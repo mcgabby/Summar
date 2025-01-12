@@ -1,3 +1,4 @@
+import { Notice } from "obsidian";
 import { PluginSettings } from "./types";
 import fetch from "node-fetch";
 
@@ -23,11 +24,12 @@ MarkDown의 Heading과 Bold는 사용하지마.
 MarkDown에서 title, bold(**) 속성은 쓰지 않고 모두 bullet으로만 표현해줘.
 응답할 때 '없습니다', '예정이다', '평가한다', '있다', '한다' 대신 '없음', '예정', '평가', '함', '있음'과 같은 축약된 어미를 사용해 줘.
 요약된 정보에 대해서는 읽어보고 의미없는 정보는 생략해줘.`,
-  url: "",
   pdfPrompt: `이 대화는 여러 PDF 페이지를 포함합니다. 각 페이지를 인식하여 마크다운 형식으로 변환하세요.
 결과에는 페이지 번호가 추가되면 안됩니다. 문장이 여러 페이지가 나눠진 경우 markdown 결과에서는 연결해줘.
 문서에 테이블을 포함하는 경우 <table>태그로 잘 표현될 수 있도록 만들어줘.
-변환 시 줄바꿈과 들여쓰기를 일관되게 유지하십시오. 추측하지 말고, 가능한 한 정확하게 내용을 인식하고 검토하여 결과를 출력하세요.`
+변환 시 줄바꿈과 들여쓰기를 일관되게 유지하십시오. 추측하지 말고, 가능한 한 정확하게 내용을 인식하고 검토하여 결과를 출력하세요.`,
+url: "",
+debugLevel: 0
 };
 
 
@@ -51,8 +53,8 @@ export class SummarViewContainer {
 
 export async function fetchOpenai(openaiApiKey: string, bodyContent: string): Promise<any> {
   try {
-    console.log(`openaiApiKey: ${openaiApiKey}`);
-    console.log(`bodyContent: ${bodyContent}`);
+    SummarDebug.log(1, `openaiApiKey: ${openaiApiKey}`);
+    SummarDebug.log(2, `bodyContent: ${bodyContent}`);
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -63,12 +65,35 @@ export async function fetchOpenai(openaiApiKey: string, bodyContent: string): Pr
     });
     return response;
   } catch (error) {
-    console.error("Error fetching data from OpenAI API:", error);
+    SummarDebug.error(1,"Error fetching data from OpenAI API:", error);
     throw error; // Re-throw the error for higher-level handling
   }
 }
 
 
+export class SummarDebug {
+  private static debugLevel: number = 0;
 
+  static initialize(debugLevel: number): void {
+    this.debugLevel = debugLevel;
+  }
+
+  static Notice(debugLevel: number, msg: string | DocumentFragment, duration?: number): void {
+    if (this.debugLevel >= debugLevel)
+      new Notice(msg, duration);
+  }
+  static log(debugLevel: number, message?: any, ...optionalParams: any[]): void {
+    if (this.debugLevel >= debugLevel)
+      console.log(message, ...optionalParams);
+  }
+
+  static error(debugLevel: number, message?: any, ...optionalParams: any[]): void {
+    if (this.debugLevel >= debugLevel)
+      console.error(message, ...optionalParams);
+  }
+  static level(): number {
+    return this.debugLevel;
+  }
+}
 
 

@@ -4,6 +4,7 @@ import { exec } from "child_process";
 import * as path from "path";
 import * as fs from "fs";
 import semver from "semver";
+import { SummarDebug } from "./globals";
 
 export class PluginUpdater {
   private plugin: any;
@@ -20,14 +21,14 @@ export class PluginUpdater {
    */
   async updatePluginIfNeeded(): Promise<void> {
     try {
-      console.log('Checking for plugin updates...');
+      SummarDebug.log(1, 'Checking for plugin updates...');
       const localVersion = this.getLocalVersion(this.plugin);
       const remoteVersion = await this.getRemoteVersion(this.REMOTE_MANIFEST_URL);
 
       if (!localVersion || !remoteVersion) {
-        console.log('Plugin is not installed. Installing now...');
+        SummarDebug.log(1, 'Plugin is not installed. Installing now...');
       } else if (semver.gt(remoteVersion, localVersion)) {
-        console.log(`Updating plugin from version ${localVersion} to ${remoteVersion}...`);
+        SummarDebug.log(1, `Updating plugin from version ${localVersion} to ${remoteVersion}...`);
 
         // 최신 플러그인 다운로드 및 설치
         const zipPath = path.join(this.plugin.OBSIDIAN_PLUGIN_DIR, `${this.plugin.PLUGIN_NAME}.zip`);
@@ -35,14 +36,44 @@ export class PluginUpdater {
         await this.extractZip(zipPath, path.join(this.plugin.OBSIDIAN_PLUGIN_DIR, this.plugin.PLUGIN_NAME));
         fs.unlinkSync(zipPath); // ZIP 파일 삭제
 
-        console.log('Summar update complete! Please reload Obsidian to apply changes.');
-        new Notice('Summar update complete! Please reload Obsidian to apply changes.');
+        SummarDebug.log(1, 'Summar update complete! Please reload Obsidian to apply changes.');
+        const fragment = document.createDocumentFragment();
+
+        {
+          // 설명 메시지 추가
+          const message1 = document.createElement("span");
+          message1.textContent = "Summar update completed! Please click ";
+          fragment.appendChild(message1);
+
+          // 링크 생성 및 스타일링
+          const link = document.createElement("a");
+          link.textContent = "HERE";
+          link.href = "#";
+          link.style.cursor = "pointer";
+          link.style.color = "blue"; // 링크 색상 설정 (옵션)
+
+          // 클릭 이벤트 핸들러
+          link.addEventListener("click", (event) => {
+            event.preventDefault(); // 기본 동작 방지
+            window.location.reload(); // Obsidian 재로드
+          });
+
+          // Fragment에 링크 추가
+          fragment.appendChild(link);
+
+          // 설명 메시지 추가
+          const message2 = document.createElement("span");
+          message2.textContent = " to reload Obsidian and apply the changes.";
+          fragment.appendChild(message2); // Fragment에 메시지 추가
+
+          SummarDebug.Notice(0, fragment, 0);
+        }
       } else if (localVersion === remoteVersion) {
-        console.log('Plugin is already up to date.');
+        SummarDebug.log(1, 'Plugin is already up to date.');
         return;
       }
     } catch (error) {
-      console.error('Failed to update plugin:', error);
+      SummarDebug.error(1,'Failed to update plugin:', error);
     }
   }
 
@@ -52,7 +83,7 @@ export class PluginUpdater {
       return null;
     }
     const manifest = JSON.parse(fs.readFileSync(plugin.LOCAL_MANIFEST_PATH, 'utf-8'));
-    console.log('Summar Local version:', manifest.version);
+    SummarDebug.log(1, 'Summar Local version:', manifest.version);
     return manifest.version || null;
   }
 
@@ -63,7 +94,7 @@ export class PluginUpdater {
     }
 
     try {
-      console.log(`Fetching manifest from URL: ${url}`);
+      SummarDebug.log(1, `Fetching manifest from URL: ${url}`);
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -73,7 +104,7 @@ export class PluginUpdater {
       const data = (await response.json()) as Manifest;
       return data.version || null;
     } catch (error) {
-      console.error(`Error fetching remote manifest: ${(error as Error).message}`);
+      SummarDebug.error(1,`Error fetching remote manifest: ${(error as Error).message}`);
       throw error;
     }
   }
@@ -83,7 +114,7 @@ export class PluginUpdater {
    */
   private async downloadPlugin(url: string, outputPath: string): Promise<void> {
     try {
-      console.log(`Fetching plugin from URL: ${url}`);
+      SummarDebug.log(1, `Fetching plugin from URL: ${url}`);
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -107,7 +138,7 @@ export class PluginUpdater {
         });
       });
     } catch (error) {
-      console.error(`Error downloading plugin: ${(error as Error).message}`);
+      SummarDebug.error(1,`Error downloading plugin: ${(error as Error).message}`);
       throw error;
     }
   }

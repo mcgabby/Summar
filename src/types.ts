@@ -8,8 +8,10 @@ export interface PluginSettings {
   confluenceBaseUrl: string;
   systemPrompt: string;
   userPrompt: string;
-  url: string;
   pdfPrompt: string;
+
+  url: string;
+  debugLevel: number;
 }
 
 export interface OpenAIResponse {

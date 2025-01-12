@@ -5,7 +5,7 @@ import * as path from "path";
 import fss from "fs/promises";
 import { join } from "path";
 import { spawn } from "child_process";
-import { SummarViewContainer } from "./globals";
+import { SummarViewContainer, SummarDebug } from "./globals";
 
 export class PdfToPng {
   private file: File;
@@ -29,10 +29,10 @@ export class PdfToPng {
 
   async isPopplerInstalled(): Promise<boolean> {
     if (fs.existsSync(this.pdftocairoPath)) {
-      console.log("Poppler is installed.");
+      SummarDebug.log(1, "Poppler is installed.");
       return true;
     } else {
-      console.log("Poppler is not installed.");
+      SummarDebug.log(1, "Poppler is not installed.");
       return false;
     }
   }
@@ -42,7 +42,7 @@ export class PdfToPng {
     this.page = 0; // initial value
     let result: string[] = [];
 
-    console.log("Starting PDF to PNG conversion...");
+    SummarDebug.log(1, "Starting PDF to PNG conversion...");
     SummarViewContainer.updateText(this.resultContainer, "Initial rendering...");
 
     // Save the PDF file to a temporary location
@@ -51,16 +51,16 @@ export class PdfToPng {
 
     if (!fs.existsSync(this.tempDir)) {
       await this.createDirectory(this.tempDir);
-      console.log(`Temporary directory created: ${this.tempDir}`);
+      SummarDebug.log(1, `Temporary directory created: ${this.tempDir}`);
       SummarViewContainer.updateText(this.resultContainer, `Temporary directory created: ${this.tempDir}`);
     } else {
-      console.log(`Temporary directory already exists: ${this.tempDir}`);
+      SummarDebug.log(1, `Temporary directory already exists: ${this.tempDir}`);
       SummarViewContainer.updateText(this.resultContainer, `Temporary directory already exists: ${this.tempDir}`);
     }
 
-    console.log("PDF file will be save at:", this.pdfPath);
+    SummarDebug.log(1, "PDF file will be save at:", this.pdfPath);
     fs.writeFileSync(this.pdfPath, Buffer.from(await this.file.arrayBuffer()));
-    console.log("PDF file saved at:", this.pdfPath);
+    SummarDebug.log(1, "PDF file saved at:", this.pdfPath);
     SummarViewContainer.updateText(this.resultContainer, `PDF file saved at: ${this.pdfPath}`);
 
     // Output directory for PNGs
@@ -68,10 +68,10 @@ export class PdfToPng {
     this.outputDir = join(this.tempDir, pdfName);
     await this.createDirectory(this.outputDir);
 
-    console.log("Converting PDF to images using Poppler...");
+    SummarDebug.log(1, "Converting PDF to images using Poppler...");
     SummarViewContainer.updateText(this.resultContainer, "Converting PDF to images using Poppler...");
 
-    console.log(this.pdfPath);
+    SummarDebug.log(1, this.pdfPath);
 
     await this.convertPdfToPng();//this.pdfPath, options);
     if (removeflag) {
@@ -79,7 +79,7 @@ export class PdfToPng {
     }
 
     result = this.listPngFiles();
-    console.log("outputDir: ", this.outputDir);
+    SummarDebug.log(1, "outputDir: ", this.outputDir);
 
     if (removeflag) {
       await this.deleteIfExists(this.outputDir);
@@ -94,9 +94,9 @@ export class PdfToPng {
   private async createDirectory(path: string): Promise<void> {
     if (!fs.existsSync(path)) {
       fs.mkdirSync(path, { recursive: true });
-      console.log("Directory created:", path);
+      SummarDebug.log(1, "Directory created:", path);
     } else {
-      console.log("Directory already exists:", path);
+      SummarDebug.log(1, "Directory already exists:", path);
     }
   }
 
@@ -121,23 +121,23 @@ export class PdfToPng {
       args.push("-f", String(this.page), "-l", String(this.page), "-r", String(300)); // Convert a specific page
     }
 
-    console.log("Executing pdftocairo with args:", this.pdftocairoPath, args);
+    SummarDebug.log(1, "Executing pdftocairo with args:", this.pdftocairoPath, args);
 
     return new Promise((resolve, reject) => {
       const process = spawn(this.pdftocairoPath, args);
 
       process.stdout.on("data", (data) => {
-        console.log("stdout: ", data);
+        SummarDebug.log(1, "stdout: ", data);
       });
 
       process.stderr.on("data", (data) => {
-        console.error("stderr: ", data);
+        SummarDebug.error(1,"stderr: ", data);
 
       });
 
       process.on("close", (code) => {
         if (code === 0) {
-          console.log("PDF successfully converted.");
+          SummarDebug.log(1, "PDF successfully converted.");
           const outputFiles = this.generateOutputFileList();
           resolve(outputFiles);
         } else {
@@ -158,7 +158,7 @@ export class PdfToPng {
       if (stats.isFile()) {
         // 파일이면 삭제
         await fss.unlink(filePath);
-        console.log(`File deleted: ${filePath}`);
+        SummarDebug.log(1, `File deleted: ${filePath}`);
       } else if (stats.isDirectory()) {
         // 디렉토리이면 재귀적으로 삭제
         const files = await fss.readdir(filePath); // 디렉토리 내용 읽기
@@ -168,17 +168,17 @@ export class PdfToPng {
         }
         // 디렉토리 비워졌으므로 삭제
         await fss.rmdir(filePath);
-        console.log(`Directory deleted: ${filePath}`);
+        SummarDebug.log(1, `Directory deleted: ${filePath}`);
       } else {
-        console.error(`Unsupported file type: ${filePath}`);
+        SummarDebug.error(1,`Unsupported file type: ${filePath}`);
       }
     } catch (err: any) {
       if (err.code === "ENOENT") {
-        console.error(`File or directory does not exist: ${filePath}`);
+        SummarDebug.error(1,`File or directory does not exist: ${filePath}`);
       } else if (err.code === "EACCES") {
-        console.error(`Permission denied to delete: ${filePath}`);
+        SummarDebug.error(1,`Permission denied to delete: ${filePath}`);
       } else {
-        console.error(`Failed to delete: ${filePath}`, err);
+        SummarDebug.error(1,`Failed to delete: ${filePath}`, err);
       }
     }
   }
@@ -197,7 +197,7 @@ export class PdfToPng {
     try {
       // Ensure the directory exists
       if (!fs.existsSync(this.outputDir)) {
-        new Notice(`Directory not found: ${this.outputDir}`);
+        SummarDebug.Notice(1, `Directory not found: ${this.outputDir}`,0);
         return [];
       }
 
@@ -222,14 +222,14 @@ export class PdfToPng {
           const base64String = fileBuffer.toString("base64"); // Convert to Base64
           base64Values.push(base64String); // Add Base64 to result
         } catch (readError) {
-          console.error(`Error reading file ${file}:`, readError);
+          SummarDebug.error(1,`Error reading file ${file}:`, readError);
           SummarViewContainer.updateText(this.resultContainer, `Failed to process ${file}`);
         }
       });
       return base64Values;
     } catch (error) {
-      console.error("Error listing PNG files:", error);
-      new Notice("An error occurred while listing PNG files. Check the console for details.");
+      SummarDebug.error(1,"Error listing PNG files:", error);
+      SummarDebug.Notice(1, "An error occurred while listing PNG files. Check the console for details.",0);
       return [];
     }
   }
