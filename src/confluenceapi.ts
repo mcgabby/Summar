@@ -1,5 +1,6 @@
 import { Notice } from "obsidian";
 import fetch from "node-fetch";
+import { SummarDebug } from "./globals";
 
 interface ConfluencePage {
   id: string;
@@ -36,7 +37,7 @@ export class ConfluenceAPI {
     const { confluenceApiToken, confluenceBaseUrl } = this.plugin.settings;
 
     if (!confluenceApiToken || !confluenceBaseUrl) {
-      new Notice("Please configure API keys in the plugin settings.");
+      SummarDebug.Notice(0, "Please configure confluence API keys in the plugin settings.", 0);
       return { pageId, spaceKey, title };
     }
     if (url.includes("pageId=")) {
@@ -51,26 +52,26 @@ export class ConfluenceAPI {
       } else {
         const pathSegments = url.split("/");
         if (pathSegments.length >= 6) {
-          console.log("pathSegments: " + pathSegments);
+          SummarDebug.log(1,"pathSegments: " + pathSegments);
           spaceKey = pathSegments[4];
           title = decodeURIComponent(pathSegments[5]).replace(/\+/g, " ");
         }
       }
-      console.log("spaceKey: " + spaceKey);
-      console.log("title: " + title);
+      SummarDebug.log(1, "spaceKey: " + spaceKey);
+      SummarDebug.log(1, "title: " + title);
 
       // 페이지 ID 검색
       if (spaceKey && title) {
         try {
-          console.log("Searching for page");
+          SummarDebug.log(1, "Searching for page");
           pageId = await this.getPageIdFromTitle(spaceKey, title);
-          console.log(`Found page ID: ${pageId}`);
+          SummarDebug.log(1, `Found page ID: ${pageId}`);
         } catch (error) {
-          console.error("Error while fetching page ID:", error);
+          SummarDebug.error(1,"Error while fetching page ID:", error);
         }
       }
       else {
-        console.error("Invalid URL format. Cannot extract spaceKey or title.");
+        SummarDebug.error(1,"Invalid URL format. Cannot extract spaceKey or title.");
         return { pageId, spaceKey, title };
       }
     }
@@ -89,7 +90,7 @@ export class ConfluenceAPI {
     // Confluence REST API endpoint
     const apiUrl = `${confluenceBaseUrl}/rest/api/content/${pageId}?expand=body.storage`;
 
-    console.log("Fetching Confluence page content...");
+    SummarDebug.log(1, "Fetching Confluence page content...");
 
     try {
       const response = await fetch(apiUrl, { headers });
@@ -98,15 +99,15 @@ export class ConfluenceAPI {
         const data = await (response.json()) as ConfluencePageContentResponse;
         const content = data.body.storage.value;
         const title = data.title; // 타이틀 가져오기
-        console.log("Fetch complete!");
+        SummarDebug.log(1, "Fetch complete!");
 
         return { title, content }; // 타이틀과 콘텐츠 반환
       } else {
-        console.error(`Error: ${response.status} - ${response.statusText}`);
+        SummarDebug.error(1,`Error: ${response.status} - ${response.statusText}`);
         throw new Error(`Failed to fetch Confluence page, status code: ${response.status}`);
       }
     } catch (error) {
-      console.error("Error while fetching Confluence page content:", error);
+      SummarDebug.error(1,"Error while fetching Confluence page content:", error);
       throw error;
     }
   }
@@ -126,7 +127,7 @@ export class ConfluenceAPI {
       title
     )}&spaceKey=${encodeURIComponent(spaceKey)}&expand=body.storage`;
 
-    console.log("searchUrl: " + searchUrl);
+    SummarDebug.log(1, "searchUrl: " + searchUrl);
 
     try {
       const response = await fetch(searchUrl, { headers });
@@ -138,17 +139,17 @@ export class ConfluenceAPI {
         if (data.results && data.results.length > 0) {
           return data.results[0].id;
         } else {
-          console.error("No results found for the given title and spaceKey.");
+          SummarDebug.error(1,"No results found for the given title and spaceKey.");
           throw new Error("Page not found.");
         }
       } else {
-        console.error(
+        SummarDebug.error(1,
           `Error: ${response.status} - ${response.statusText}`
         );
         throw new Error(`Failed to fetch Confluence page ID, status code: ${response.status}`);
       }
     } catch (error) {
-      console.error("Error while fetching page ID:", error);
+      SummarDebug.error(1,"Error while fetching page ID:", error);
       throw error;
     }
   }
