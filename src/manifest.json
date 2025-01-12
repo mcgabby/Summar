@@ -1,0 +1,13 @@
+{
+  
+  "author": "Snow Kwon",
+  "authorUrl": "https://linepluscorp.com",
+  "description": "Summarizes the content of web pages and PDFs using the OpenAI API.",
+
+  "id": "summar",
+
+  "isDesktopOnly": true,
+  "minAppVersion": "0.13.0",
+  "name": "Summar: AI-Powered Summarizer",
+  "version": "1.0.5"
+}
