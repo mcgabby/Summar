@@ -1,6 +1,7 @@
 import { Notice } from "obsidian";
-import { PluginSettings } from "./types";
 import fetch from "node-fetch";
+
+import { PluginSettings } from "./types";
 
 export const DEFAULT_SETTINGS: PluginSettings = {
   openaiApiKey: "",
@@ -28,8 +29,9 @@ MarkDown에서 title, bold(**) 속성은 쓰지 않고 모두 bullet으로만 �
 결과에는 페이지 번호가 추가되면 안됩니다. 문장이 여러 페이지가 나눠진 경우 markdown 결과에서는 연결해줘.
 문서에 테이블을 포함하는 경우 <table>태그로 잘 표현될 수 있도록 만들어줘.
 변환 시 줄바꿈과 들여쓰기를 일관되게 유지하십시오. 추측하지 말고, 가능한 한 정확하게 내용을 인식하고 검토하여 결과를 출력하세요.`,
-url: "",
-debugLevel: 0
+
+  url: "",        // initial URL of the page to summarize
+  debugLevel: 0  // debug level
 };
 
 
@@ -65,7 +67,7 @@ export async function fetchOpenai(openaiApiKey: string, bodyContent: string): Pr
     });
     return response;
   } catch (error) {
-    SummarDebug.error(1,"Error fetching data from OpenAI API:", error);
+    SummarDebug.error(1, "Error fetching data from OpenAI API:", error);
     throw error; // Re-throw the error for higher-level handling
   }
 }

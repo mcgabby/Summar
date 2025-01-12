@@ -1,6 +1,7 @@
-import { Notice } from "obsidian";
 import fetch from "node-fetch";
+
 import { SummarDebug } from "./globals";
+
 
 interface ConfluencePage {
   id: string;
@@ -44,7 +45,6 @@ export class ConfluenceAPI {
       // URL에서 pageId 추출
       pageId = url.split("pageId=")[1].split("&")[0];
     } else {
-
       // URL에서 spaceKey와 title 추출
       if (url.includes("spaceKey=") && url.includes("title=")) {
         spaceKey = url.split("spaceKey=")[1].split("&")[0];

@@ -1,9 +1,9 @@
-import { Notice } from "obsidian";
 import fetch from "node-fetch";
 import { exec } from "child_process";
 import * as path from "path";
 import * as fs from "fs";
 import semver from "semver";
+
 import { SummarDebug } from "./globals";
 
 export class PluginUpdater {
@@ -11,7 +11,7 @@ export class PluginUpdater {
 
   private REMOTE_MANIFEST_URL = 'https://github.com/mcgabby/Summar/releases/latest/download/manifest.json';
   private PLUGIN_ZIP_URL = 'https://github.com/mcgabby/Summar/releases/latest/download/summar.zip';
-  
+
   constructor(plugin: any) {
     this.plugin = plugin;
   }
@@ -73,7 +73,7 @@ export class PluginUpdater {
         return;
       }
     } catch (error) {
-      SummarDebug.error(1,'Failed to update plugin:', error);
+      SummarDebug.error(1, 'Failed to update plugin:', error);
     }
   }
 
@@ -104,7 +104,7 @@ export class PluginUpdater {
       const data = (await response.json()) as Manifest;
       return data.version || null;
     } catch (error) {
-      SummarDebug.error(1,`Error fetching remote manifest: ${(error as Error).message}`);
+      SummarDebug.error(1, `Error fetching remote manifest: ${(error as Error).message}`);
       throw error;
     }
   }
@@ -138,7 +138,7 @@ export class PluginUpdater {
         });
       });
     } catch (error) {
-      SummarDebug.error(1,`Error downloading plugin: ${(error as Error).message}`);
+      SummarDebug.error(1, `Error downloading plugin: ${(error as Error).message}`);
       throw error;
     }
   }

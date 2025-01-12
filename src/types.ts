@@ -1,6 +1,3 @@
-
-
-
 export interface PluginSettings {
   openaiApiKey: string;
   confluenceApiToken: string;

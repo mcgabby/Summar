@@ -1,10 +1,10 @@
-import { Notice } from "obsidian";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import fss from "fs/promises";
 import { join } from "path";
 import { spawn } from "child_process";
+
 import { SummarViewContainer, SummarDebug } from "./globals";
 
 export class PdfToPng {
@@ -18,10 +18,12 @@ export class PdfToPng {
 
   private FORMAT: string = "png";
   private OUT_PREFIX = "page";
-  //private POPPLER_PATH = "/opt/homebrew/bin";
   private pdftocairoPath = "";
 
-
+  /**
+   * Initializes a new instance of the PdfToPng class.
+   * @param resultContainer The container to display results.
+   */
   constructor(resultContainer: { value: string }) {
     this.resultContainer = resultContainer;
     this.pdftocairoPath = join("/opt/homebrew/bin", "pdftocairo");

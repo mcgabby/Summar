@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, View, WorkspaceLeaf, Notice, Platform, Menu, Modal } from "obsidian";
+import { App, Plugin, PluginSettingTab, Setting, View, WorkspaceLeaf, Platform, Menu, Modal } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
 import fetch from "node-fetch";
@@ -12,7 +12,6 @@ import { JsonBuilder } from "./jsonbuilder";
 import { PdfToPng } from "./pdftopng";
 
 export default class SummarPlugin extends Plugin {
-  // selectedLink: string | null = null;
   settings: PluginSettings;
   resultContainer: HTMLTextAreaElement;
   inputField: HTMLInputElement;
@@ -37,16 +36,13 @@ export default class SummarPlugin extends Plugin {
       }
     }, 1000 * 60); // 1분 (60초)    
 
-
     SummarDebug.log(1, "Summar Plugin loaded");
 
     this.settings = await this.loadSettingsFromFile();
     SummarDebug.initialize(this.settings.debugLevel);
 
     this.addSettingTab(new SummarSettingsTab(this));
-
     this.addRibbonIcon("scroll-text", "Open Summar View", this.activateView.bind(this));
-
     this.registerView(SummarView.VIEW_TYPE, (leaf) => new SummarView(leaf, this));
 
     if (Platform.isDesktopApp) {
@@ -167,9 +163,7 @@ export default class SummarPlugin extends Plugin {
 
   // 커맨드에서 사용할 링크 설정
   setLinkForCommand(link: string) {
-    // this.selectedLink = link;
     SummarDebug.Notice(0, `Link set for command: ${link}`);
-    // SummarViewContainer.appendText(this.inputField, link);
     SummarViewContainer.updateText(this.inputField, link);
     fetchAndSummarize(this.resultContainer, link, this);
   }
@@ -352,12 +346,10 @@ class SummarSettingsTab extends PluginSettingTab {
             await this.plugin.saveSettingsToFile(this.plugin.settings);
           });
 
-
         const textAreaEl = text.inputEl;
         textAreaEl.style.width = "100%";
         textAreaEl.style.height = "150px";
         textAreaEl.style.resize = "none";
-
       })
       ;
   }
@@ -478,7 +470,12 @@ class SummarView extends View {
 
 
 
-
+/*
+ * fetchAndSummarize 함수는 URL을 가져와서 요약을 생성합니다.
+ * @param resultContainer 결과를 표시할 textarea 엘리먼트
+ * @param url 가져올 URL
+ * @param plugin 플러그인 인스턴스
+ */
 async function fetchAndSummarize(resultContainer: { value: string }, url: string, plugin: any) {
   const { confluenceApiToken, confluenceBaseUrl, useConfluenceAPI, openaiApiKey, systemPrompt, userPrompt } = plugin.settings;
   const timer = new SummarTimer(resultContainer);
@@ -508,9 +505,6 @@ async function fetchAndSummarize(resultContainer: { value: string }, url: string
     if (confluenceApiToken && confluenceBaseUrl) {
       const result = await conflueceapi.getPageId(url);
 
-
-      // const result = await extractConfluenceInfo(url, plugin);
-      // 결과 출력
       SummarDebug.log(1, "Extracted Confluence Info:");
       SummarDebug.log(1, `Page ID: ${result.pageId}`);
       SummarDebug.log(1, `Space Key: ${result.spaceKey}`);
@@ -521,7 +515,6 @@ async function fetchAndSummarize(resultContainer: { value: string }, url: string
       try {
         if (useConfluenceAPI && confluenceApiToken) {
           const { title, content } = await conflueceapi.getPageContent(pageId);
-          //          const { title, content } = await getConfluencePageContent(result.pageId, confluenceApiToken, confluenceBaseUrl);
           page_content = await content;
           SummarDebug.log(2, `Fetched Confluence page content:\n ${content}`);
         } else {
@@ -580,11 +573,12 @@ async function fetchAndSummarize(resultContainer: { value: string }, url: string
 }
 
 
-/**
- * Convert a PDF file to PNG images using Poppler and Jimp.
- * @param file The PDF file to be converted.
- * @param app Obsidian's app instance for accessing the file system.
+/*
+ * convertPdfToMarkdown 함수는 PDF를 이미지로 변환한 후 마크다운으로 변환합니다.
+ * @param resultContainer 결과를 표시할 textarea 엘리먼트
+ * @param plugin 플러그인 인스턴스
  */
+
 async function convertPdfToMarkdown(resultContainer: { value: string }, plugin: any) {
   const { openaiApiKey } = plugin.settings;
 
@@ -620,8 +614,7 @@ async function convertPdfToMarkdown(resultContainer: { value: string }, plugin: 
         const jsonBuilder = new JsonBuilder();
 
         // 기본 데이터 추가
-        jsonBuilder
-          .addData("model", "gpt-4o");
+        jsonBuilder.addData("model", "gpt-4o");
 
         // 시스템 메시지 추가
         jsonBuilder.addToArray("messages", {
@@ -666,7 +659,6 @@ async function convertPdfToMarkdown(resultContainer: { value: string }, plugin: 
 
         const body_content = jsonBuilder.toString();
         SummarDebug.log(2, body_content);
-
 
         SummarViewContainer.updateText(resultContainer, "Converting PDF to markdown. This may take a while...");
 
