@@ -59,11 +59,12 @@ export class ConfluenceAPI {
           title = decodeURIComponent(pathSegments[5]).replace(/\+/g, " ");
         }
       }
-      SummarDebug.log(1, "spaceKey: " + spaceKey);
-      SummarDebug.log(1, "title: " + title);
 
       // 페이지 ID 검색
       if (spaceKey && title) {
+        title = title.includes("#") ? title.split("#")[0] : title;
+        SummarDebug.log(1, "spaceKey: " + spaceKey);
+        SummarDebug.log(1, "title: " + title);
         try {
           SummarDebug.log(1, "Searching for page");
           pageId = await this.getPageIdFromTitle(spaceKey, title);
