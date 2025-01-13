@@ -193,6 +193,27 @@ class SummarSettingsTab extends PluginSettingTab {
 
     containerEl.createEl("h2", { text: "Summar Settings" });
 
+    // 설명 메시지 추가
+    const message1 = document.createElement("span");
+    message1.textContent = "current version: " + this.plugin.manifest.version + " - If you want to reload Obsidian, click ";
+    containerEl.appendChild(message1);
+
+    // 링크 생성 및 스타일링
+    const link = document.createElement("a");
+    link.textContent = "HERE";
+    link.href = "#";
+    link.style.cursor = "pointer";
+    link.style.color = "blue"; // 링크 색상 설정 (옵션)
+
+    // 클릭 이벤트 핸들러
+    link.addEventListener("click", (event) => {
+      event.preventDefault(); // 기본 동작 방지
+      window.location.reload(); // Obsidian 재로드
+    });
+
+    // Fragment에 링크 추가
+    containerEl.appendChild(link);
+        
     new Setting(containerEl)
       .setName("OpenAI API Key")
       .setDesc("Enter your OpenAI API key.")
