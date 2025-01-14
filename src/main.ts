@@ -141,13 +141,21 @@ export default class SummarPlugin extends Plugin {
     const pluginDir = await this.getPluginDir();
     // const settingsPath = path.join(pluginDir, "data.json");
     const settingsPath = normalizePath(pluginDir + "/data.json");
+    
+    if (await this.app.vault.adapter.exists(settingsPath)) {
+      console.log("Settings file exists:", settingsPath);
+    } else {
+      console.log("Settings file does not exist:", settingsPath);
+    }
+
     if (fs.existsSync(settingsPath)) {
+      console.log("Reading settings from data.json");
       try {
         const rawData = fs.readFileSync(settingsPath, "utf-8");
         const settings = JSON.parse(rawData);
         return Object.assign({}, DEFAULT_SETTINGS, settings);
       } catch (error) {
-        SummarDebug.error(1, "Error reading settings file:", error);
+        console.log("Error reading settings file:", error);
         return DEFAULT_SETTINGS;
       }
     }
