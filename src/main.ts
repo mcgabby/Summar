@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, View, WorkspaceLeaf, Platform, Menu, Modal } from "obsidian";
+import { App, Plugin, PluginSettingTab, Setting, View, WorkspaceLeaf, Platform, Menu, Modal, normalizePath } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
 import fetch from "node-fetch";
@@ -16,14 +16,17 @@ export default class SummarPlugin extends Plugin {
   resultContainer: HTMLTextAreaElement;
   inputField: HTMLInputElement;
 
-  PLUGIN_NAME: string = ""; // 플러그인 이름
+  PLUGIN_ID: string = ""; // 플러그인 이름
   OBSIDIAN_PLUGIN_DIR: string = "";
   LOCAL_MANIFEST_PATH: string = "";
 
   async onload() {
-    this.PLUGIN_NAME = this.manifest.id;
-    this.OBSIDIAN_PLUGIN_DIR = path.join((this.app.vault.adapter as any).basePath, ".obsidian", "plugins");
-    this.LOCAL_MANIFEST_PATH = path.join(this.OBSIDIAN_PLUGIN_DIR, this.PLUGIN_NAME, 'manifest.json');
+    this.PLUGIN_ID = this.manifest.id;
+    // this.OBSIDIAN_PLUGIN_DIR = path.join((this.app.vault.adapter as any).basePath, ".obsidian", "plugins");
+    this.OBSIDIAN_PLUGIN_DIR = normalizePath((this.app.vault.adapter as any).basePath + "/.obsidian/plugins");
+
+    // this.LOCAL_MANIFEST_PATH = path.join(this.OBSIDIAN_PLUGIN_DIR, this.PLUGIN_ID, 'manifest.json');
+    this.LOCAL_MANIFEST_PATH = normalizePath(this.OBSIDIAN_PLUGIN_DIR + "/" + this.PLUGIN_ID + "/manifest.json");
 
     // 로딩 후 1분 뒤에 업데이트 확인
     setTimeout(async () => {
@@ -129,13 +132,15 @@ export default class SummarPlugin extends Plugin {
 
   async getPluginDir(): Promise<string> {
     const pluginId = this.manifest.id;
-    const pluginDir = path.join((this.app.vault.adapter as any).basePath, ".obsidian", "plugins", pluginId);
+    // const pluginDir = path.join((this.app.vault.adapter as any).basePath, ".obsidian", "plugins", pluginId);
+    const pluginDir = normalizePath((this.app.vault.adapter as any).basePath + "/.obsidian/plugins/" + pluginId);
     return pluginDir;
   }
 
   async loadSettingsFromFile(): Promise<PluginSettings> {
     const pluginDir = await this.getPluginDir();
-    const settingsPath = path.join(pluginDir, "data.json");
+    // const settingsPath = path.join(pluginDir, "data.json");
+    const settingsPath = normalizePath(pluginDir + "/data.json");
     if (fs.existsSync(settingsPath)) {
       try {
         const rawData = fs.readFileSync(settingsPath, "utf-8");
@@ -151,7 +156,8 @@ export default class SummarPlugin extends Plugin {
 
   async saveSettingsToFile(settings: PluginSettings): Promise<void> {
     const pluginDir = await this.getPluginDir();
-    const settingsPath = path.join(pluginDir, "data.json");
+    // const settingsPath = path.join(pluginDir, "data.json");
+    const settingsPath = normalizePath(pluginDir + "/data.json");
     try {
       fs.mkdirSync(pluginDir, { recursive: true });
       fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), "utf-8");
@@ -610,7 +616,7 @@ async function convertPdfToMarkdown(resultContainer: { value: string }, plugin: 
   }
 
   const timer = new SummarTimer(resultContainer);
-  const pdftopng = new PdfToPng(resultContainer);
+  const pdftopng = new PdfToPng(resultContainer, plugin);
   try {
     if (!(await pdftopng.isPopplerInstalled())) {
       SummarDebug.Notice(0, "Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");

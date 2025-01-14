@@ -1,10 +1,11 @@
 import fetch from "node-fetch";
 import { exec } from "child_process";
-import * as path from "path";
+// import * as path from "path";
 import * as fs from "fs";
 import semver from "semver";
 
 import { SummarDebug } from "./globals";
+import { normalizePath } from "obsidian";
 
 export class PluginUpdater {
   private plugin: any;
@@ -31,9 +32,11 @@ export class PluginUpdater {
         SummarDebug.log(1, `Updating plugin from version ${localVersion} to ${remoteVersion}...`);
 
         // 최신 플러그인 다운로드 및 설치
-        const zipPath = path.join(this.plugin.OBSIDIAN_PLUGIN_DIR, `${this.plugin.PLUGIN_NAME}.zip`);
+        // const zipPath = path.join(this.plugin.OBSIDIAN_PLUGIN_DIR, `${this.plugin.PLUGIN_ID}.zip`);
+        const zipPath = normalizePath(this.plugin.OBSIDIAN_PLUGIN_DIR + "/" + this.plugin.PLUGIN_ID + ".zip");
         await this.downloadPlugin(this.PLUGIN_ZIP_URL, zipPath);
-        await this.extractZip(zipPath, path.join(this.plugin.OBSIDIAN_PLUGIN_DIR, this.plugin.PLUGIN_NAME));
+        // await this.extractZip(zipPath, path.join(this.plugin.OBSIDIAN_PLUGIN_DIR, this.plugin.PLUGIN_ID));
+        await this.extractZip(zipPath, normalizePath(this.plugin.OBSIDIAN_PLUGIN_DIR + "/" + this.plugin.PLUGIN_ID));
         fs.unlinkSync(zipPath); // ZIP 파일 삭제
 
         SummarDebug.log(1, 'Summar update complete! Please reload Obsidian to apply changes.');

@@ -1,8 +1,10 @@
+import { normalizePath, Plugin } from "obsidian";
+
 import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
+// import * as os from "os";
+// import * as path from "path";
 import fss from "fs/promises";
-import { join } from "path";
+// import { join } from "path";
 import { spawn } from "child_process";
 
 import { SummarViewContainer, SummarDebug } from "./globals";
@@ -10,6 +12,7 @@ import { SummarViewContainer, SummarDebug } from "./globals";
 export class PdfToPng {
   private file: File;
   private resultContainer: { value: string };
+  private plugin: Plugin;
 
   private tempDir: string;
   private pdfPath: string;
@@ -24,9 +27,11 @@ export class PdfToPng {
    * Initializes a new instance of the PdfToPng class.
    * @param resultContainer The container to display results.
    */
-  constructor(resultContainer: { value: string }) {
+  constructor(resultContainer: { value: string }, plugin: Plugin) {
     this.resultContainer = resultContainer;
-    this.pdftocairoPath = join("/opt/homebrew/bin", "pdftocairo");
+    this.plugin = plugin;
+    // this.pdftocairoPath = join("/opt/homebrew/bin", "pdftocairo");
+    this.pdftocairoPath = normalizePath("/opt/homebrew/bin/pdftocairo");
   }
 
   async isPopplerInstalled(): Promise<boolean> {
@@ -48,8 +53,11 @@ export class PdfToPng {
     SummarViewContainer.updateText(this.resultContainer, "Initial rendering...");
 
     // Save the PDF file to a temporary location
-    this.tempDir = path.join(os.tmpdir(), "pdf_conversion", "temp");
-    this.pdfPath = join(this.tempDir, this.file.name);
+    // this.tempDir = path.join(os.tmpdir(), "pdf_conversion", "temp");
+    // this.tempDir = normalizePath(os.tempdir() + "/pdf_conversion/temp");
+    this.tempDir = normalizePath((this.plugin.app.vault.adapter as any).basePath + "/.obsidian/pdf_conversion/temp");
+    // this.pdfPath = join(this.tempDir, this.file.name);
+    this.pdfPath = normalizePath(this.tempDir + "/" + this.file.name);
 
     if (!fs.existsSync(this.tempDir)) {
       await this.createDirectory(this.tempDir);
@@ -67,7 +75,8 @@ export class PdfToPng {
 
     // Output directory for PNGs
     const pdfName = this.file.name.replace(".pdf", "");
-    this.outputDir = join(this.tempDir, pdfName);
+    // this.outputDir = join(this.tempDir, pdfName);
+    this.outputDir = normalizePath(this.tempDir + "/" + pdfName);
     await this.createDirectory(this.outputDir);
 
     SummarDebug.log(1, "Converting PDF to images using Poppler...");
@@ -115,7 +124,8 @@ export class PdfToPng {
     const args = [
       `-${this.FORMAT}`, // Output format (e.g., -png)
       this.pdfPath,    // Input PDF file
-      join(this.outputDir, this.OUT_PREFIX), // Output file prefix
+      // join(this.outputDir, this.OUT_PREFIX), // Output file prefix
+      normalizePath(this.outputDir + "/" + this.OUT_PREFIX), // Output file prefix
     ];
 
     // Add page-specific arguments
@@ -218,7 +228,8 @@ export class PdfToPng {
       // Convert each file to Base64 and collect results
       const base64Values: string[] = [];
       sortedFiles.forEach((file: string) => {
-        const filePath = path.join(this.outputDir, file);
+        // const filePath = path.join(this.outputDir, file);
+        const filePath = normalizePath(this.outputDir + "/" + file);
         try {
           const fileBuffer = fs.readFileSync(filePath); // Read file as buffer
           const base64String = fileBuffer.toString("base64"); // Convert to Base64
@@ -246,7 +257,8 @@ export class PdfToPng {
     let page = 1;
 
     while (true) {
-      const filePath = join(this.outputDir, `${this.OUT_PREFIX}-${page}.${this.FORMAT}`);
+      // const filePath = join(this.outputDir, `${this.OUT_PREFIX}-${page}.${this.FORMAT}`);
+      const filePath = normalizePath(this.outputDir + "/" + `${this.OUT_PREFIX}-${page}.${this.FORMAT}`);
       if (fs.existsSync(filePath)) {
         outputFiles.push(filePath);
         page++;
