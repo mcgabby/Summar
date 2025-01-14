@@ -1,5 +1,6 @@
 import { Notice } from "obsidian";
 import fetch from "node-fetch";
+import { Http } from "@capacitor/http";
 
 import { PluginSettings } from "./types";
 
@@ -58,6 +59,7 @@ export async function fetchOpenai(openaiApiKey: string, bodyContent: string): Pr
     SummarDebug.log(1, `openaiApiKey: ${openaiApiKey}`);
     SummarDebug.log(2, `bodyContent: ${bodyContent}`);
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    // const response = await capacitorFetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -99,3 +101,61 @@ export class SummarDebug {
 }
 
 
+
+interface FetchParams {
+  method?: string; // HTTP 메서드 (GET, POST 등)
+  headers?: Record<string, string>; // 요청 헤더
+  body?: string; // 요청 본문 (JSON 등)
+}
+
+async function capacitorFetch(
+  url: string,
+  { method = "GET", headers = {}, body }: FetchParams = {}
+): Promise<Response> {
+  let currentUrl = url;
+  const maxRedirects = 5; // 최대 리다이렉트 제한
+  let redirectCount = 0;
+
+  SummarDebug.log(1, `fetching $JSON.stringify(headers)`);
+
+  while (redirectCount < maxRedirects) {
+    const response = await Http.request({
+      method,
+      url: currentUrl,
+      headers,
+      data: method === "POST" || method === "PUT" ? body : undefined, // POST/PUT인 경우 Body 포함
+    });
+
+    // 정상 응답
+    if (response.status >= 200 && response.status < 300) {
+      return new Response(JSON.stringify(response.data), {
+        status: response.status,
+        headers: new Headers(response.headers),
+      });
+    }
+
+    // 리다이렉트 처리
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.location;
+      if (!location) {
+        throw new Error(`Redirect location missing at ${response.status}`);
+      }
+
+      currentUrl = location; // 새로운 URL 설정
+      redirectCount++;
+
+      // 301/302 리다이렉트는 GET으로 변경
+      if (response.status === 301 || response.status === 302) {
+        method = "GET";
+        body = undefined;
+      }
+
+      console.log(`Redirecting to: ${currentUrl} (status: ${response.status})`);
+    } else {
+      // 30x가 아닌 경우 오류 발생
+      throw new Error(`HTTP error: ${response.status} - ${response.data.toString()}`);
+    }
+  }
+
+  throw new Error(`Too many redirects. Stopped after ${maxRedirects} redirects.`);
+}
