@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 
-import { SummarDebug } from "./globals";
+import { SummarDebug, capacitorFetch } from "./globals";
 
 // confluence api가 동작하지 않을때, 컨텐츠를 가져오지 못할때의 처리 추가
 

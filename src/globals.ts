@@ -1,5 +1,5 @@
 import { Notice } from "obsidian";
-import fetch from "node-fetch";
+//import fetch from "node-fetch";
 import { Http } from "@capacitor/http";
 
 import { PluginSettings } from "./types";
@@ -108,7 +108,7 @@ interface FetchParams {
   body?: string; // 요청 본문 (JSON 등)
 }
 
-async function capacitorFetch(
+export async function capacitorFetch(
   url: string,
   { method = "GET", headers = {}, body }: FetchParams = {}
 ): Promise<Response> {
