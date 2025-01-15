@@ -4,7 +4,7 @@ import * as path from "path";
 import fetch from "node-fetch";
 
 import { PluginSettings, OpenAIResponse } from "./types";
-import { DEFAULT_SETTINGS, SummarViewContainer, SummarDebug, fetchOpenai } from "./globals";
+import { DEFAULT_SETTINGS, SummarViewContainer, SummarDebug, fetchOpenai, requestFetch } from "./globals";
 import { SummarTimer } from "./summartimer";
 import { PluginUpdater } from "./pluginupdater";
 import { ConfluenceAPI } from "./confluenceapi";
@@ -37,7 +37,7 @@ export default class SummarPlugin extends Plugin {
       } catch (error) {
         SummarDebug.error(1, "Error during plugin update:", error);
       }
-    }, 1000 * 60); // 1분 (60초)    
+    }, 1000 * 6); // 1분 (60초)    
 
     SummarDebug.log(1, "Summar Plugin loaded");
 
@@ -553,7 +553,7 @@ async function fetchAndSummarize(resultContainer: { value: string }, url: string
           page_content = await content;
           SummarDebug.log(2, `Fetched Confluence page content:\n ${content}`);
         } else {
-          const response = await fetch(url, {
+          const response = await requestFetch(url, {
             headers: {
               Authorization: `Bearer ${confluenceApiToken}`,
             },

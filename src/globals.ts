@@ -1,6 +1,7 @@
-import { Notice } from "obsidian";
+import { Notice, request } from "obsidian";
 //import fetch from "node-fetch";
-import { Http } from "@capacitor/http";
+// import { Response, Headers, RequestInit } from "node-fetch";
+// import { Http } from "@capacitor/http";
 
 import { PluginSettings } from "./types";
 
@@ -108,54 +109,268 @@ interface FetchParams {
   body?: string; // 요청 본문 (JSON 등)
 }
 
-export async function capacitorFetch(
-  url: string,
-  { method = "GET", headers = {}, body }: FetchParams = {}
+// export async function capacitorFetch(
+//   url: string,
+//   { method = "GET", headers = {}, body }: FetchParams = {}
+// ): Promise<Response> {
+//   const formattedHeaders: Record<string, string> = {};
+//   Object.keys(headers).forEach((key) => {
+//     formattedHeaders[key] = String(headers[key]);
+//   });
+
+//   let currentUrl = url;
+//   const maxRedirects = 5; // 최대 리다이렉트 제한
+//   let redirectCount = 0;
+
+//   SummarDebug.log(1, `fetching $JSON.stringify(headers)`);
+
+//   while (redirectCount < maxRedirects) {
+//     const response = await Http.request({
+//       method,
+//       url: currentUrl,
+//       headers: formattedHeaders,
+//       data: method === "POST" || method === "PUT" ? body : undefined, // POST/PUT인 경우 Body 포함
+//     });
+
+//     // 정상 응답
+//     if (response.status >= 200 && response.status < 300) {
+//       SummarDebug.log(1, `redirectCount: ${redirectCount}, Response: ${JSON.stringify(response)}`);
+//       return new Response(JSON.stringify(response.data), {
+//         status: response.status,
+//         headers: new Headers(response.headers),
+//       });
+//     }
+
+//     // 리다이렉트 처리
+//     if (response.status >= 300 && response.status < 400) {
+//       SummarDebug.log(1, `redirectCount: ${redirectCount}, Response: ${JSON.stringify(response)}`);
+//       const location = response.headers.location;
+//       if (!location) {
+//         throw new Error(`Redirect location missing at ${response.status}`);
+//       }
+
+//       currentUrl = location; // 새로운 URL 설정
+//       redirectCount++;
+
+//       // 301/302 리다이렉트는 GET으로 변경
+//       if (response.status === 301 || response.status === 302) {
+//         method = "GET";
+//         body = undefined;
+//       }
+
+//       console.log(`Redirecting to: ${currentUrl} (status: ${response.status})`);
+//     } else {
+//       // 30x가 아닌 경우 오류 발생
+//       throw new Error(`HTTP error: ${response.status} - ${response.data.toString()}`);
+//     }
+//   }
+
+//   throw new Error(`Too many redirects. Stopped after ${maxRedirects} redirects.`);
+// }
+
+
+
+/**
+ * Fetch content from a webpage without CORS issues.
+ * 
+ * @param url The URL of the webpage to fetch content from.
+ * @returns The content of the webpage as a string.
+ */
+export async function fetchWebContent(url: string): Promise<string> {
+  try {
+      const response = await request({
+          url: url,
+          method: "GET",
+      });
+      return response;
+  } catch (error) {
+      console.error("Failed to fetch web content:", error);
+      throw new Error(`Unable to fetch content from ${url}.`);
+  }
+}
+
+
+
+
+/**
+ * Fetch-like wrapper for Obsidian's request API with redirect handling.
+ * Uses the native Response object from node-fetch.
+ * 
+ * @param url The URL to fetch.
+ * @param options Fetch-like options for the request.
+ * @returns A native Response object.
+ */
+export async function requestFetch(
+    url: string,
+    options: RequestInit = {}
 ): Promise<Response> {
   let currentUrl = url;
-  const maxRedirects = 5; // 최대 리다이렉트 제한
   let redirectCount = 0;
-
-  SummarDebug.log(1, `fetching $JSON.stringify(headers)`);
+  const maxRedirects = 5;
 
   while (redirectCount < maxRedirects) {
-    const response = await Http.request({
-      method,
-      url: currentUrl,
-      headers,
-      data: method === "POST" || method === "PUT" ? body : undefined, // POST/PUT인 경우 Body 포함
-    });
+      try {
+          const responseBody = await request({
+              url: currentUrl,
+              method: options.method || "GET",
+              headers: options.headers instanceof Headers
+                  ? Object.fromEntries(options.headers)
+                  : options.headers,
+              body: options.body || undefined,
+          });
 
-    // 정상 응답
-    if (response.status >= 200 && response.status < 300) {
-      return new Response(JSON.stringify(response.data), {
-        status: response.status,
-        headers: new Headers(response.headers),
-      });
-    }
+          // Return a Response object
+          return new Response(responseBody, {
+              status: 200,
+              statusText: "OK",
+              headers: new Headers(), // Obsidian's request API does not expose headers
+          });
+      } catch (error: any) {
+          const statusMatch = /HTTP\/\d\.\d (\d{3}) (.+)/.exec(error.message);
+          const status = statusMatch ? parseInt(statusMatch[1], 10) : 0;
+          const statusText = statusMatch ? statusMatch[2] : "Unknown Error";
 
-    // 리다이렉트 처리
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.location;
-      if (!location) {
-        throw new Error(`Redirect location missing at ${response.status}`);
+          // Handle redirection
+          if (status >= 300 && status < 400) {
+              const location = error.headers?.get("Location");
+              if (!location) throw new Error("Redirect location not provided.");
+              currentUrl = location;
+              redirectCount++;
+          } else {
+              return new Response(null, {
+                  status,
+                  statusText,
+              });
+          }
       }
-
-      currentUrl = location; // 새로운 URL 설정
-      redirectCount++;
-
-      // 301/302 리다이렉트는 GET으로 변경
-      if (response.status === 301 || response.status === 302) {
-        method = "GET";
-        body = undefined;
-      }
-
-      console.log(`Redirecting to: ${currentUrl} (status: ${response.status})`);
-    } else {
-      // 30x가 아닌 경우 오류 발생
-      throw new Error(`HTTP error: ${response.status} - ${response.data.toString()}`);
-    }
   }
 
-  throw new Error(`Too many redirects. Stopped after ${maxRedirects} redirects.`);
+  throw new Error("Too many redirects.");
+}
+
+
+/**
+ * Custom implementation of Headers class to mimic browser Headers.
+ */
+class Headers {
+  private headerMap: Map<string, string>;
+
+  constructor(init?: Headers | Record<string, string> | [string, string][] | Map<string, string>) {
+      this.headerMap = new Map();
+
+      if (init) {
+          if (init instanceof Headers) {
+              // Copy entries from another Headers instance
+              for (const [key, value] of init) {
+                  this.headerMap.set(key.toLowerCase(), value);
+              }
+          } else if (init instanceof Map) {
+              // Copy entries from a Map
+              for (const [key, value] of init) {
+                  this.headerMap.set(key.toLowerCase(), value);
+              }
+          } else if (Array.isArray(init)) {
+              // Copy entries from an array of [key, value]
+              for (const [key, value] of init) {
+                  this.headerMap.set(key.toLowerCase(), value);
+              }
+          } else {
+              // Copy entries from a plain object
+              for (const key in init) {
+                  this.headerMap.set(key.toLowerCase(), init[key]);
+              }
+          }
+      }
+  }
+
+  get(name: string): string | null {
+      return this.headerMap.get(name.toLowerCase()) || null;
+  }
+
+  set(name: string, value: string): void {
+      this.headerMap.set(name.toLowerCase(), value);
+  }
+
+  has(name: string): boolean {
+      return this.headerMap.has(name.toLowerCase());
+  }
+
+  delete(name: string): void {
+      this.headerMap.delete(name.toLowerCase());
+  }
+
+  forEach(callback: (value: string, key: string) => void): void {
+      for (const [key, value] of this.headerMap) {
+          callback(value, key);
+      }
+  }
+
+  entries(): IterableIterator<[string, string]> {
+      return this.headerMap.entries();
+  }
+
+  keys(): IterableIterator<string> {
+      return this.headerMap.keys();
+  }
+
+  values(): IterableIterator<string> {
+      return this.headerMap.values();
+  }
+
+  [Symbol.iterator](): IterableIterator<[string, string]> {
+      return this.entries();
+  }
+}
+
+
+/**
+* RequestInit interface definition.
+*/
+interface RequestInit {
+  method?: string;                  // HTTP method (e.g., "GET", "POST").
+  headers?: Record<string, string> | Headers; // HTTP headers.
+  body?: string | null;             // Request body.
+  redirect?: "follow" | "error" | "manual"; // Redirect behavior.
+}
+
+/**
+* Response class to mimic browser's Response object.
+*/
+export class Response {
+  status: number;
+  statusText: string;
+  headers: Headers;
+  private body: string | null;
+
+  constructor(body: string | null, options: { status: number; statusText: string; headers?: Headers }) {
+      this.body = body;
+      this.status = options.status;
+      this.statusText = options.statusText;
+      this.headers = options.headers || new Headers();
+  }
+
+/**
+ * Property to determine if the response status is in the 200–299 range.
+ */
+  get ok(): boolean {
+    return this.status >= 200 && this.status < 300;
+  }
+
+  /**
+  * Mimics the text() method of the Response object.
+  */
+  async text(): Promise<string> {
+    return this.body || "";
+  }
+
+  /**
+   * Mimics the json() method of the Response object.
+   */
+  async json(): Promise<any> {
+    try {
+      return this.body ? JSON.parse(this.body) : null;
+    } catch {
+      throw new Error("Failed to parse JSON response.");
+    }
+  }
 }

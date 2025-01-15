@@ -28,6 +28,7 @@
 		"@capacitor/http": "^0.0.2",
 		"https": "^1.0.0",
 		"jimp": "^1.6.0",
+		"jszip": "^3.10.1",
 		"node-fetch": "^3.3.2",
 		"pdf-poppler": "^0.2.1",
 		"semver": "^7.6.3"
