@@ -1,12 +1,12 @@
-import fetch from "node-fetch";
+// import fetch from "node-fetch";
 import { exec } from "child_process";
 import JSZip from 'jszip';
 // import * as path from "path";
 //import * as fs from "fs";
 import semver from "semver";
 
-import { SummarDebug } from "./globals";
-import { normalizePath } from "obsidian";
+import { SummarDebug, requestFetch } from "./globals";
+import { normalizePath, requestUrl } from "obsidian";
 
 export class PluginUpdater {
   private plugin: any;
@@ -121,7 +121,7 @@ export class PluginUpdater {
 
     try {
       SummarDebug.log(1, `Fetching manifest from URL: ${url}`);
-      const response = await fetch(url);
+      const response = await requestFetch(url);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch remote manifest. Status code: ${response.status}`);
@@ -171,23 +171,64 @@ export class PluginUpdater {
   private async downloadPlugin(url: string, outputPath: string): Promise<void> {
     try {
         SummarDebug.log(1, `Fetching plugin from URL: ${url}`);
-        
+/*        
         // Fetch the file
-        const response = await fetch(url);
+        // const response = await fetch(url);
+        const response = await requestFetch(url,{
+          method: "GET",
+          headers: {
+            "Accept": "application/octet-stream"
+          }
+        })
 
         if (!response.ok) {
             throw new Error(`Failed to download plugin. Status code: ${response.status}`);
         }
 
         // Read the response as a Blob or ArrayBuffer
-        const blob = await response.blob();
+        // const blob = await response.blob();
 
         // Convert the Blob to an ArrayBuffer
-        const arrayBuffer = await blob.arrayBuffer();
+        // const arrayBuffer = await blob.arrayBuffer();
+        const arrayBuffer = await response.arrayBuffer();
 
         // Write the ArrayBuffer to the output file using Obsidian's file API
         await this.writeFile(outputPath, new Uint8Array(arrayBuffer));
+*/
+/*
+        const base64Data = await request({
+          url: url,
+          method: "GET",
+          headers: {
+            "Accept": "application/octet-stream",
+            "content-Type": "application/octet-stream",
+          },
+        });
+        const binary = atob(base64Data);
+        const len = binary.length;
 
+
+        // const arrayBuffer = new ArrayBuffer(binary.length);
+        const uint8Array = new Uint8Array(len);
+
+
+        for (let i = 0; i < binary.length; i++){
+          uint8Array[i] = binary.charCodeAt(i);
+        }
+        const blob = new Blob([uint8Array]);
+        this.plugin.app.valut.adapter.writeBinary(outputPath, blob);
+        */
+
+        const response = await requestUrl({
+          url: url,
+          method: "GET",
+          headers: {},
+        });
+        if (response.arrayBuffer) {
+        const uint8Array = new Uint8Array(response.arrayBuffer);
+
+        await this.plugin.app.adapter.writeBinary(outputPath, uint8Array);
+        }
         SummarDebug.log(1, `Plugin successfully downloaded to: ${outputPath}`);
     } catch (error) {
         SummarDebug.error(1, `Error downloading plugin: ${(error as Error).message}`);

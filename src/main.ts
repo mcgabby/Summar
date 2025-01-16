@@ -1,7 +1,7 @@
 import { App, Plugin, PluginSettingTab, Setting, View, WorkspaceLeaf, Platform, Menu, Modal, normalizePath } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
-import fetch from "node-fetch";
+// import fetch from "node-fetch";
 
 import { PluginSettings, OpenAIResponse } from "./types";
 import { DEFAULT_SETTINGS, SummarViewContainer, SummarDebug, fetchOpenai, requestFetch } from "./globals";

@@ -333,33 +333,129 @@ interface RequestInit {
   redirect?: "follow" | "error" | "manual"; // Redirect behavior.
 }
 
+// /**
+//  * Response class to mimic browser's Response object.
+//  */
+// export class Response {
+//   status: number;
+//   statusText: string;
+//   headers: Headers;
+//   private body: ArrayBuffer | null;
+
+//   constructor(
+//     body: ArrayBuffer | string | null,
+//     options: { status: number; statusText: string; headers?: Headers }
+//   ) {
+//     this.body = this.convertBodyToBuffer(body);
+//     this.status = options.status;
+//     this.statusText = options.statusText;
+//     this.headers = options.headers || new Headers();
+//   }
+
+//   /**
+//    * Converts the body to an ArrayBuffer for consistent handling.
+//    */
+//   private convertBodyToBuffer(body: ArrayBuffer | string | null): ArrayBuffer | null {
+//     if (body === null) {
+//       return null;
+//     }
+//     if (typeof body === "string") {
+//       return new TextEncoder().encode(body).buffer;
+//     }
+//     return body; // Already an ArrayBuffer
+//   }
+
+//   /**
+//    * Property to determine if the response status is in the 200–299 range.
+//    */
+//   get ok(): boolean {
+//     return this.status >= 200 && this.status < 300;
+//   }
+
+//   /**
+//    * Mimics the text() method of the Response object.
+//    */
+//   async text(): Promise<string> {
+//     if (!this.body) return "";
+//     return new TextDecoder("utf-8").decode(this.body);
+//   }
+
+//   /**
+//    * Mimics the json() method of the Response object.
+//    */
+//   async json(): Promise<any> {
+//     try {
+//       return JSON.parse(await this.text());
+//     } catch {
+//       throw new Error("Failed to parse JSON response.");
+//     }
+//   }
+
+//   /**
+//    * Mimics the blob() method of the Response object.
+//    */
+//   async blob(): Promise<Blob> {
+//     if (!this.body) return new Blob();
+//     return new Blob([this.body], { type: this.headers.get("content-type") || "application/octet-stream" });
+//   }
+
+//   /**
+//    * Mimics the arrayBuffer() method of the Response object.
+//    */
+//   async arrayBuffer(): Promise<ArrayBuffer> {
+//     if (this.body instanceof ArrayBuffer) {
+//       return this.body;
+//     } else if (typeof this.body === "string") {
+//       // Convert string to ArrayBuffer
+//       const encoder = new TextEncoder();
+//       return encoder.encode(this.body).buffer;
+//     }
+//     throw new Error("Response body is not convertible to ArrayBuffer.");
+//   }
+// }
+
+
 /**
-* Response class to mimic browser's Response object.
-*/
+ * Response class to mimic browser's Response object.
+ */
 export class Response {
   status: number;
   statusText: string;
   headers: Headers;
-  private body: string | null;
+  private body: string | Uint8Array | null;
 
-  constructor(body: string | null, options: { status: number; statusText: string; headers?: Headers }) {
+  constructor(
+    body: string | null,
+    options: { status: number; statusText: string; headers?: Headers }
+  ) {
+    this.headers = options.headers || new Headers();
+    this.status = options.status;
+    this.statusText = options.statusText;
+
+    // Initialize body as string or convert to Uint8Array for binary data
+    const contentType = this.headers.get("Content-Type") || "";
+    if (contentType.includes("application/octet-stream")) {
+//      this.body = body ? this.convertStringToUint8Array(body) : null;
+        this.body = body ? new Uint8Array(body as any) : null;
+    } else {
       this.body = body;
-      this.status = options.status;
-      this.statusText = options.statusText;
-      this.headers = options.headers || new Headers();
+    }
   }
 
-/**
- * Property to determine if the response status is in the 200–299 range.
- */
+  /**
+   * Property to determine if the response status is in the 200–299 range.
+   */
   get ok(): boolean {
     return this.status >= 200 && this.status < 300;
   }
 
   /**
-  * Mimics the text() method of the Response object.
-  */
+   * Mimics the text() method of the Response object.
+   */
   async text(): Promise<string> {
+    if (this.body instanceof Uint8Array) {
+      throw new Error("Body is binary and cannot be converted to text.");
+    }
     return this.body || "";
   }
 
@@ -368,9 +464,46 @@ export class Response {
    */
   async json(): Promise<any> {
     try {
+      if (this.body instanceof Uint8Array) {
+        throw new Error("Body is binary and cannot be parsed as JSON.");
+      }
       return this.body ? JSON.parse(this.body) : null;
     } catch {
       throw new Error("Failed to parse JSON response.");
     }
+  }
+
+  /**
+   * Mimics the blob() method of the Response object.
+   */
+  async blob(): Promise<Blob> {
+    if (this.body instanceof Uint8Array) {
+      return new Blob([this.body]);
+    }
+    return new Blob([this.body || ""]);
+  }
+
+  /**
+   * Mimics the arrayBuffer() method of the Response object.
+   */
+  async arrayBuffer(): Promise<ArrayBuffer> {
+    if (this.body instanceof Uint8Array) {
+      return this.body.buffer;
+    }
+    const encoder = new TextEncoder();
+    return encoder.encode(this.body || "").buffer;
+  }
+
+  /**
+   * Converts a string to a Uint8Array.
+   */
+  private convertStringToUint8Array(input: string): Uint8Array {
+    const binaryString = atob(input);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
   }
 }
