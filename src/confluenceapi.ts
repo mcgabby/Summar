@@ -96,7 +96,8 @@ export class ConfluenceAPI {
     SummarDebug.log(1, "Fetching Confluence page content...");
 
     try {
-      const response = await fetch(apiUrl, { headers });
+      // const response = await fetch(apiUrl, { headers });
+      const response = await requestFetch(apiUrl, { headers });
 
       if (response.ok) {
         const data = await (response.json()) as ConfluencePageContentResponse;
@@ -133,7 +134,8 @@ export class ConfluenceAPI {
     SummarDebug.log(1, "searchUrl: " + searchUrl);
 
     try {
-      const response = await fetch(searchUrl, { headers });
+      // const response = await fetch(searchUrl, { headers });
+      const response = await requestFetch(searchUrl, { headers });
 
       if (response.ok) {
         // 명시적으로 JSON 데이터를 ConfluenceResponse 타입으로 파싱
