@@ -75,7 +75,7 @@ export default class SummarPlugin extends Plugin {
     this.registerEvent(
       this.app.workspace.on('url-menu', (menu: Menu, url: string) => {
         menu.addItem((item) => {
-          item.setTitle("&Summary web page using Summar")
+          item.setTitle("Summary web page using Summar")
             .setIcon("star")
             .onClick(() => {
               this.activateView();
@@ -558,6 +558,7 @@ async function fetchAndSummarize(resultContainer: { value: string }, url: string
 
       page_content = await response.text();
     }
+    SummarViewContainer.updateText(resultContainer, "Fedtched page content");
 
     SummarDebug.log(2, "Fetched page content:", page_content);
 
@@ -569,6 +570,10 @@ async function fetchAndSummarize(resultContainer: { value: string }, url: string
       ],
       max_tokens: 16384,
     });
+
+//SummarViewContainer.updateText(resultContainer, body_content);
+
+SummarViewContainer.updateText(resultContainer, "Summarizing...");
 
     const aiResponse = await fetchOpenai(openaiApiKey, body_content);
     timer.stopTimer();
@@ -633,7 +638,7 @@ async function convertPdfToMarkdown(resultContainer: { value: string }, plugin: 
         const file = fileInput.files[0];
         SummarDebug.Notice(1, file.name);
 
-        const base64Values = await pdftopng.convert(file, (SummarDebug.level()<1));
+        const base64Values = await pdftopng.convert(file, (SummarDebug.level()<4));
 
         // JsonBuilder 인스턴스 생성
         const jsonBuilder = new JsonBuilder();

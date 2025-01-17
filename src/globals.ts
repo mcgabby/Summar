@@ -1,4 +1,4 @@
-import { Notice, request, requestUrl } from "obsidian";
+import { Notice, requestUrl } from "obsidian";
 
 import { PluginSettings } from "./types";
 

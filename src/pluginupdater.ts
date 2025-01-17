@@ -2,7 +2,7 @@ import JSZip from 'jszip';
 import semver from "semver";
 
 import { SummarDebug, fetchLikeRequestUrl } from "./globals";
-import { normalizePath, requestUrl } from "obsidian";
+import { normalizePath } from "obsidian";
 
 export class PluginUpdater {
   private plugin: any;

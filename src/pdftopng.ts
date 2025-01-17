@@ -15,7 +15,7 @@ export class PdfToPng {
   private plugin: Plugin;
 
   private tempDir: string;
-  private pdfPath: string;
+  private pdfName: string;
   private outputDir: string;
   private page: number = 0; // Convert all pages
 
@@ -30,7 +30,6 @@ export class PdfToPng {
   constructor(resultContainer: { value: string }, plugin: Plugin) {
     this.resultContainer = resultContainer;
     this.plugin = plugin;
-    // this.pdftocairoPath = join("/opt/homebrew/bin", "pdftocairo");
     this.pdftocairoPath = normalizePath("/opt/homebrew/bin/pdftocairo");
   }
 
@@ -53,11 +52,8 @@ export class PdfToPng {
     SummarViewContainer.updateText(this.resultContainer, "Initial rendering...");
 
     // Save the PDF file to a temporary location
-    // this.tempDir = path.join(os.tmpdir(), "pdf_conversion", "temp");
-    // this.tempDir = normalizePath(os.tempdir() + "/pdf_conversion/temp");
-    this.tempDir = normalizePath((this.plugin.app.vault.adapter as any).basePath + "/.obsidian/pdf_conversion/temp");
-    // this.pdfPath = join(this.tempDir, this.file.name);
-    this.pdfPath = normalizePath(this.tempDir + "/" + this.file.name);
+    this.tempDir = normalizePath((this.plugin.app.vault.adapter as any).basePath + "/" + (this.plugin as any).PLUGIN_DIR + "/pdf_converion/temp");
+    this.pdfName = normalizePath(this.tempDir + "/" + this.file.name);
 
     if (!fs.existsSync(this.tempDir)) {
       await this.createDirectory(this.tempDir);
@@ -68,25 +64,24 @@ export class PdfToPng {
       SummarViewContainer.updateText(this.resultContainer, `Temporary directory already exists: ${this.tempDir}`);
     }
 
-    SummarDebug.log(1, "PDF file will be save at:", this.pdfPath);
-    fs.writeFileSync(this.pdfPath, Buffer.from(await this.file.arrayBuffer()));
-    SummarDebug.log(1, "PDF file saved at:", this.pdfPath);
-    SummarViewContainer.updateText(this.resultContainer, `PDF file saved at: ${this.pdfPath}`);
+    SummarDebug.log(1, "PDF file will be save at:", this.pdfName);
+    fs.writeFileSync(this.pdfName, Buffer.from(await this.file.arrayBuffer()));
+    SummarDebug.log(1, "PDF file saved at:", this.pdfName);
+    SummarViewContainer.updateText(this.resultContainer, `PDF file saved at: ${this.pdfName}`);
 
     // Output directory for PNGs
     const pdfName = this.file.name.replace(".pdf", "");
-    // this.outputDir = join(this.tempDir, pdfName);
     this.outputDir = normalizePath(this.tempDir + "/" + pdfName);
     await this.createDirectory(this.outputDir);
 
     SummarDebug.log(1, "Converting PDF to images using Poppler...");
     SummarViewContainer.updateText(this.resultContainer, "Converting PDF to images using Poppler...");
 
-    SummarDebug.log(1, this.pdfPath);
+    SummarDebug.log(1, this.pdfName);
 
-    await this.convertPdfToPng();//this.pdfPath, options);
+    await this.convertPdfToPng();//this.pdfName, options);
     if (removeflag) {
-      await this.deleteIfExists(this.pdfPath);
+      await this.deleteIfExists(this.pdfName);
     }
 
     result = this.listPngFiles();
@@ -123,8 +118,7 @@ export class PdfToPng {
     // Prepare arguments for pdftocairo
     const args = [
       `-${this.FORMAT}`, // Output format (e.g., -png)
-      this.pdfPath,    // Input PDF file
-      // join(this.outputDir, this.OUT_PREFIX), // Output file prefix
+      this.pdfName,    // Input PDF file
       normalizePath(this.outputDir + "/" + this.OUT_PREFIX), // Output file prefix
     ];
 
@@ -257,7 +251,6 @@ export class PdfToPng {
     let page = 1;
 
     while (true) {
-      // const filePath = join(this.outputDir, `${this.OUT_PREFIX}-${page}.${this.FORMAT}`);
       const filePath = normalizePath(this.outputDir + "/" + `${this.OUT_PREFIX}-${page}.${this.FORMAT}`);
       if (fs.existsSync(filePath)) {
         outputFiles.push(filePath);
