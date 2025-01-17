@@ -1,10 +1,7 @@
 import { App, Plugin, PluginSettingTab, Setting, View, WorkspaceLeaf, Platform, Menu, Modal, normalizePath } from "obsidian";
-import * as fs from "fs";
-import * as path from "path";
-// import fetch from "node-fetch";
 
 import { PluginSettings, OpenAIResponse } from "./types";
-import { DEFAULT_SETTINGS, SummarViewContainer, SummarDebug, fetchOpenai, requestFetch } from "./globals";
+import { DEFAULT_SETTINGS, SummarViewContainer, SummarDebug, fetchOpenai, fetchLikeRequestUrl } from "./globals";
 import { SummarTimer } from "./summartimer";
 import { PluginUpdater } from "./pluginupdater";
 import { ConfluenceAPI } from "./confluenceapi";
@@ -16,17 +13,27 @@ export default class SummarPlugin extends Plugin {
   resultContainer: HTMLTextAreaElement;
   inputField: HTMLInputElement;
 
-  PLUGIN_ID: string = ""; // 플러그인 이름
   OBSIDIAN_PLUGIN_DIR: string = "";
-  LOCAL_MANIFEST_PATH: string = "";
+  PLUGIN_ID: string = ""; // 플러그인 아이디
+  PLUGIN_DIR: string = ""; // 플러그인 디렉토리
+  PLUGIN_MANIFEST: string = ""; // 플러그인 디렉토리의 manifest.json
+  PLUGIN_SETTINGS: string = "";  // 플러그인 디렉토리의 data.json
 
   async onload() {
+    this.OBSIDIAN_PLUGIN_DIR = normalizePath("/.obsidian/plugins");
     this.PLUGIN_ID = this.manifest.id;
-    // this.OBSIDIAN_PLUGIN_DIR = path.join((this.app.vault.adapter as any).basePath, ".obsidian", "plugins");
-    this.OBSIDIAN_PLUGIN_DIR = normalizePath((this.app.vault.adapter as any).basePath + "/.obsidian/plugins");
+    this.PLUGIN_DIR = normalizePath(this.OBSIDIAN_PLUGIN_DIR + "/" + this.PLUGIN_ID);
+    this.PLUGIN_MANIFEST = normalizePath(this.PLUGIN_DIR + "/manifest.json");
+    this.PLUGIN_SETTINGS = normalizePath(this.PLUGIN_DIR + "/data.json");
 
-    // this.LOCAL_MANIFEST_PATH = path.join(this.OBSIDIAN_PLUGIN_DIR, this.PLUGIN_ID, 'manifest.json');
-    this.LOCAL_MANIFEST_PATH = normalizePath(this.OBSIDIAN_PLUGIN_DIR + "/" + this.PLUGIN_ID + "/manifest.json");
+    this.settings = await this.loadSettingsFromFile();
+    SummarDebug.initialize(this.settings.debugLevel);
+
+    SummarDebug.log(1, `OBSIDIAN_PLUGIN_DIR: ${this.OBSIDIAN_PLUGIN_DIR}`);
+    SummarDebug.log(1, `PLUGIN_ID: ${this.PLUGIN_ID}`);
+    SummarDebug.log(1, `PLUGIN_DIR: ${this.PLUGIN_DIR}`);
+    SummarDebug.log(1, `PLUGIN_MANIFEST: ${this.PLUGIN_MANIFEST}`);
+    SummarDebug.log(1, `PLUGIN_SETTINGS: ${this.PLUGIN_SETTINGS}`);
 
     // 로딩 후 1분 뒤에 업데이트 확인
     setTimeout(async () => {
@@ -41,8 +48,6 @@ export default class SummarPlugin extends Plugin {
 
     SummarDebug.log(1, "Summar Plugin loaded");
 
-    this.settings = await this.loadSettingsFromFile();
-    SummarDebug.initialize(this.settings.debugLevel);
 
     this.addSettingTab(new SummarSettingsTab(this));
     this.addRibbonIcon("scroll-text", "Open Summar View", this.activateView.bind(this));
@@ -130,28 +135,16 @@ export default class SummarPlugin extends Plugin {
     }
   }
 
-  async getPluginDir(): Promise<string> {
-    const pluginId = this.manifest.id;
-    // const pluginDir = path.join((this.app.vault.adapter as any).basePath, ".obsidian", "plugins", pluginId);
-    const pluginDir = normalizePath((this.app.vault.adapter as any).basePath + "/.obsidian/plugins/" + pluginId);
-    return pluginDir;
-  }
-
   async loadSettingsFromFile(): Promise<PluginSettings> {
-    const pluginDir = await this.getPluginDir();
-    // const settingsPath = path.join(pluginDir, "data.json");
-    const settingsPath = normalizePath(pluginDir + "/data.json");
-    
-    if (await this.app.vault.adapter.exists(settingsPath)) {
-      console.log("Settings file exists:", settingsPath);
+    if (await this.app.vault.adapter.exists(this.PLUGIN_SETTINGS)) {
+      console.log("Settings file exists:", this.PLUGIN_SETTINGS);
     } else {
-      console.log("Settings file does not exist:", settingsPath);
+      console.log("Settings file does not exist:", this.PLUGIN_SETTINGS);
     }
-
-    if (fs.existsSync(settingsPath)) {
+    if (await this.app.vault.adapter.exists(this.PLUGIN_SETTINGS)) {
       console.log("Reading settings from data.json");
       try {
-        const rawData = fs.readFileSync(settingsPath, "utf-8");
+        const rawData = await this.app.vault.adapter.read(this.PLUGIN_SETTINGS);
         const settings = JSON.parse(rawData);
         return Object.assign({}, DEFAULT_SETTINGS, settings);
       } catch (error) {
@@ -163,12 +156,9 @@ export default class SummarPlugin extends Plugin {
   }
 
   async saveSettingsToFile(settings: PluginSettings): Promise<void> {
-    const pluginDir = await this.getPluginDir();
-    // const settingsPath = path.join(pluginDir, "data.json");
-    const settingsPath = normalizePath(pluginDir + "/data.json");
     try {
-      fs.mkdirSync(pluginDir, { recursive: true });
-      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), "utf-8");
+      await this.app.vault.adapter.mkdir(this.PLUGIN_DIR)
+      await this.app.vault.adapter.write(this.PLUGIN_SETTINGS,JSON.stringify(settings, null, 2));
       SummarDebug.log(1, "Settings saved to data.json");
     } catch (error) {
       SummarDebug.error(1, "Error saving settings file:", error);
@@ -553,7 +543,7 @@ async function fetchAndSummarize(resultContainer: { value: string }, url: string
           page_content = await content;
           SummarDebug.log(2, `Fetched Confluence page content:\n ${content}`);
         } else {
-          const response = await requestFetch(url, {
+          const response = await fetchLikeRequestUrl(url, {
             headers: {
               Authorization: `Bearer ${confluenceApiToken}`,
             },
@@ -564,7 +554,7 @@ async function fetchAndSummarize(resultContainer: { value: string }, url: string
         SummarDebug.error(1, "Failed to fetch page content:", error);
       }
     } else {
-      const response = await fetch(url);
+      const response = await fetchLikeRequestUrl(url);
 
       page_content = await response.text();
     }

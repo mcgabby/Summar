@@ -1,10 +1,6 @@
-// import fetch from "node-fetch";
-
-import { SummarDebug, requestFetch } from "./globals";
+import { SummarDebug, fetchLikeRequestUrl } from "./globals";
 
 // confluence api가 동작하지 않을때, 컨텐츠를 가져오지 못할때의 처리 추가
-
-
 interface ConfluencePage {
   id: string;
   title: string;
@@ -96,8 +92,7 @@ export class ConfluenceAPI {
     SummarDebug.log(1, "Fetching Confluence page content...");
 
     try {
-      // const response = await fetch(apiUrl, { headers });
-      const response = await requestFetch(apiUrl, { headers });
+      const response = await fetchLikeRequestUrl(apiUrl, { headers });
 
       if (response.ok) {
         const data = await (response.json()) as ConfluencePageContentResponse;
@@ -134,8 +129,7 @@ export class ConfluenceAPI {
     SummarDebug.log(1, "searchUrl: " + searchUrl);
 
     try {
-      // const response = await fetch(searchUrl, { headers });
-      const response = await requestFetch(searchUrl, { headers });
+      const response = await fetchLikeRequestUrl(searchUrl, { headers });
 
       if (response.ok) {
         // 명시적으로 JSON 데이터를 ConfluenceResponse 타입으로 파싱
