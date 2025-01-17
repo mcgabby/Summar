@@ -1,7 +1,7 @@
 import { App, Plugin, PluginSettingTab, Setting, View, WorkspaceLeaf, Platform, Menu, Modal, normalizePath } from "obsidian";
 
 import { PluginSettings, OpenAIResponse } from "./types";
-import { DEFAULT_SETTINGS, SummarViewContainer, SummarDebug, fetchOpenai, fetchLikeRequestUrl } from "./globals";
+import { DEFAULT_SETTINGS, SummarViewContainer, SummarDebug, fetchOpenai, fetchLikeRequestUrl, extractDomain, containsDomain } from "./globals";
 import { SummarTimer } from "./summartimer";
 import { PluginUpdater } from "./pluginupdater";
 import { ConfluenceAPI } from "./confluenceapi";
@@ -145,8 +145,16 @@ export default class SummarPlugin extends Plugin {
       console.log("Reading settings from data.json");
       try {
         const rawData = await this.app.vault.adapter.read(this.PLUGIN_SETTINGS);
-        const settings = JSON.parse(rawData);
-        return Object.assign({}, DEFAULT_SETTINGS, settings);
+        // const settings = JSON.parse(rawData);
+        // return Object.assign({}, DEFAULT_SETTINGS, settings);
+        const settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(rawData)) as PluginSettings;
+        const domain = extractDomain(settings.confluenceDomain);
+        if (domain) {
+          settings.confluenceDomain = domain;
+        } else {
+          settings.confluenceDomain = "";
+        }
+        return settings;
       } catch (error) {
         console.log("Error reading settings file:", error);
         return DEFAULT_SETTINGS;
@@ -264,10 +272,10 @@ class SummarSettingsTab extends PluginSettingTab {
         })
       )
       .addText((text) => {
-        text.setPlaceholder("Enter your Confluence Base URL")
-          .setValue(this.plugin.settings.confluenceBaseUrl || "https://wiki.workers-hub.com")
+        text.setPlaceholder("Enter your Confluence Domain")
+          .setValue(this.plugin.settings.confluenceDomain || "wiki.workers-hub.com")
           .onChange(async (value) => {
-            this.plugin.settings.confluenceBaseUrl = value;
+            this.plugin.settings.confluenceDomain = value;
             await this.plugin.saveSettingsToFile(this.plugin.settings);
           });
 
@@ -282,7 +290,7 @@ class SummarSettingsTab extends PluginSettingTab {
 
         // Save the reference to dynamically update later
       })
-      .setName("Confluence Base URL")
+      .setName("Confluence Domain")
       .setDesc("If you want to use the Confluence Open API, toggle it on; if not, toggle it off.");
 
 
@@ -502,7 +510,7 @@ class SummarView extends View {
  * @param plugin 플러그인 인스턴스
  */
 async function fetchAndSummarize(resultContainer: { value: string }, url: string, plugin: any) {
-  const { confluenceApiToken, confluenceBaseUrl, useConfluenceAPI, openaiApiKey, systemPrompt, userPrompt } = plugin.settings;
+  const { confluenceApiToken, confluenceDomain, useConfluenceAPI, openaiApiKey, systemPrompt, userPrompt } = plugin.settings;
   const timer = new SummarTimer(resultContainer);
 
   if (!openaiApiKey) {
@@ -527,7 +535,7 @@ async function fetchAndSummarize(resultContainer: { value: string }, url: string
     let pageId = "";
     let page_content: string = "";
 
-    if (confluenceApiToken && confluenceBaseUrl) {
+    if (confluenceApiToken && confluenceDomain && containsDomain(url, plugin.settings.confluenceDomain)) {
       const result = await conflueceapi.getPageId(url);
 
       SummarDebug.log(1, "Extracted Confluence Info:");
@@ -535,7 +543,7 @@ async function fetchAndSummarize(resultContainer: { value: string }, url: string
       SummarDebug.log(1, `Space Key: ${result.spaceKey}`);
       SummarDebug.log(1, `Title: ${result.title}`);
       pageId = result.pageId as string;
-    }
+    } 
     if (pageId) {
       try {
         if (useConfluenceAPI && confluenceApiToken) {

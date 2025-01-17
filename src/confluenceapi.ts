@@ -33,9 +33,9 @@ export class ConfluenceAPI {
     let spaceKey: string | undefined;
     let title: string | undefined;
 
-    const { confluenceApiToken, confluenceBaseUrl } = this.plugin.settings;
+    const { confluenceApiToken, confluenceDomain } = this.plugin.settings;
 
-    if (!confluenceApiToken || !confluenceBaseUrl) {
+    if (!confluenceApiToken || !confluenceDomain) {
       SummarDebug.Notice(0, "Please configure confluence API keys in the plugin settings.", 0);
       return { pageId, spaceKey, title };
     }
@@ -79,7 +79,7 @@ export class ConfluenceAPI {
   }
 
   async getPageContent(pageId: any): Promise<{ title: string; content: string }> {
-    const { confluenceApiToken, confluenceBaseUrl } = this.plugin.settings;
+    const { confluenceApiToken, confluenceDomain } = this.plugin.settings;
 
     const headers = {
       Authorization: `Bearer ${confluenceApiToken}`,
@@ -87,7 +87,7 @@ export class ConfluenceAPI {
     };
 
     // Confluence REST API endpoint
-    const apiUrl = `${confluenceBaseUrl}/rest/api/content/${pageId}?expand=body.storage`;
+    const apiUrl = `https://${confluenceDomain}/rest/api/content/${pageId}?expand=body.storage`;
 
     SummarDebug.log(1, "Fetching Confluence page content...");
 
@@ -115,14 +115,14 @@ export class ConfluenceAPI {
     spaceKey: string,
     title: string
   ): Promise<string> {
-    const { confluenceApiToken, confluenceBaseUrl } = this.plugin.settings;
+    const { confluenceApiToken, confluenceDomain } = this.plugin.settings;
     const headers = {
       Authorization: `Bearer ${confluenceApiToken}`,
       "Content-Type": "application/json",
     };
 
     // Confluence REST API URL 생성
-    const searchUrl = `${confluenceBaseUrl}/rest/api/content?title=${encodeURIComponent(
+    const searchUrl = `https://${confluenceDomain}/rest/api/content?title=${encodeURIComponent(
       title
     )}&spaceKey=${encodeURIComponent(spaceKey)}&expand=body.storage`;
 

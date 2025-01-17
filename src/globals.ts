@@ -6,7 +6,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   openaiApiKey: "",
   confluenceApiToken: "",
   useConfluenceAPI: true,
-  confluenceBaseUrl: "https://wiki.workers-hub.com",
+  confluenceDomain: "https://wiki.workers-hub.com",
   systemPrompt: `너는 LY의 CTO Office 직원이야.
 Wiki의 컨텐츠를 읽고 한국어로 문서의 내용을 전달해주는 일을 하고 있어.
 다음 단어는 주의해줘: 出澤(Idezawa), 三枝(Saegusa), 坂上(Sakaue), 妹尾(Senoo), 片野(Katano), 大寺(Odera)
@@ -171,6 +171,8 @@ export async function fetchLikeRequestUrl(input: string, init?: RequestInit): Pr
           body: typeof body === "string" ? body : undefined,
       });
 
+      SummarDebug.log(1,`response.status: ${response.status}`);
+
       // Redirect 처리 (30x 상태코드)
       if (response.status >= 300 && response.status < 400 && response.headers["location"]) {
           url = response.headers["location"];
@@ -190,4 +192,17 @@ export async function fetchLikeRequestUrl(input: string, init?: RequestInit): Pr
   }
 
   throw new Error(`Too many redirects: exceeded ${maxRedirects} attempts`);
+}
+
+export function extractDomain(url: string): string | null {
+  // URL에서 도메인을 추출하는 정규식
+  const domainPattern = /^(?:https?:\/\/)?(?:www\.)?([^\/]+)/i;
+  const match = url.match(domainPattern);
+  return match ? match[1] : null;
+}
+
+export function containsDomain(text: string, domain: string): boolean {
+  // 정규식을 사용해 특정 도메인이 포함되어 있는지 확인
+  const domainPattern = new RegExp(`(?:https?:\\/\\/)?(?:www\\.)?${domain.replace('.', '\\.')}`, 'i');
+  return domainPattern.test(text);
 }

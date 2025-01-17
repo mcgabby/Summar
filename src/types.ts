@@ -2,7 +2,7 @@ export interface PluginSettings {
   openaiApiKey: string;
   confluenceApiToken: string;
   useConfluenceAPI:boolean;
-  confluenceBaseUrl: string;
+  confluenceDomain: string;
   systemPrompt: string;
   userPrompt: string;
   pdfPrompt: string;
