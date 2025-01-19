@@ -7,7 +7,7 @@ import { PluginUpdater } from "./pluginupdater";
 import { ConfluenceAPI } from "./confluenceapi";
 import { JsonBuilder } from "./jsonbuilder";
 import { PdfToPng } from "./pdftopng";
-
+  
 export default class SummarPlugin extends Plugin {
   settings: PluginSettings;
   resultContainer: HTMLTextAreaElement;
