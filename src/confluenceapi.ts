@@ -39,14 +39,18 @@ export class ConfluenceAPI {
       SummarDebug.Notice(0, "Please configure confluence API keys in the plugin settings.", 0);
       return { pageId, spaceKey, title };
     }
-    if (url.includes("pageId=")) {
+
+    // URL을 소문자로 변환
+    const lowerCaseUrl = url.toLowerCase();
+
+    if (lowerCaseUrl.includes("pageid=")) {
       // URL에서 pageId 추출
-      pageId = url.split("pageId=")[1].split("&")[0];
+      pageId = url.split(/pageId=/i)[1].split("&")[0];
     } else {
       // URL에서 spaceKey와 title 추출
-      if (url.includes("spaceKey=") && url.includes("title=")) {
-        spaceKey = url.split("spaceKey=")[1].split("&")[0];
-        title = decodeURIComponent(url.split("title=")[1].split("&")[0]).replace(/\+/g, " ");
+      if (lowerCaseUrl.includes("spacekey=") && lowerCaseUrl.includes("title=")) {
+        spaceKey = url.split(/spaceKey=/i)[1].split("&")[0];
+        title = decodeURIComponent(url.split(/title=/i)[1].split("&")[0]).replace(/\+/g, " ");
       } else {
         const pathSegments = url.split("/");
         if (pathSegments.length >= 6) {
