@@ -7,7 +7,12 @@ export interface PluginSettings {
   userPrompt: string;
   pdfPrompt: string;
 
-  url: string;
+  /////
+  selectedDeviceId: string;
+  recordingUnit: number;
+  recordingPrompt: string;
+  /////
+  testUrl: string;
   debugLevel: number;
 }
 

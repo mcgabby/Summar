@@ -7,7 +7,10 @@ import { PluginUpdater } from "./pluginupdater";
 import { ConfluenceAPI } from "./confluenceapi";
 import { JsonBuilder } from "./jsonbuilder";
 import { PdfToPng } from "./pdftopng";
-  
+import { SummarView } from "./summarview"
+import { SummarRecordingPanel } from "./summarrecordingpanel"
+import { SummarSettingsTab } from "./summarsettingtab";
+
 export default class SummarPlugin extends Plugin {
   settings: PluginSettings;
   resultContainer: HTMLTextAreaElement;
@@ -50,8 +53,13 @@ export default class SummarPlugin extends Plugin {
 
 
     this.addSettingTab(new SummarSettingsTab(this));
-    this.addRibbonIcon("scroll-text", "Open Summar View", this.activateView.bind(this));
+
+    this.addRibbonIcon("scroll-text", "Open Summar View", this.activateView.bind(this));    
     this.registerView(SummarView.VIEW_TYPE, (leaf) => new SummarView(leaf, this));
+
+    this.addRibbonIcon("cassette-tape", "Record panel", this.activatePanel.bind(this));
+    this.registerView(SummarRecordingPanel.VIEW_TYPE, (leaf) => new SummarRecordingPanel(leaf, this));
+
 
     if (Platform.isDesktopApp) {
       if (Platform.isWin) {
@@ -107,7 +115,7 @@ export default class SummarPlugin extends Plugin {
       name: "Convert PDF to Markdown",
       callback: () => {
         this.activateView();
-        convertPdfToMarkdown(this.resultContainer, this);
+        this.convertPdfToMarkdown();
       },
     });
   }
@@ -115,6 +123,24 @@ export default class SummarPlugin extends Plugin {
   async onunload() {
     this.app.workspace.detachLeavesOfType(SummarView.VIEW_TYPE);
     SummarDebug.log(1, "Summar Plugin unloaded");
+  }
+
+  async activatePanel() {
+    const existingLeaf = this.app.workspace.getLeavesOfType(SummarRecordingPanel.VIEW_TYPE)[0];
+
+    if (existingLeaf) {
+      this.app.workspace.revealLeaf(existingLeaf);
+    } else {
+      const newLeaf = this.app.workspace.getRightLeaf(true);
+      if (newLeaf) {
+        await newLeaf.setViewState({
+          type: SummarRecordingPanel.VIEW_TYPE,
+        });
+        this.app.workspace.revealLeaf(newLeaf);
+      } else {
+        SummarDebug.error(1, "No available left pane to open Summar Recording panel.");
+      }
+    }
   }
 
   async activateView() {
@@ -177,566 +203,300 @@ export default class SummarPlugin extends Plugin {
   setLinkForCommand(link: string) {
     SummarDebug.Notice(0, `Link set for command: ${link}`);
     SummarViewContainer.updateText(this.inputField, link);
-    fetchAndSummarize(this.resultContainer, link, this);
+    this.fetchAndSummarize(link);
   }
 
   openUrlInputDialog(callback: (url: string | null) => void) {
     new UrlInputModal(this.app, callback).open();
   }
-}
 
-class SummarSettingsTab extends PluginSettingTab {
-  plugin: SummarPlugin;
 
-  constructor(plugin: SummarPlugin) {
-    super(plugin.app, plugin);
-    this.plugin = plugin;
-  }
+  /*
+   * fetchAndSummarize 함수는 URL을 가져와서 요약을 생성합니다.
+   * @param resultContainer 결과를 표시할 textarea 엘리먼트
+   * @param url 가져올 URL
+   * @param plugin 플러그인 인스턴스
+   */
+  async fetchAndSummarize(url: string) {
+    const { confluenceApiToken, confluenceDomain, useConfluenceAPI, openaiApiKey, systemPrompt, userPrompt } = this.settings;
+    const resultContainer = this.resultContainer;
+    const timer = new SummarTimer(resultContainer);
 
-  display(): void {
-    const { containerEl } = this;
-
-    if (!containerEl || !this.plugin.settings) {
-      SummarDebug.error(1, "Settings or containerEl not initialized correctly.");
+    if (!openaiApiKey) {
+      SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
+      SummarViewContainer.updateText(resultContainer, "Please configure OpenAI API key in the plugin settings.");
       return;
     }
 
-    containerEl.empty();
-
-    containerEl.createEl("h2", { text: "Summar Settings" });
-
-    // 설명 메시지 추가
-    const message1 = document.createElement("span");
-    message1.textContent = "current version: " + this.plugin.manifest.version + " - If you want to reload Obsidian, click ";
-    containerEl.appendChild(message1);
-
-    // 링크 생성 및 스타일링
-    const link = document.createElement("a");
-    link.textContent = "HERE";
-    link.href = "#";
-    link.style.cursor = "pointer";
-    link.style.color = "blue"; // 링크 색상 설정 (옵션)
-
-    // 클릭 이벤트 핸들러
-    link.addEventListener("click", (event) => {
-      event.preventDefault(); // 기본 동작 방지
-      window.location.reload(); // Obsidian 재로드
-    });
-
-    // Fragment에 링크 추가
-    containerEl.appendChild(link);
-        
-    new Setting(containerEl)
-      .setName("OpenAI API Key")
-      .setDesc("Enter your OpenAI API key.")
-      .addText((text) => {
-        text
-          .setPlaceholder("Enter OpenAI API Key")
-          .setValue(this.plugin.settings.openaiApiKey || "")
-          .onChange(async (value) => {
-            this.plugin.settings.openaiApiKey = value;
-            await this.plugin.saveSettingsToFile(this.plugin.settings);
-          });
-
-        const textAreaEl = text.inputEl;
-        textAreaEl.style.width = "100%";
-      });
-
-    new Setting(containerEl)
-      .setName("Confluence API Token")
-      .setDesc("Enter your Confluence API token.")
-      .addText((text) => {
-        text
-          .setPlaceholder("Enter Confluence API Token")
-          .setValue(this.plugin.settings.confluenceApiToken || "")
-          .onChange(async (value) => {
-            this.plugin.settings.confluenceApiToken = value;
-            await this.plugin.saveSettingsToFile(this.plugin.settings);
-          });
-        const textAreaEl = text.inputEl;
-        textAreaEl.style.width = "100%";
-      });
-
-    // Confluence Base URL with a checkbox in the same line
-    new Setting(containerEl)
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.useConfluenceAPI).onChange(async (value) => {
-          this.plugin.settings.useConfluenceAPI = value;
-          await this.plugin.saveSettingsToFile(this.plugin.settings);
-
-          // Dynamically enable/disable the input field
-          const inputField = containerEl.querySelector<HTMLInputElement>(".confluence-url-input");
-          if (inputField) {
-            inputField.disabled = !value;
-          }
-        })
-      )
-      .addText((text) => {
-        text.setPlaceholder("Enter your Confluence Domain")
-          .setValue(this.plugin.settings.confluenceDomain || "wiki.workers-hub.com")
-          .onChange(async (value) => {
-            this.plugin.settings.confluenceDomain = value;
-            await this.plugin.saveSettingsToFile(this.plugin.settings);
-          });
-
-        const textAreaEl = text.inputEl;
-        textAreaEl.style.width = "100%";
-
-        // Assign a custom class for targeting
-        text.inputEl.classList.add("confluence-url-input");
-
-        // Disable the text field if "useConfluenceAPI" is false on initialization
-        text.inputEl.disabled = !this.plugin.settings.useConfluenceAPI;
-
-        // Save the reference to dynamically update later
-      })
-      .setName("Confluence Domain")
-      .setDesc("If you want to use the Confluence Open API, toggle it on; if not, toggle it off.");
-
-
-    // Custom CSS for proper alignment
-    const style = document.createElement("style");
-    style.textContent = `
-      .setting-container {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .setting-container input[type="checkbox"] {
-        margin-right: 10px;
-      }
-      .setting-container label {
-        margin-right: 10px;
-      }
-      .setting-container input[type="text"] {
-        flex: 1;
-      }
-    `;
-    containerEl.appendChild(style);
-
-
-    new Setting(containerEl)
-      .setName("System Prompt (for Web page summary)")
-      .setDesc("This prompt will be added to the beginning of every chat.")
-
-    new Setting(containerEl)
-      .setHeading()
-      .addTextArea((text) => {
-        text
-          .setPlaceholder("Enter system prompt")
-          .setValue(this.plugin.settings.systemPrompt || "")
-          .onChange(async (value) => {
-            this.plugin.settings.systemPrompt = value;
-            await this.plugin.saveSettingsToFile(this.plugin.settings);
-          });
-
-        const textAreaEl = text.inputEl;
-        textAreaEl.style.width = "100%";
-        textAreaEl.style.height = "150px";
-        textAreaEl.style.resize = "none";
-
-        // 간격을 좁히는 스타일 추가
-        const descriptionEl = containerEl.querySelector('.setting-item-description') as HTMLElement;
-        if (descriptionEl) {
-          descriptionEl.style.marginBottom = "1px"; // 설명과 textarea 사이 간격 조정
-        }
-        textAreaEl.style.marginTop = "1px"; // textarea의 위쪽 간격 조정          
-      })
-      ;
-
-    new Setting(containerEl)
-      .setName("User Prompt (for Web page summary)")
-      .setDesc("This prompt will guide the AI response.")
-
-    new Setting(containerEl)
-      .setHeading()
-      .addTextArea((text) => {
-        text
-          .setPlaceholder("Enter user prompt")
-          .setValue(this.plugin.settings.userPrompt || "")
-          .onChange(async (value) => {
-            this.plugin.settings.userPrompt = value;
-            await this.plugin.saveSettingsToFile(this.plugin.settings);
-          });
-
-        const textAreaEl = text.inputEl;
-        textAreaEl.style.width = "100%";
-        textAreaEl.style.height = "150px";
-        textAreaEl.style.resize = "none";
-      })
-      ;
-    new Setting(containerEl)
-      .setName("System Prompt (for PDF to Markdown)")
-      .setDesc("This prompt will guide the AI response.")
-    new Setting(containerEl)
-      .setHeading()
-      .addTextArea((text) => {
-        text
-          .setPlaceholder("Enter user prompt")
-          .setValue(this.plugin.settings.pdfPrompt || "")
-          .onChange(async (value) => {
-            this.plugin.settings.pdfPrompt = value;
-            await this.plugin.saveSettingsToFile(this.plugin.settings);
-          });
-
-        const textAreaEl = text.inputEl;
-        textAreaEl.style.width = "100%";
-        textAreaEl.style.height = "150px";
-        textAreaEl.style.resize = "none";
-      })
-      ;
-  }
-}
-
-class SummarView extends View {
-  static VIEW_TYPE = "summar-view";
-
-  plugin: SummarPlugin;
-
-  constructor(leaf: WorkspaceLeaf, plugin: SummarPlugin) {
-    super(leaf);
-    this.plugin = plugin;
-  }
-
-  getViewType(): string {
-    return SummarView.VIEW_TYPE;
-  }
-
-  getDisplayText(): string {
-    return "Summar: AI-Powered Summarizer";
-  }
-
-  async onOpen(): Promise<void> {
-    SummarDebug.log(1, "Summar View opened");
-    this.renderView();
-  }
-
-  async onClose(): Promise<void> {
-    SummarDebug.log(1, "Summar View closed");
-  }
-
-  private async renderView(): Promise<void> {
-    const container = this.containerEl;
-    container.empty();
-
-    const inputContainer = container.createEl("div", {
-      cls: "input-container",
-    });
-    inputContainer.style.display = "flex";
-    inputContainer.style.alignItems = "center";
-    inputContainer.style.gap = "10px";
-    inputContainer.style.marginBottom = "10px";
-
-    const inputField = inputContainer.createEl("input", {
-      type: "text",
-      placeholder: "Enter Web page URL",
-    });
-    inputField.style.flexGrow = "1";
-    inputField.style.padding = "8px";
-    inputField.style.border = "1px solid #ccc";
-    inputField.style.borderRadius = "5px";
-    inputField.style.boxSizing = "border-box";
-    inputField.value = this.plugin.settings.url || "";
-
-    this.plugin.inputField = inputField;
-
-    const fetchButton = inputContainer.createEl("button", { text: "GO" });
-    fetchButton.style.padding = "8px 12px";
-    fetchButton.style.border = "1px solid #ccc";
-    fetchButton.style.borderRadius = "5px";
-    fetchButton.style.cursor = "pointer";
-    fetchButton.style.flexShrink = "0";
-
-    const pdfButton = container.createEl("button", { text: "PDF -> Markdown" });
-    pdfButton.style.width = "100%";
-    pdfButton.style.marginBottom = "10px";
-    pdfButton.style.padding = "8px 12px";
-    pdfButton.style.border = "1px solid #ccc";
-    pdfButton.style.borderRadius = "5px";
-    pdfButton.style.cursor = "pointer";
-
-    const resultContainer = container.createEl("textarea", {
-      cls: "result-content",
-    });
-
-    resultContainer.style.width = "100%";
-    resultContainer.style.height = "calc(100% - 90px)";
-    resultContainer.style.border = "1px solid #ccc";
-    resultContainer.style.padding = "10px";
-    // resultContainer.style.backgroundColor = "#fffff9";
-    resultContainer.style.whiteSpace = "pre-wrap";
-    resultContainer.style.overflowY = "auto";
-    resultContainer.style.resize = "none";
-    resultContainer.readOnly = true;
-
-    this.plugin.resultContainer = resultContainer;
-
-    if (!Platform.isMacOS) {
-      // 버튼을 안보이게 하고 비활성화
-      pdfButton.style.display = "none"; // 안보이게 하기
-      pdfButton.disabled = true;        // 비활성화
+    if (!confluenceApiToken) {
+      SummarDebug.Notice(0, "If you want to use the Confluence API, please configure the API token in the plugin settings.", 0);
     }
 
-    pdfButton.onclick = async () => {
-      convertPdfToMarkdown(resultContainer, this.plugin);
-    };
+    SummarViewContainer.updateText(resultContainer, "Fetching and summarizing...");
 
-    fetchButton.onclick = async () => {
-      const url = inputField.value.trim();
-      if (!url) {
-        SummarDebug.Notice(0, "Please enter a valid URL.");
+    try {
+      timer.startTimer();
+
+      // extractConfluenceInfo 함수 호출
+      const { confluenceApiToken } = this.settings;
+
+      const conflueceapi = new ConfluenceAPI(this);
+      let pageId = "";
+      let page_content: string = "";
+
+      if (confluenceApiToken && confluenceDomain && containsDomain(url, this.settings.confluenceDomain)) {
+        const result = await conflueceapi.getPageId(url);
+
+        SummarDebug.log(1, "Extracted Confluence Info:");
+        SummarDebug.log(1, `Page ID: ${result.pageId}`);
+        SummarDebug.log(1, `Space Key: ${result.spaceKey}`);
+        SummarDebug.log(1, `Title: ${result.title}`);
+        pageId = result.pageId as string;
+      }
+      if (pageId) {
+        try {
+          if (useConfluenceAPI && confluenceApiToken) {
+            const { title, content } = await conflueceapi.getPageContent(pageId);
+            page_content = await content;
+            SummarDebug.log(2, `Fetched Confluence page content:\n ${content}`);
+          } else {
+            const response = await fetchLikeRequestUrl(url, {
+              headers: {
+                Authorization: `Bearer ${confluenceApiToken}`,
+              },
+            });
+            page_content = await response.text();
+          }
+        } catch (error) {
+          SummarDebug.error(1, "Failed to fetch page content:", error);
+        }
+      } else {
+        const response = await fetchLikeRequestUrl(url);
+
+        page_content = await response.text();
+      }
+      SummarViewContainer.updateText(resultContainer, "Fedtched page content");
+
+      SummarDebug.log(2, "Fetched page content:", page_content);
+
+      const body_content = JSON.stringify({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `${userPrompt}\n\n${page_content}` },
+        ],
+        max_tokens: 16384,
+      });
+
+      //SummarViewContainer.updateText(resultContainer, body_content);
+
+      SummarViewContainer.updateText(resultContainer, "Summarizing...");
+
+      const aiResponse = await fetchOpenai(openaiApiKey, body_content);
+      timer.stopTimer();
+
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        SummarDebug.error(1, "OpenAI API Error:", errorText);
+        SummarViewContainer.updateText(resultContainer, `Error: ${aiResponse.status} - ${errorText}`);
+
         return;
       }
 
-      fetchAndSummarize(resultContainer, url, this.plugin);
-    };
-  }
-}
+      const aiData = (await aiResponse.json()) as OpenAIResponse;
 
-
-
-
-
-
-
-
-
-
-
-/*
- * fetchAndSummarize 함수는 URL을 가져와서 요약을 생성합니다.
- * @param resultContainer 결과를 표시할 textarea 엘리먼트
- * @param url 가져올 URL
- * @param plugin 플러그인 인스턴스
- */
-async function fetchAndSummarize(resultContainer: { value: string }, url: string, plugin: any) {
-  const { confluenceApiToken, confluenceDomain, useConfluenceAPI, openaiApiKey, systemPrompt, userPrompt } = plugin.settings;
-  const timer = new SummarTimer(resultContainer);
-
-  if (!openaiApiKey) {
-    SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
-    SummarViewContainer.updateText(resultContainer, "Please configure OpenAI API key in the plugin settings.");
-    return;
-  }
-
-  if (!confluenceApiToken) {
-    SummarDebug.Notice(0, "If you want to use the Confluence API, please configure the API token in the plugin settings.", 0);
-  }
-
-  SummarViewContainer.updateText(resultContainer, "Fetching and summarizing...");
-
-  try {
-    timer.startTimer();
-
-    // extractConfluenceInfo 함수 호출
-    const { confluenceApiToken } = plugin.settings;
-
-    const conflueceapi = new ConfluenceAPI(plugin);
-    let pageId = "";
-    let page_content: string = "";
-
-    if (confluenceApiToken && confluenceDomain && containsDomain(url, plugin.settings.confluenceDomain)) {
-      const result = await conflueceapi.getPageId(url);
-
-      SummarDebug.log(1, "Extracted Confluence Info:");
-      SummarDebug.log(1, `Page ID: ${result.pageId}`);
-      SummarDebug.log(1, `Space Key: ${result.spaceKey}`);
-      SummarDebug.log(1, `Title: ${result.title}`);
-      pageId = result.pageId as string;
-    } 
-    if (pageId) {
-      try {
-        if (useConfluenceAPI && confluenceApiToken) {
-          const { title, content } = await conflueceapi.getPageContent(pageId);
-          page_content = await content;
-          SummarDebug.log(2, `Fetched Confluence page content:\n ${content}`);
-        } else {
-          const response = await fetchLikeRequestUrl(url, {
-            headers: {
-              Authorization: `Bearer ${confluenceApiToken}`,
-            },
-          });
-          page_content = await response.text();
-        }
-      } catch (error) {
-        SummarDebug.error(1, "Failed to fetch page content:", error);
+      if (aiData.choices && aiData.choices.length > 0) {
+        const summary = aiData.choices[0].message.content || "No summary generated.";
+        SummarViewContainer.updateText(resultContainer, summary);
+      } else {
+        SummarViewContainer.updateText(resultContainer, "No valid response from OpenAI API.");
       }
-    } else {
-      const response = await fetchLikeRequestUrl(url);
 
-      page_content = await response.text();
+    } catch (error) {
+      timer.stopTimer();
+      SummarDebug.error(1, "Error:", error);
+      SummarViewContainer.updateText(resultContainer, "An error occurred while processing the request.");
     }
-    SummarViewContainer.updateText(resultContainer, "Fedtched page content");
+  }
 
-    SummarDebug.log(2, "Fetched page content:", page_content);
 
-    const body_content = JSON.stringify({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `${userPrompt}\n\n${page_content}` },
-      ],
-      max_tokens: 16384,
-    });
+  /*
+   * convertPdfToMarkdown 함수는 PDF를 이미지로 변환한 후 마크다운으로 변환합니다.
+   * @param resultContainer 결과를 표시할 textarea 엘리먼트
+   * @param plugin 플러그인 인스턴스
+   */
 
-//SummarViewContainer.updateText(resultContainer, body_content);
+  async convertPdfToMarkdown() {
+    const { openaiApiKey } = this.settings;
+    const resultContainer = this.resultContainer;
 
-SummarViewContainer.updateText(resultContainer, "Summarizing...");
-
-    const aiResponse = await fetchOpenai(openaiApiKey, body_content);
-    timer.stopTimer();
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      SummarDebug.error(1, "OpenAI API Error:", errorText);
-      SummarViewContainer.updateText(resultContainer, `Error: ${aiResponse.status} - ${errorText}`);
-
+    if (!openaiApiKey) {
+      SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
+      SummarViewContainer.updateText(resultContainer, "Please configure OpenAI API key in the plugin settings.");
       return;
     }
 
-    const aiData = (await aiResponse.json()) as OpenAIResponse;
+    const timer = new SummarTimer(resultContainer);
+    const pdftopng = new PdfToPng(resultContainer, this);
+    try {
+      if (!(await pdftopng.isPopplerInstalled())) {
+        SummarDebug.Notice(0, "Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
+        SummarViewContainer.updateText(resultContainer, "Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
+        throw new Error("Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
+      }
 
-    if (aiData.choices && aiData.choices.length > 0) {
-      const summary = aiData.choices[0].message.content || "No summary generated.";
-      SummarViewContainer.updateText(resultContainer, summary);
-    } else {
-      SummarViewContainer.updateText(resultContainer, "No valid response from OpenAI API.");
-    }
+      const fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.accept = ".pdf";
+      const openaiApiKey = this.settings.openaiApiKey;
+      const pdfPrompt = this.settings.pdfPrompt;
 
-  } catch (error) {
-    timer.stopTimer();
-    SummarDebug.error(1, "Error:", error);
-    SummarViewContainer.updateText(resultContainer, "An error occurred while processing the request.");
-  }
-}
+      fileInput.onchange = async () => {
+        if (fileInput.files && fileInput.files.length > 0) {
+          const file = fileInput.files[0];
+          SummarDebug.Notice(1, file.name);
 
+          const base64Values = await pdftopng.convert(file, (SummarDebug.level() < 4));
 
-/*
- * convertPdfToMarkdown 함수는 PDF를 이미지로 변환한 후 마크다운으로 변환합니다.
- * @param resultContainer 결과를 표시할 textarea 엘리먼트
- * @param plugin 플러그인 인스턴스
- */
+          // JsonBuilder 인스턴스 생성
+          const jsonBuilder = new JsonBuilder();
 
-async function convertPdfToMarkdown(resultContainer: { value: string }, plugin: any) {
-  const { openaiApiKey } = plugin.settings;
+          // 기본 데이터 추가
+          jsonBuilder.addData("model", "gpt-4o");
 
-  if (!openaiApiKey) {
-    SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
-    SummarViewContainer.updateText(resultContainer, "Please configure OpenAI API key in the plugin settings.");
-    return;
-  }
+          // 시스템 메시지 추가
+          jsonBuilder.addToArray("messages", {
+            role: "system",
+            content: [
+              {
+                type: "text",
+                text: pdfPrompt,
+              },
+            ],
+          });
 
-  const timer = new SummarTimer(resultContainer);
-  const pdftopng = new PdfToPng(resultContainer, plugin);
-  try {
-    if (!(await pdftopng.isPopplerInstalled())) {
-      SummarDebug.Notice(0, "Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
-      SummarViewContainer.updateText(resultContainer, "Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
-      throw new Error("Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
-    }
+          base64Values.forEach((base64, index) => {
+            SummarDebug.log(2, `${index + 1}번 파일의 Base64: ${base64}`);
+            const page_prompt = `다음은 PDF의 페이지 ${index + 1}입니다.`;
+            jsonBuilder.addToArray("messages", {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: page_prompt,
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:image/png;base64,${base64}`,
+                  },
+                },
+              ],
+            });
+          });
 
-    const fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.accept = ".pdf";
-    const openaiApiKey = plugin.settings.openaiApiKey;
-    const pdfPrompt = plugin.settings.pdfPrompt;
-
-    fileInput.onchange = async () => {
-      if (fileInput.files && fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        SummarDebug.Notice(1, file.name);
-
-        const base64Values = await pdftopng.convert(file, (SummarDebug.level()<4));
-
-        // JsonBuilder 인스턴스 생성
-        const jsonBuilder = new JsonBuilder();
-
-        // 기본 데이터 추가
-        jsonBuilder.addData("model", "gpt-4o");
-
-        // 시스템 메시지 추가
-        jsonBuilder.addToArray("messages", {
-          role: "system",
-          content: [
-            {
-              type: "text",
-              text: pdfPrompt,
-            },
-          ],
-        });
-
-        base64Values.forEach((base64, index) => {
-          SummarDebug.log(2, `${index + 1}번 파일의 Base64: ${base64}`);
-          const page_prompt = `다음은 PDF의 페이지 ${index + 1}입니다.`;
           jsonBuilder.addToArray("messages", {
             role: "user",
             content: [
               {
                 type: "text",
-                text: page_prompt,
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/png;base64,${base64}`,
-                },
+                text: "모든 페이지가 전송되었습니다. 이제 전체 PDF의 마크다운 결과를 출력하세요.",
               },
             ],
           });
-        });
 
-        jsonBuilder.addToArray("messages", {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "모든 페이지가 전송되었습니다. 이제 전체 PDF의 마크다운 결과를 출력하세요.",
-            },
-          ],
-        });
+          const body_content = jsonBuilder.toString();
+          SummarDebug.log(2, body_content);
 
-        const body_content = jsonBuilder.toString();
-        SummarDebug.log(2, body_content);
+          SummarViewContainer.updateText(resultContainer, "Converting PDF to markdown. This may take a while...");
 
-        SummarViewContainer.updateText(resultContainer, "Converting PDF to markdown. This may take a while...");
+          timer.startTimer();
+          const aiResponse = await fetchOpenai(openaiApiKey, body_content);
+          timer.stopTimer();
 
-        timer.startTimer();
-        const aiResponse = await fetchOpenai(openaiApiKey, body_content);
-        timer.stopTimer();
-
-        if (!aiResponse.ok) {
-          const errorText = await aiResponse.text();
-          SummarDebug.error(1, "OpenAI API Error:", errorText);
-          SummarViewContainer.updateText(resultContainer, `Error: ${aiResponse.status} - ${errorText}`);
-          return;
-        }
-
-        const aiData = (await aiResponse.json()) as OpenAIResponse;
-
-        if (aiData.choices && aiData.choices.length > 0) {
-          const summary = aiData.choices[0].message.content || "No summary generated.";
-          const markdownContent = extractMarkdownContent(summary);
-          if (markdownContent) {
-            SummarViewContainer.updateText(resultContainer, markdownContent);
-          } else {
-            SummarViewContainer.updateText(resultContainer, JSON.stringify(aiData, null, 2));
+          if (!aiResponse.ok) {
+            const errorText = await aiResponse.text();
+            SummarDebug.error(1, "OpenAI API Error:", errorText);
+            SummarViewContainer.updateText(resultContainer, `Error: ${aiResponse.status} - ${errorText}`);
+            return;
           }
-        } else {
-          SummarViewContainer.updateText(resultContainer, "No valid response from OpenAI API.");
+
+          const aiData = (await aiResponse.json()) as OpenAIResponse;
+
+          if (aiData.choices && aiData.choices.length > 0) {
+            const summary = aiData.choices[0].message.content || "No summary generated.";
+            const markdownContent = extractMarkdownContent(summary);
+            if (markdownContent) {
+              SummarViewContainer.updateText(resultContainer, markdownContent);
+            } else {
+              SummarViewContainer.updateText(resultContainer, JSON.stringify(aiData, null, 2));
+            }
+          } else {
+            SummarViewContainer.updateText(resultContainer, "No valid response from OpenAI API.");
+          }
+
+          SummarDebug.log(1, "PDF conversion to images complete.");
         }
+      };
+      fileInput.click();
+    } catch (error) {
+      timer.stopTimer();
 
-        SummarDebug.log(1, "PDF conversion to images complete.");
-      }
-    };
-    fileInput.click();
-  } catch (error) {
-    timer.stopTimer();
-
-    SummarDebug.error(1, "Error during PDF to PNG conversion:", error);
-    SummarViewContainer.updateText(resultContainer, `Error during PDF to PNG conversion: ${error}`);
-    SummarDebug.Notice(0, "Failed to convert PDF to PNG. Check console for details.");
+      SummarDebug.error(1, "Error during PDF to PNG conversion:", error);
+      SummarViewContainer.updateText(resultContainer, `Error during PDF to PNG conversion: ${error}`);
+      SummarDebug.Notice(0, "Failed to convert PDF to PNG. Check console for details.");
+    }
   }
+
+  async startRecording(): Promise<void> {
+    try {
+      const deviceId = this.settings.selectedDeviceId;
+      if (!deviceId) {
+        SummarDebug.Notice(0, "No audio device selected.", 0);
+        return;
+      }
+  
+      // Create MediaStream from selected device
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { deviceId },
+      });
+  
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+  
+      recorder.ondataavailable = (event) => chunks.push(event.data);
+      recorder.onstop = () => {
+        const audioBlob = new Blob(chunks, { type: "audio/wav" });
+        const audioUrl = URL.createObjectURL(audioBlob);
+  
+        // Blob URL can be used to save or attach the file
+        console.log("Audio URL:", audioUrl);
+        SummarDebug.Notice(1, "Recording completed.");
+      };
+  
+      recorder.start();
+      SummarDebug.Notice(1, "Recording started!");
+  
+      // Example: Stop recording after 5 seconds
+      setTimeout(() => recorder.stop(), 5000);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+      SummarDebug.Notice(1, "An error occurred during recording.");
+    }
+  }  
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // 정규식을 사용하여 마크다운 내용만 추출

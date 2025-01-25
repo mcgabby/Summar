@@ -1,0 +1,44 @@
+.settings-tabs {
+    display: flex;
+    margin-bottom: 1rem;
+    gap: 10px;
+}
+
+.settings-tab-button {
+    padding: 8px 16px;
+    cursor: pointer;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background-color: var(--background-primary);
+}
+
+.settings-tab-button.active {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.settings-tab-content {
+    display: none;
+}
+
+.settings-tab-content:not(.hidden) {
+    display: block;
+}
+
+.setting-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.setting-container input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+.setting-container label {
+    margin-right: 10px;
+}
+
+.setting-container input[type="text"] {
+    flex: 1;
+}
