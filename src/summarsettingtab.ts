@@ -299,15 +299,31 @@ export class SummarSettingsTab extends PluginSettingTab {
         });
       });
 
-    // Test recording button
+    // // Test recording button
+    // new Setting(containerEl)
+    //   .setName("Test Recording")
+    //   .setDesc("Test recording with the selected device.")
+    //   .addButton((button) =>
+    //     button.setButtonText("Start Test Recording").onClick(async () => {
+    //       await this.plugin.startRecording();
+    //     })
+    //   );
+
     new Setting(containerEl)
-      .setName("Test Recording")
-      .setDesc("Test recording with the selected device.")
-      .addButton((button) =>
-        button.setButtonText("Start Test Recording").onClick(async () => {
-          await this.plugin.startRecording();
-        })
-      );
+      .setName("Temporary folder")
+      .setDesc("Specify the path in the vault where to save the audio files and the transcription files")
+      .addText((text) => {
+        text
+          .setPlaceholder("Specify temporary folder")
+          .setValue(this.plugin.settings.recordingDir || "")
+          .onChange(async (value) => {
+            this.plugin.settings.recordingDir = value;
+            await this.plugin.saveSettingsToFile(this.plugin.settings);
+          });
+
+        const textAreaEl = text.inputEl;
+        textAreaEl.style.width = "100%";
+      });
 
     // Recording Unit
     new Setting(containerEl)

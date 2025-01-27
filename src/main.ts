@@ -1,20 +1,25 @@
 import { App, Plugin, PluginSettingTab, Setting, View, WorkspaceLeaf, Platform, Menu, Modal, normalizePath } from "obsidian";
-
-import { PluginSettings, OpenAIResponse } from "./types";
+import { PluginSettings } from "./types";
 import { DEFAULT_SETTINGS, SummarViewContainer, SummarDebug, fetchOpenai, fetchLikeRequestUrl, extractDomain, containsDomain } from "./globals";
-import { SummarTimer } from "./summartimer";
 import { PluginUpdater } from "./pluginupdater";
-import { ConfluenceAPI } from "./confluenceapi";
-import { JsonBuilder } from "./jsonbuilder";
-import { PdfToPng } from "./pdftopng";
 import { SummarView } from "./summarview"
-import { SummarRecordingPanel } from "./summarrecordingpanel"
+// import { SummarRecordingPanel } from "./summarrecordingpanel"
 import { SummarSettingsTab } from "./summarsettingtab";
+import { ConfluenceHandler } from "./confluencehandler";
+import { PdfHandler } from "./pdfhandler";
+import { AudioHandler } from "./audiohandler";
+import AudioRecordingManager from "./recordingmanager";
+
 
 export default class SummarPlugin extends Plugin {
   settings: PluginSettings;
   resultContainer: HTMLTextAreaElement;
   inputField: HTMLInputElement;
+  // confluenceHandler: ConfluenceHandler;
+  // pdfHandler: PdfHandler;
+  // audioHandler: AudioHandler;
+  recordingManager: AudioRecordingManager;
+  recordButton: HTMLButtonElement; 
 
   OBSIDIAN_PLUGIN_DIR: string = "";
   PLUGIN_ID: string = ""; // 플러그인 아이디
@@ -54,11 +59,11 @@ export default class SummarPlugin extends Plugin {
 
     this.addSettingTab(new SummarSettingsTab(this));
 
-    this.addRibbonIcon("scroll-text", "Open Summar View", this.activateView.bind(this));    
+    this.addRibbonIcon("scroll-text", "Open Summar View", this.activateView.bind(this));
     this.registerView(SummarView.VIEW_TYPE, (leaf) => new SummarView(leaf, this));
 
-    this.addRibbonIcon("cassette-tape", "Record panel", this.activatePanel.bind(this));
-    this.registerView(SummarRecordingPanel.VIEW_TYPE, (leaf) => new SummarRecordingPanel(leaf, this));
+    // this.addRibbonIcon("cassette-tape", "Record panel", this.activatePanel.bind(this));
+    // this.registerView(SummarRecordingPanel.VIEW_TYPE, (leaf) => new SummarRecordingPanel(leaf, this));
 
 
     if (Platform.isDesktopApp) {
@@ -94,6 +99,12 @@ export default class SummarPlugin extends Plugin {
       })
     );
 
+    // this.confluenceHandler = new ConfluenceHandler(this.resultContainer, this);
+    // this.pdfHandler = new PdfHandler(this.resultContainer, this);
+    // this.audioHandler = new AudioHandler(this.resultContainer, this);
+    this.recordingManager = new AudioRecordingManager(this);
+
+
     // 커맨드 추가
     this.addCommand({
       id: "fetch-and-summarize-link",
@@ -115,9 +126,198 @@ export default class SummarPlugin extends Plugin {
       name: "Convert PDF to Markdown",
       callback: () => {
         this.activateView();
-        this.convertPdfToMarkdown();
+
+        const pdfHandler = new PdfHandler(this.resultContainer, this);
+        pdfHandler.convertPdfToMarkdown();
       },
     });
+
+    this.addCommand({
+      id: "upload-audio-to-transcript",
+      name: "Upload audio file",
+      callback: () => {
+        this.activateView();
+        // Create an input element for file selection
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = "audio/*"; // Accept only audio files
+        // fileInput.accept = "audio/*,.webm"; // Accept audio files and .webm files
+        // fileInput.webkitdirectory = true; // Allow directory selection
+
+        // Handle file or directory selection
+        fileInput.onchange = async (event) => {
+          const files = (event.target as HTMLInputElement).files;
+          if (files && files.length > 0) {
+            // Send all selected files to sendAudioData
+            const audioHandler = new AudioHandler(this.resultContainer, this);
+            const text = await audioHandler.sendAudioData(files);
+            SummarDebug.log(3, `transcripted text: ${text}`);
+            this.recordingManager.summarize(this.resultContainer, text);
+          }
+        };
+
+        // Programmatically open the file dialog
+        fileInput.click();
+      },
+    });
+
+    this.addCommand({
+      id: "start-top-recording-to-transcript",
+      name: "Start/Stop recording",
+      callback: async () => {
+        this.activateView();
+        await this.toggleRecording();
+        // if (this.recordingManager.getRecorderState() !== "recording") {
+        //   await this.recordingManager.startRecording(this.settings.recordingUnit);
+        //   this.recordButton.textContent = "recording..."
+        // } else {
+        //   this.recordButton.textContent = "record"
+
+        //   const recordingPath = await this.recordingManager.stopRecording();
+        //   SummarDebug.log(1, `main.ts - recordingPath: ${recordingPath}`);
+
+        //   try {
+        //     // Vault adapter를 사용해 디렉토리 내용을 읽음
+        //     const fileEntries = await this.app.vault.adapter.list(recordingPath);
+        //     const audioFiles = fileEntries.files.filter((file) =>
+        //       file.toLowerCase().match(/\.(webm|mp3|wav|ogg|m4a)$/)
+        //     );
+        //     // 파일명을 추출하고 로그 출력
+        //     fileEntries.files.forEach((filePath) => {
+        //       const fileName = filePath.split('/').pop(); // 파일 경로에서 마지막 부분(파일명) 추출
+        //       SummarDebug.log(1, `File found: ${fileName}`);
+        //     });            
+        //     // 파일명을 추출하고 로그 출력
+        //     audioFiles.forEach((filePath) => {
+        //       const fileName = filePath.split('/').pop(); // 파일 경로에서 파일명만 추출
+        //       SummarDebug.log(1, `Audio file found: ${fileName}`);
+        //     });
+        //     if (audioFiles.length === 0) {
+        //       // 오디오 파일이 없을 경우 사용자에게 알림
+        //       SummarDebug.Notice(1, "No audio files found in the specified directory.");
+        //       return;
+        //     }
+
+        //     // 파일 경로를 File 객체로 변환
+        //     const files = await Promise.all(
+        //       audioFiles.map(async (filePath) => {
+        //         const content = await this.app.vault.adapter.readBinary(filePath);
+        //         const blob = new Blob([content]);
+        //         SummarDebug.log(1, `stop - filePath: ${filePath}`);
+        //         return new File([blob], filePath.split("/").pop() || "unknown", { type: blob.type });
+        //       })
+        //     );
+        //     // sendAudioData에 오디오 파일 경로 전달
+        //     await this.audioHandler.sendAudioData(files, recordingPath);
+        //     SummarDebug.Notice(1, `Uploaded ${audioFiles.length} audio files successfully.`);
+        //   } catch (error) {
+        //     SummarDebug.error(0, "Error reading directory:", error);
+        //     SummarDebug.Notice(1, "Failed to access the specified directory.");
+        //   }
+        // }
+      }
+    });
+
+    this.addCommand({
+      id: "upload-audiolist-to-transcript",
+      name: "Upload audio files in directory",
+      callback: () => {
+        this.activateView();
+        // Create an input element for file selection
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        //        fileInput.accept = "audio/*"; // Accept only audio files
+        fileInput.accept = "audio/*,.webm"; // Accept audio files and .webm files
+        fileInput.webkitdirectory = true; // Allow directory selection
+
+        // Handle file or directory selection
+        fileInput.onchange = async (event) => {
+          const files = (event.target as HTMLInputElement).files;
+          if (files && files.length > 0) {
+            // Filter only audio files
+            const audioFiles = Array.from(files).filter((file) => {
+              // Check MIME type or file extension
+              return (
+                file.type.startsWith("audio/") ||
+                file.name.toLowerCase().endsWith(".webm") // Include .webm files
+              );
+            });
+            // const audioFiles = Array.from(files).filter((file) => file.type.startsWith("audio/"));
+
+            if (audioFiles.length === 0) {
+              SummarDebug.Notice(1, "No audio files found in the selected directory.");
+              return;
+            }
+
+
+            // Send all selected files to sendAudioData
+            const audioHandler = new AudioHandler(this.resultContainer, this);
+            const text = await audioHandler.sendAudioData(files);
+            SummarDebug.log(3, `transcripted text: ${text}`);
+            this.recordingManager.summarize(this.resultContainer, text);
+          }
+        };
+
+        // Programmatically open the file dialog
+        fileInput.click();
+      },
+    });
+
+  }
+
+  async toggleRecording(): Promise<void> {
+    if (this.recordingManager.getRecorderState() !== "recording") {
+      await this.recordingManager.startRecording(this.settings.recordingUnit);
+//      this.recordButton.textContent = "recording..."
+    } else {
+      // this.recordButton.textContent = "[●] record"
+
+      const recordingPath = await this.recordingManager.stopRecording();
+      SummarDebug.log(1, `main.ts - recordingPath: ${recordingPath}`);
+
+      try {
+        // Vault adapter를 사용해 디렉토리 내용을 읽음
+        const fileEntries = await this.app.vault.adapter.list(recordingPath);
+        const audioFiles = fileEntries.files.filter((file) =>
+          file.toLowerCase().match(/\.(webm|mp3|wav|ogg|m4a)$/)
+        );
+        // 파일명을 추출하고 로그 출력
+        fileEntries.files.forEach((filePath) => {
+          const fileName = filePath.split('/').pop(); // 파일 경로에서 마지막 부분(파일명) 추출
+          SummarDebug.log(1, `File found: ${fileName}`);
+        });            
+        // 파일명을 추출하고 로그 출력
+        audioFiles.forEach((filePath) => {
+          const fileName = filePath.split('/').pop(); // 파일 경로에서 파일명만 추출
+          SummarDebug.log(1, `Audio file found: ${fileName}`);
+        });
+        if (audioFiles.length === 0) {
+          // 오디오 파일이 없을 경우 사용자에게 알림
+          SummarDebug.Notice(1, "No audio files found in the specified directory.");
+          return;
+        }
+
+        // 파일 경로를 File 객체로 변환
+        const files = await Promise.all(
+          audioFiles.map(async (filePath) => {
+            const content = await this.app.vault.adapter.readBinary(filePath);
+            const blob = new Blob([content]);
+            SummarDebug.log(1, `stop - filePath: ${filePath}`);
+            return new File([blob], filePath.split("/").pop() || "unknown", { type: blob.type });
+          })
+        );
+        // sendAudioData에 오디오 파일 경로 전달
+        const audioHandler = new AudioHandler(this.resultContainer, this);
+        const text = await audioHandler.sendAudioData(files, recordingPath);
+        SummarDebug.Notice(1, `Uploaded ${audioFiles.length} audio files successfully.`);
+        SummarDebug.log(3, `transcripted text: ${text}`);
+        this.recordingManager.summarize(this.resultContainer, text);
+  } catch (error) {
+        SummarDebug.error(0, "Error reading directory:", error);
+        SummarDebug.Notice(1, "Failed to access the specified directory.");
+      }
+    }
+
   }
 
   async onunload() {
@@ -125,23 +325,23 @@ export default class SummarPlugin extends Plugin {
     SummarDebug.log(1, "Summar Plugin unloaded");
   }
 
-  async activatePanel() {
-    const existingLeaf = this.app.workspace.getLeavesOfType(SummarRecordingPanel.VIEW_TYPE)[0];
+  // async activatePanel() {
+  //   const existingLeaf = this.app.workspace.getLeavesOfType(SummarRecordingPanel.VIEW_TYPE)[0];
 
-    if (existingLeaf) {
-      this.app.workspace.revealLeaf(existingLeaf);
-    } else {
-      const newLeaf = this.app.workspace.getRightLeaf(true);
-      if (newLeaf) {
-        await newLeaf.setViewState({
-          type: SummarRecordingPanel.VIEW_TYPE,
-        });
-        this.app.workspace.revealLeaf(newLeaf);
-      } else {
-        SummarDebug.error(1, "No available left pane to open Summar Recording panel.");
-      }
-    }
-  }
+  //   if (existingLeaf) {
+  //     this.app.workspace.revealLeaf(existingLeaf);
+  //   } else {
+  //     const newLeaf = this.app.workspace.getRightLeaf(true);
+  //     if (newLeaf) {
+  //       await newLeaf.setViewState({
+  //         type: SummarRecordingPanel.VIEW_TYPE,
+  //       });
+  //       this.app.workspace.revealLeaf(newLeaf);
+  //     } else {
+  //       SummarDebug.error(1, "No available left pane to open Summar Recording panel.");
+  //     }
+  //   }
+  // }
 
   async activateView() {
     const existingLeaf = this.app.workspace.getLeavesOfType(SummarView.VIEW_TYPE)[0];
@@ -191,8 +391,8 @@ export default class SummarPlugin extends Plugin {
 
   async saveSettingsToFile(settings: PluginSettings): Promise<void> {
     try {
-      await this.app.vault.adapter.mkdir(this.PLUGIN_DIR)
-      await this.app.vault.adapter.write(this.PLUGIN_SETTINGS,JSON.stringify(settings, null, 2));
+      await this.app.vault.adapter.mkdir(this.PLUGIN_DIR);
+      await this.app.vault.adapter.write(this.PLUGIN_SETTINGS, JSON.stringify(settings, null, 2));
       SummarDebug.log(1, "Settings saved to data.json");
     } catch (error) {
       SummarDebug.error(1, "Error saving settings file:", error);
@@ -203,7 +403,9 @@ export default class SummarPlugin extends Plugin {
   setLinkForCommand(link: string) {
     SummarDebug.Notice(0, `Link set for command: ${link}`);
     SummarViewContainer.updateText(this.inputField, link);
-    this.fetchAndSummarize(link);
+    // this.confluenceHandler.fetchAndSummarize(link);
+    const confluenceHandler = new ConfluenceHandler(this.resultContainer, this);
+    confluenceHandler.fetchAndSummarize(link);
   }
 
   openUrlInputDialog(callback: (url: string | null) => void) {
@@ -211,279 +413,43 @@ export default class SummarPlugin extends Plugin {
   }
 
 
-  /*
-   * fetchAndSummarize 함수는 URL을 가져와서 요약을 생성합니다.
-   * @param resultContainer 결과를 표시할 textarea 엘리먼트
-   * @param url 가져올 URL
-   * @param plugin 플러그인 인스턴스
-   */
-  async fetchAndSummarize(url: string) {
-    const { confluenceApiToken, confluenceDomain, useConfluenceAPI, openaiApiKey, systemPrompt, userPrompt } = this.settings;
-    const resultContainer = this.resultContainer;
-    const timer = new SummarTimer(resultContainer);
 
-    if (!openaiApiKey) {
-      SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
-      SummarViewContainer.updateText(resultContainer, "Please configure OpenAI API key in the plugin settings.");
-      return;
-    }
+  // async startRecording(): Promise<void> {
+  //   try {
+  //     const deviceId = this.settings.selectedDeviceId;
+  //     if (!deviceId) {
+  //       SummarDebug.Notice(0, "No audio device selected.", 0);
+  //       return;
+  //     }
 
-    if (!confluenceApiToken) {
-      SummarDebug.Notice(0, "If you want to use the Confluence API, please configure the API token in the plugin settings.", 0);
-    }
+  //     // Create MediaStream from selected device
+  //     const stream = await navigator.mediaDevices.getUserMedia({
+  //       audio: { deviceId },
+  //     });
 
-    SummarViewContainer.updateText(resultContainer, "Fetching and summarizing...");
+  //     const recorder = new MediaRecorder(stream);
+  //     const chunks: Blob[] = [];
 
-    try {
-      timer.startTimer();
+  //     recorder.ondataavailable = (event) => chunks.push(event.data);
+  //     recorder.onstop = () => {
+  //       const audioBlob = new Blob(chunks, { type: "audio/wav" });
+  //       const audioUrl = URL.createObjectURL(audioBlob);
 
-      // extractConfluenceInfo 함수 호출
-      const { confluenceApiToken } = this.settings;
+  //       // Blob URL can be used to save or attach the file
+  //       console.log("Audio URL:", audioUrl);
+  //       SummarDebug.Notice(1, "Recording completed.");
+  //     };
 
-      const conflueceapi = new ConfluenceAPI(this);
-      let pageId = "";
-      let page_content: string = "";
+  //     recorder.start();
+  //     SummarDebug.Notice(1, "Recording started!");
 
-      if (confluenceApiToken && confluenceDomain && containsDomain(url, this.settings.confluenceDomain)) {
-        const result = await conflueceapi.getPageId(url);
-
-        SummarDebug.log(1, "Extracted Confluence Info:");
-        SummarDebug.log(1, `Page ID: ${result.pageId}`);
-        SummarDebug.log(1, `Space Key: ${result.spaceKey}`);
-        SummarDebug.log(1, `Title: ${result.title}`);
-        pageId = result.pageId as string;
-      }
-      if (pageId) {
-        try {
-          if (useConfluenceAPI && confluenceApiToken) {
-            const { title, content } = await conflueceapi.getPageContent(pageId);
-            page_content = await content;
-            SummarDebug.log(2, `Fetched Confluence page content:\n ${content}`);
-          } else {
-            const response = await fetchLikeRequestUrl(url, {
-              headers: {
-                Authorization: `Bearer ${confluenceApiToken}`,
-              },
-            });
-            page_content = await response.text();
-          }
-        } catch (error) {
-          SummarDebug.error(1, "Failed to fetch page content:", error);
-        }
-      } else {
-        const response = await fetchLikeRequestUrl(url);
-
-        page_content = await response.text();
-      }
-      SummarViewContainer.updateText(resultContainer, "Fedtched page content");
-
-      SummarDebug.log(2, "Fetched page content:", page_content);
-
-      const body_content = JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `${userPrompt}\n\n${page_content}` },
-        ],
-        max_tokens: 16384,
-      });
-
-      //SummarViewContainer.updateText(resultContainer, body_content);
-
-      SummarViewContainer.updateText(resultContainer, "Summarizing...");
-
-      const aiResponse = await fetchOpenai(openaiApiKey, body_content);
-      timer.stopTimer();
-
-      if (!aiResponse.ok) {
-        const errorText = await aiResponse.text();
-        SummarDebug.error(1, "OpenAI API Error:", errorText);
-        SummarViewContainer.updateText(resultContainer, `Error: ${aiResponse.status} - ${errorText}`);
-
-        return;
-      }
-
-      const aiData = (await aiResponse.json()) as OpenAIResponse;
-
-      if (aiData.choices && aiData.choices.length > 0) {
-        const summary = aiData.choices[0].message.content || "No summary generated.";
-        SummarViewContainer.updateText(resultContainer, summary);
-      } else {
-        SummarViewContainer.updateText(resultContainer, "No valid response from OpenAI API.");
-      }
-
-    } catch (error) {
-      timer.stopTimer();
-      SummarDebug.error(1, "Error:", error);
-      SummarViewContainer.updateText(resultContainer, "An error occurred while processing the request.");
-    }
-  }
-
-
-  /*
-   * convertPdfToMarkdown 함수는 PDF를 이미지로 변환한 후 마크다운으로 변환합니다.
-   * @param resultContainer 결과를 표시할 textarea 엘리먼트
-   * @param plugin 플러그인 인스턴스
-   */
-
-  async convertPdfToMarkdown() {
-    const { openaiApiKey } = this.settings;
-    const resultContainer = this.resultContainer;
-
-    if (!openaiApiKey) {
-      SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
-      SummarViewContainer.updateText(resultContainer, "Please configure OpenAI API key in the plugin settings.");
-      return;
-    }
-
-    const timer = new SummarTimer(resultContainer);
-    const pdftopng = new PdfToPng(resultContainer, this);
-    try {
-      if (!(await pdftopng.isPopplerInstalled())) {
-        SummarDebug.Notice(0, "Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
-        SummarViewContainer.updateText(resultContainer, "Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
-        throw new Error("Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
-      }
-
-      const fileInput = document.createElement("input");
-      fileInput.type = "file";
-      fileInput.accept = ".pdf";
-      const openaiApiKey = this.settings.openaiApiKey;
-      const pdfPrompt = this.settings.pdfPrompt;
-
-      fileInput.onchange = async () => {
-        if (fileInput.files && fileInput.files.length > 0) {
-          const file = fileInput.files[0];
-          SummarDebug.Notice(1, file.name);
-
-          const base64Values = await pdftopng.convert(file, (SummarDebug.level() < 4));
-
-          // JsonBuilder 인스턴스 생성
-          const jsonBuilder = new JsonBuilder();
-
-          // 기본 데이터 추가
-          jsonBuilder.addData("model", "gpt-4o");
-
-          // 시스템 메시지 추가
-          jsonBuilder.addToArray("messages", {
-            role: "system",
-            content: [
-              {
-                type: "text",
-                text: pdfPrompt,
-              },
-            ],
-          });
-
-          base64Values.forEach((base64, index) => {
-            SummarDebug.log(2, `${index + 1}번 파일의 Base64: ${base64}`);
-            const page_prompt = `다음은 PDF의 페이지 ${index + 1}입니다.`;
-            jsonBuilder.addToArray("messages", {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: page_prompt,
-                },
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: `data:image/png;base64,${base64}`,
-                  },
-                },
-              ],
-            });
-          });
-
-          jsonBuilder.addToArray("messages", {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "모든 페이지가 전송되었습니다. 이제 전체 PDF의 마크다운 결과를 출력하세요.",
-              },
-            ],
-          });
-
-          const body_content = jsonBuilder.toString();
-          SummarDebug.log(2, body_content);
-
-          SummarViewContainer.updateText(resultContainer, "Converting PDF to markdown. This may take a while...");
-
-          timer.startTimer();
-          const aiResponse = await fetchOpenai(openaiApiKey, body_content);
-          timer.stopTimer();
-
-          if (!aiResponse.ok) {
-            const errorText = await aiResponse.text();
-            SummarDebug.error(1, "OpenAI API Error:", errorText);
-            SummarViewContainer.updateText(resultContainer, `Error: ${aiResponse.status} - ${errorText}`);
-            return;
-          }
-
-          const aiData = (await aiResponse.json()) as OpenAIResponse;
-
-          if (aiData.choices && aiData.choices.length > 0) {
-            const summary = aiData.choices[0].message.content || "No summary generated.";
-            const markdownContent = extractMarkdownContent(summary);
-            if (markdownContent) {
-              SummarViewContainer.updateText(resultContainer, markdownContent);
-            } else {
-              SummarViewContainer.updateText(resultContainer, JSON.stringify(aiData, null, 2));
-            }
-          } else {
-            SummarViewContainer.updateText(resultContainer, "No valid response from OpenAI API.");
-          }
-
-          SummarDebug.log(1, "PDF conversion to images complete.");
-        }
-      };
-      fileInput.click();
-    } catch (error) {
-      timer.stopTimer();
-
-      SummarDebug.error(1, "Error during PDF to PNG conversion:", error);
-      SummarViewContainer.updateText(resultContainer, `Error during PDF to PNG conversion: ${error}`);
-      SummarDebug.Notice(0, "Failed to convert PDF to PNG. Check console for details.");
-    }
-  }
-
-  async startRecording(): Promise<void> {
-    try {
-      const deviceId = this.settings.selectedDeviceId;
-      if (!deviceId) {
-        SummarDebug.Notice(0, "No audio device selected.", 0);
-        return;
-      }
-  
-      // Create MediaStream from selected device
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { deviceId },
-      });
-  
-      const recorder = new MediaRecorder(stream);
-      const chunks: Blob[] = [];
-  
-      recorder.ondataavailable = (event) => chunks.push(event.data);
-      recorder.onstop = () => {
-        const audioBlob = new Blob(chunks, { type: "audio/wav" });
-        const audioUrl = URL.createObjectURL(audioBlob);
-  
-        // Blob URL can be used to save or attach the file
-        console.log("Audio URL:", audioUrl);
-        SummarDebug.Notice(1, "Recording completed.");
-      };
-  
-      recorder.start();
-      SummarDebug.Notice(1, "Recording started!");
-  
-      // Example: Stop recording after 5 seconds
-      setTimeout(() => recorder.stop(), 5000);
-    } catch (error) {
-      console.error("Error starting recording:", error);
-      SummarDebug.Notice(1, "An error occurred during recording.");
-    }
-  }  
+  //     // Example: Stop recording after 5 seconds
+  //     setTimeout(() => recorder.stop(), 5000);
+  //   } catch (error) {
+  //     console.error("Error starting recording:", error);
+  //     SummarDebug.Notice(1, "An error occurred during recording.");
+  //   }
+  // }
 }
 
 
@@ -499,17 +465,6 @@ export default class SummarPlugin extends Plugin {
 
 
 
-// 정규식을 사용하여 마크다운 내용만 추출
-function extractMarkdownContent(fullText: string): string | null {
-  // 정규식 패턴
-  const markdownRegex = /```markdown\n([\s\S]*?)\n```/;
-
-  // 정규식 매칭
-  const match = fullText.match(markdownRegex);
-
-  // 매칭된 내용 반환 또는 null
-  return match ? match[1] : fullText;
-}
 
 
 // 사용자 입력을 처리하기 위한 모달 클래스

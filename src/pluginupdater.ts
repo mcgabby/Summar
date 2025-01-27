@@ -1,16 +1,17 @@
 import JSZip from 'jszip';
 import semver from "semver";
 
+import SummarPlugin from "./main";
 import { SummarDebug, fetchLikeRequestUrl } from "./globals";
 import { normalizePath } from "obsidian";
 
 export class PluginUpdater {
-  private plugin: any;
+  private plugin: SummarPlugin;
 
   private REMOTE_MANIFEST_URL = 'https://github.com/mcgabby/Summar/releases/latest/download/manifest.json';
   private PLUGIN_ZIP_URL = 'https://github.com/mcgabby/Summar/releases/latest/download/summar.zip';
 
-  constructor(plugin: any) {
+  constructor(plugin: SummarPlugin) {
     this.plugin = plugin;
   }
 

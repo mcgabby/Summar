@@ -1,4 +1,5 @@
 import { SummarDebug, fetchLikeRequestUrl } from "./globals";
+import SummarPlugin from "./main";
 
 // confluence api가 동작하지 않을때, 컨텐츠를 가져오지 못할때의 처리 추가
 interface ConfluencePage {
@@ -20,9 +21,9 @@ interface ConfluencePageContentResponse {
 }
 
 export class ConfluenceAPI {
-  private plugin: any;
+  private plugin: SummarPlugin;
 
-  constructor(plugin: any) {
+  constructor(plugin: SummarPlugin) {
     this.plugin = plugin;
   }
 
@@ -33,11 +34,16 @@ export class ConfluenceAPI {
     let spaceKey: string | undefined;
     let title: string | undefined;
 
+    SummarDebug.log(1, `Entered getPageId`);
+
     const { confluenceApiToken, confluenceDomain } = this.plugin.settings;
 
     if (!confluenceApiToken || !confluenceDomain) {
       SummarDebug.Notice(0, "Please configure confluence API keys in the plugin settings.", 0);
       return { pageId, spaceKey, title };
+    } else {
+      SummarDebug.log(1, `confluenceApiToken: ${confluenceApiToken}`);
+      SummarDebug.log(1, `confluenceDomain: ${confluenceDomain}`);
     }
 
     // URL을 소문자로 변환
@@ -54,7 +60,7 @@ export class ConfluenceAPI {
       } else {
         const pathSegments = url.split("/");
         if (pathSegments.length >= 6) {
-          SummarDebug.log(1,"pathSegments: " + pathSegments);
+          SummarDebug.log(1, "pathSegments: " + pathSegments);
           spaceKey = pathSegments[4];
           title = decodeURIComponent(pathSegments[5]).replace(/\+/g, " ");
         }
@@ -70,11 +76,11 @@ export class ConfluenceAPI {
           pageId = await this.getPageIdFromTitle(spaceKey, title);
           SummarDebug.log(1, `Found page ID: ${pageId}`);
         } catch (error) {
-          SummarDebug.error(1,"Error while fetching page ID:", error);
+          SummarDebug.error(1, "Error while fetching page ID:", error);
         }
       }
       else {
-        SummarDebug.error(1,"Invalid URL format. Cannot extract spaceKey or title.");
+        SummarDebug.error(1, "Invalid URL format. Cannot extract spaceKey or title.");
         return { pageId, spaceKey, title };
       }
     }
@@ -106,11 +112,11 @@ export class ConfluenceAPI {
 
         return { title, content }; // 타이틀과 콘텐츠 반환
       } else {
-        SummarDebug.error(1,`Error: ${response.status} - ${response.statusText}`);
+        SummarDebug.error(1, `Error: ${response.status} - ${response.statusText}`);
         throw new Error(`Failed to fetch Confluence page, status code: ${response.status}`);
       }
     } catch (error) {
-      SummarDebug.error(1,"Error while fetching Confluence page content:", error);
+      SummarDebug.error(1, "Error while fetching Confluence page content:", error);
       throw error;
     }
   }
@@ -142,7 +148,7 @@ export class ConfluenceAPI {
         if (data.results && data.results.length > 0) {
           return data.results[0].id;
         } else {
-          SummarDebug.error(1,"No results found for the given title and spaceKey.");
+          SummarDebug.error(1, "No results found for the given title and spaceKey.");
           throw new Error("Page not found.");
         }
       } else {
@@ -152,7 +158,7 @@ export class ConfluenceAPI {
         throw new Error(`Failed to fetch Confluence page ID, status code: ${response.status}`);
       }
     } catch (error) {
-      SummarDebug.error(1,"Error while fetching page ID:", error);
+      SummarDebug.error(1, "Error while fetching page ID:", error);
       throw error;
     }
   }

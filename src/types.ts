@@ -9,7 +9,9 @@ export interface PluginSettings {
 
   /////
   selectedDeviceId: string;
+  recordingDir: string;
   recordingUnit: number;
+  recordingLanguage: string;
   recordingPrompt: string;
   /////
   testUrl: string;

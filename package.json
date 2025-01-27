@@ -26,6 +26,7 @@
 	},
 	"dependencies": {
 		"@capacitor/http": "^0.0.2",
+		"axios": "^1.7.9",
 		"https": "^1.0.0",
 		"jimp": "^1.6.0",
 		"jszip": "^3.10.1",

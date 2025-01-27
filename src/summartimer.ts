@@ -9,7 +9,7 @@ export class SummarTimer {
     this.resultContainer = resultContainer;
   }
   // 타이머 시작 함수
-  startTimer(): void {
+  start(): void {
     this.dotCount = 0; // 초기화
     this.timerInterval = window.setInterval(() => {
       // 텍스트에 점(.) 추가
@@ -19,7 +19,7 @@ export class SummarTimer {
   }
 
   // 타이머 정지 함수
-  stopTimer(): void {
+  stop(): void {
     if (this.timerInterval !== undefined) {
       clearInterval(this.timerInterval); // 타이머 종료
     }
