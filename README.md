@@ -2,12 +2,12 @@
 AI-Powered Summarizer
 
 
-# Install dependencies
+## Install dependencies
 ```bash
 npm install
 ```
 
-# Build the project
+## Build the project
 ```bash
 npm run build
 ```
