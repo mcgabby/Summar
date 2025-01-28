@@ -1,18 +1,17 @@
 import SummarPlugin from "./main";
 import { OpenAIResponse } from "./types";
 import { SummarViewContainer, SummarDebug, fetchOpenai } from "./globals";
-import { SummarTimer, SummarTimer2 } from "./summartimer";
+import { SummarTimer } from "./summartimer";
 import { PdfToPng } from "./pdftopng";
 import { JsonBuilder } from "./jsonbuilder";
 
 
-export class PdfHandler {
-	private resultContainer: { value: string };
-	private plugin: SummarPlugin;
+export class PdfHandler extends SummarViewContainer {
+	private timer: SummarTimer;
 
-	constructor(resultContainer: { value: string }, plugin: SummarPlugin) {
-		this.resultContainer = resultContainer;
-		this.plugin = plugin;
+	constructor(plugin: SummarPlugin) {
+		super(plugin);
+		this.timer = new SummarTimer(plugin);
 	}
 
 	/*
@@ -22,23 +21,18 @@ export class PdfHandler {
 	 */
 	async convertPdfToMarkdown() {
 		const { openaiApiKey } = this.plugin.settings;
-		const resultContainer = this.resultContainer;
 
 		if (!openaiApiKey) {
 			SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
-			SummarViewContainer.updateText(resultContainer, "Please configure OpenAI API key in the plugin settings.");
+			this.updateResultText( "Please configure OpenAI API key in the plugin settings.");
 			return;
 		}
 
-		// const timer = new SummarTimer(resultContainer);
-		const timer = new SummarTimer2(this.plugin.resultContainer);
-
-		// const pdftopng = new PdfToPng(resultContainer, this.plugin);
 		const pdftopng = new PdfToPng(this.plugin);
 		try {
 			if (!(await pdftopng.isPopplerInstalled())) {
 				SummarDebug.Notice(0, "Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
-				SummarViewContainer.updateText(resultContainer, "Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
+				this.updateResultText("Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
 				throw new Error("Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
 			}
 
@@ -105,16 +99,16 @@ export class PdfHandler {
 					const body_content = jsonBuilder.toString();
 					SummarDebug.log(2, body_content);
 
-					SummarViewContainer.updateText(resultContainer, "Converting PDF to markdown. This may take a while...");
+					this.updateResultText("Converting PDF to markdown. This may take a while...");
 
-					timer.start();
+					this.timer.start();
 					const aiResponse = await fetchOpenai(openaiApiKey, body_content);
-					timer.stop();
+					this.timer.stop();
 
 					if (!aiResponse.ok) {
 						const errorText = await aiResponse.text();
 						SummarDebug.error(1, "OpenAI API Error:", errorText);
-						SummarViewContainer.updateText(resultContainer, `Error: ${aiResponse.status} - ${errorText}`);
+						this.updateResultText(`Error: ${aiResponse.status} - ${errorText}`);
 						return;
 					}
 
@@ -124,12 +118,12 @@ export class PdfHandler {
 						const summary = aiData.choices[0].message.content || "No summary generated.";
 						const markdownContent = this.extractMarkdownContent(summary);
 						if (markdownContent) {
-							SummarViewContainer.updateText(resultContainer, markdownContent);
+							this.updateResultText(markdownContent);
 						} else {
-							SummarViewContainer.updateText(resultContainer, JSON.stringify(aiData, null, 2));
+							this.updateResultText(JSON.stringify(aiData, null, 2));
 						}
 					} else {
-						SummarViewContainer.updateText(resultContainer, "No valid response from OpenAI API.");
+						this.updateResultText("No valid response from OpenAI API.");
 					}
 
 					SummarDebug.log(1, "PDF conversion to images complete.");
@@ -137,10 +131,10 @@ export class PdfHandler {
 			};
 			fileInput.click();
 		} catch (error) {
-			timer.stop();
+			this.timer.stop();
 
 			SummarDebug.error(1, "Error during PDF to PNG conversion:", error);
-			SummarViewContainer.updateText(resultContainer, `Error during PDF to PNG conversion: ${error}`);
+			this.updateResultText(`Error during PDF to PNG conversion: ${error}`);
 			SummarDebug.Notice(0, "Failed to convert PDF to PNG. Check console for details.");
 		}
 	}

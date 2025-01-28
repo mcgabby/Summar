@@ -33,9 +33,6 @@ export class SummarSettingsTab extends PluginSettingTab {
       { name: 'Recording Summary', id: 'recording-tab' },
     ];
 
-    // Load last active tab from localStorage or default to the first tab
-    // const savedTabId = localStorage.getItem('obsidian-active-tab');
-    // let activeTab = savedTabId && tabs.some((tab) => tab.id === savedTabId) ? savedTabId : tabs[0].id;
     let activeTab = this.savedTabId;
 
     // Create tabs

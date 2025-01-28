@@ -1,5 +1,5 @@
 import { Notice, requestUrl } from "obsidian";
-
+import SummarPlugin from "./main";
 import { PluginSettings } from "./types";
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -40,52 +40,27 @@ MarkDown에서 title, bold(**) 속성은 쓰지 않고 모두 bullet으로만 �
   debugLevel: 0  // debug level
 };
 
-
-
 export class SummarViewContainer {
-  /**
-   * Updates the value of a result container.
-   * @param resultContainer The container object to update.
-   * @param message The message to set as the value.
-   */
-  static updateText(resultContainer: { value: string }, message: string): void {
-    if (resultContainer)
-      resultContainer.value = message;
+   plugin: SummarPlugin;
+
+  constructor(plugin: SummarPlugin) {
+    this.plugin = plugin;
   }
 
-  static appendText(resultContainer: { value: string }, message: string): void {
-    if (resultContainer)
-      resultContainer.value += message;
-  }
-
-  static updateText2(resultContainer: HTMLTextAreaElement, message: string): void {
-    if (resultContainer)
-      resultContainer.value = message;
-  }
-
-  static appendText2(resultContainer: HTMLTextAreaElement, message: string): void {
-    if (resultContainer)
-      resultContainer.value += message;
-  }
-
-}
-
-export class SummarViewContainer2 {
-  resultContainer: HTMLTextAreaElement;
-  constructor(resultContainer: HTMLTextAreaElement) {
-    this.resultContainer = resultContainer;
-  }
+  // setResultContainer(resultContainer: HTMLTextAreaElement) {
+  //   this.resultContainer = resultContainer;
+  // }
   /**
    * Updates the value of a result container.
    * @param resultContainer The container object to update.
    * @param message The message to set as the value.
    */
   updateResultText(message: string): void {
-      this.resultContainer.value = message;
+      this.plugin.resultContainer.value = message;
   }
 
   appendResultText(message: string): void {
-      this.resultContainer.value += message;
+      this.plugin.resultContainer.value += message;
   }
 }
 

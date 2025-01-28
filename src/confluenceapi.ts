@@ -1,7 +1,6 @@
 import { SummarDebug, fetchLikeRequestUrl } from "./globals";
 import SummarPlugin from "./main";
 
-// confluence api가 동작하지 않을때, 컨텐츠를 가져오지 못할때의 처리 추가
 interface ConfluencePage {
   id: string;
   title: string;

@@ -1,16 +1,15 @@
 import SummarPlugin from "./main";
 import { OpenAIResponse } from "./types";
 import { SummarViewContainer, SummarDebug, fetchOpenai, fetchLikeRequestUrl, containsDomain } from "./globals";
-import { SummarTimer, SummarTimer2 } from "./summartimer";
+import { SummarTimer } from "./summartimer";
 import { ConfluenceAPI } from "./confluenceapi";
 
-export class ConfluenceHandler {
-	private resultContainer: { value: string };
-	private plugin: SummarPlugin;
+export class ConfluenceHandler extends SummarViewContainer {
+	private timer: SummarTimer;
 
-	constructor(resultContainer: { value: string }, plugin: SummarPlugin) {
-		this.resultContainer = resultContainer;
-		this.plugin = plugin;
+	constructor(plugin: SummarPlugin) {
+		super(plugin);
+		this.timer = new SummarTimer(plugin);
 	}
 
 
@@ -22,13 +21,9 @@ export class ConfluenceHandler {
 	 */
 	async fetchAndSummarize(url: string) {
 		const { confluenceApiToken, confluenceDomain, useConfluenceAPI, openaiApiKey, systemPrompt, userPrompt } = this.plugin.settings;
-		const resultContainer = this.resultContainer;
-		// const timer = new SummarTimer(resultContainer);
-	    const timer = new SummarTimer2(this.plugin.resultContainer);
-
 		if (!openaiApiKey) {
 			SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
-			SummarViewContainer.updateText(resultContainer, "Please configure OpenAI API key in the plugin settings.");
+			this.updateResultText("Please configure OpenAI API key in the plugin settings.");
 			return;
 		}
 
@@ -36,10 +31,10 @@ export class ConfluenceHandler {
 			SummarDebug.Notice(0, "If you want to use the Confluence API, please configure the API token in the plugin settings.", 0);
 		}
 
-		SummarViewContainer.updateText(resultContainer, "Fetching and summarizing...");
+		this.updateResultText("Fetching and summarizing...");
 
 		try {
-			timer.start();
+			this.timer.start();
 
 			// extractConfluenceInfo 함수 호출
 			const { confluenceApiToken } = this.plugin.settings;
@@ -79,7 +74,7 @@ export class ConfluenceHandler {
 
 				page_content = await response.text();
 			}
-			SummarViewContainer.updateText(resultContainer, "Fedtched page content");
+			this.updateResultText("Fedtched page content");
 
 			SummarDebug.log(2, "Fetched page content:", page_content);
 
@@ -92,16 +87,15 @@ export class ConfluenceHandler {
 				max_tokens: 16384,
 			});
 
-			//SummarViewContainer.updateText(resultContainer, body_content);
-			SummarViewContainer.updateText(resultContainer, "Summarizing...");
+			this.updateResultText( "Summarizing...");
 
 			const aiResponse = await fetchOpenai(openaiApiKey, body_content);
-			timer.stop();
+			this.timer.stop();
 
 			if (!aiResponse.ok) {
 				const errorText = await aiResponse.text();
 				SummarDebug.error(1, "OpenAI API Error:", errorText);
-				SummarViewContainer.updateText(resultContainer, `Error: ${aiResponse.status} - ${errorText}`);
+				this.updateResultText(`Error: ${aiResponse.status} - ${errorText}`);
 
 				return;
 			}
@@ -110,15 +104,15 @@ export class ConfluenceHandler {
 
 			if (aiData.choices && aiData.choices.length > 0) {
 				const summary = aiData.choices[0].message.content || "No summary generated.";
-				SummarViewContainer.updateText(resultContainer, summary);
+				this.updateResultText(summary);
 			} else {
-				SummarViewContainer.updateText(resultContainer, "No valid response from OpenAI API.");
+				this.updateResultText("No valid response from OpenAI API.");
 			}
 
 		} catch (error) {
-			timer.stop();
+			this.timer.stop();
 			SummarDebug.error(1, "Error:", error);
-			SummarViewContainer.updateText(resultContainer, "An error occurred while processing the request.");
+			this.updateResultText("An error occurred while processing the request.");
 		}
 	}
 
