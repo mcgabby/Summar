@@ -1,8 +1,8 @@
 import axios from "axios";
 import SummarPlugin from "./main";
-import { normalizePath, Notice, MarkdownView } from "obsidian";
-import { SummarDebug, SummarViewContainer, getBaseFileName, getFolderPath, fetchLikeRequestUrl } from "./globals";
-import { SummarTimer } from "./summartimer";
+import { normalizePath } from "obsidian";
+import { SummarDebug, SummarViewContainer } from "./globals";
+import { SummarTimer, SummarTimer2 } from "./summartimer";
 
 export class AudioHandler {
 	private resultContainer: { value: string };
@@ -15,7 +15,8 @@ export class AudioHandler {
 
 	async sendAudioData(files: FileList | File[], givenFolderPath: string = ""): Promise<string> {
 		const resultContainer = this.resultContainer;
-		const timer = new SummarTimer(resultContainer);
+		// const timer = new SummarTimer(resultContainer);
+		const timer = new SummarTimer2(this.plugin.resultContainer);
 
 		SummarViewContainer.updateText(resultContainer, "convert audio to text");
 
@@ -40,8 +41,6 @@ export class AudioHandler {
 			return pathA.localeCompare(pathB);
 		});
 
-		// timer.start();
-
 		// Calculate the common folder path
 		let folderPath = "";
 		let noteFilePath = "";
@@ -60,7 +59,6 @@ export class AudioHandler {
 			folderPath = match ? match[0] : noteFilePath;
 			console.log(`Given folder path: ${folderPath}`); // Debug log
 		}
-//		noteFilePath = normalizePath(`${this.plugin.settings.recordingDir}/${folderPath}`);
 
 		SummarDebug.log(1, `noteFilePath: ${noteFilePath}`);
 
@@ -71,7 +69,6 @@ export class AudioHandler {
 			const filePath = (file as any).webkitRelativePath || file.name;
 			SummarDebug.log(1, `File ${index + 1}: ${filePath}`);
 			if (file.type.startsWith("audio/") || file.name.toLowerCase().endsWith(".webm")) {
-				// const audioFilePath = `${this.plugin.settings.recordingDir ? `${this.plugin.settings.recordingDir}/` : ""}${file.name}`;
 				const audioFilePath = normalizePath(`${noteFilePath}/${file.name}`);
 				SummarDebug.log(1, `audioFilePath: ${audioFilePath}`);
 
@@ -95,7 +92,6 @@ export class AudioHandler {
 				audioList += `![[${audioFilePath}]]\n`;
 				SummarDebug.log(1, `audioList: ${audioList}`);
 			}
-			// });
 		}
 
 		timer.start();
@@ -107,10 +103,8 @@ export class AudioHandler {
 				const fileName = file.name;
 				const blob = file.slice(0, file.size, file.type);
 
-				// const audioFilePath = `${this.plugin.settings.recordingDir ? `${this.plugin.settings.recordingDir}/` : ""}${fileName}`;
 				const audioFilePath = normalizePath(`${noteFilePath}/${file.name}`);
 				SummarDebug.log(1, `audioFilePath: ${audioFilePath}`);
-				// audioList += `![[${audioFilePath}]]\n`;
 
 				const formData = new FormData();
 				formData.append("file", blob, fileName);
@@ -163,24 +157,6 @@ export class AudioHandler {
 		timer.stop();
 		return fullText;
 	}
-
-	// // 타임스탬프 포맷팅 함수
-	// formatTime(seconds: number): string {
-	// 	const hours = Math.floor(seconds / 3600)
-	// 		.toString()
-	// 		.padStart(2, "0");
-	// 	const minutes = Math.floor((seconds % 3600) / 60)
-	// 		.toString()
-	// 		.padStart(2, "0");
-	// 	const secs = Math.floor(seconds % 60)
-	// 		.toString()
-	// 		.padStart(2, "0");
-	// 	const milliseconds = Math.floor((seconds % 1) * 1000)
-	// 		.toString()
-	// 		.padStart(3, "0");
-
-	// 	return `${hours}:${minutes}:${secs},${milliseconds}`;
-	// }
 
 	// Helper function to calculate the common folder path
 	private getCommonFolderPath(files: File[]): string {

@@ -1,7 +1,7 @@
 import SummarPlugin from "./main";
 import { OpenAIResponse } from "./types";
 import { SummarViewContainer, SummarDebug, fetchOpenai } from "./globals";
-import { SummarTimer } from "./summartimer";
+import { SummarTimer, SummarTimer2 } from "./summartimer";
 import { PdfToPng } from "./pdftopng";
 import { JsonBuilder } from "./jsonbuilder";
 
@@ -30,8 +30,11 @@ export class PdfHandler {
 			return;
 		}
 
-		const timer = new SummarTimer(resultContainer);
-		const pdftopng = new PdfToPng(resultContainer, this.plugin);
+		// const timer = new SummarTimer(resultContainer);
+		const timer = new SummarTimer2(this.plugin.resultContainer);
+
+		// const pdftopng = new PdfToPng(resultContainer, this.plugin);
+		const pdftopng = new PdfToPng(this.plugin);
 		try {
 			if (!(await pdftopng.isPopplerInstalled())) {
 				SummarDebug.Notice(0, "Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");

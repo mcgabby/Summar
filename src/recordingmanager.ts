@@ -4,7 +4,7 @@ import { OpenAIResponse } from "./types";
 import { SummarDebug, SummarViewContainer, fetchOpenai } from "./globals";
 import { NativeAudioRecorder } from "./audiorecorder";
 import { RecordingTimer } from "./recordingtimer";
-import { SummarTimer } from "./summartimer";
+import { SummarTimer, SummarTimer2 } from "./summartimer";
 
 export default class AudioRecordingManager {
 	// private resultContainer: HTMLTextAreaElement;
@@ -27,7 +27,8 @@ export default class AudioRecordingManager {
 
 	async summarize(resultContainer: { value: string }, transcripted: string) {
 
-		const timer = new SummarTimer(resultContainer);
+		// const timer = new SummarTimer(resultContainer);
+		const timer = new SummarTimer2(this.plugin.resultContainer);
 
 		// const resultContainer = this.plugin.resultContainer;
 		SummarViewContainer.updateText(resultContainer, "Summarizing from transcripted text");

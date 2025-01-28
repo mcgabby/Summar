@@ -5,7 +5,7 @@
 
   "id": "summar",
 
-  "isDesktopOnly": false,
+  "isDesktopOnly": true,
   "minAppVersion": "0.13.0",
   "name": "Summar: AI-Powered Summarizer",
   "version": "1.1.0"

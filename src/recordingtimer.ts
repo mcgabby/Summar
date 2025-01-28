@@ -1,4 +1,3 @@
-// import { SummarViewContainer } from "./globals";
 import SummarPlugin from "./main";
 
 export class RecordingTimer {

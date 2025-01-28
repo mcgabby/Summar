@@ -1,9 +1,8 @@
-import { App, Plugin, PluginSettingTab, Setting, View, WorkspaceLeaf, Platform, Menu, Modal, normalizePath } from "obsidian";
+import { App, Plugin, Setting, Platform, Menu, Modal, normalizePath } from "obsidian";
 import { PluginSettings } from "./types";
-import { DEFAULT_SETTINGS, SummarViewContainer, SummarDebug, fetchOpenai, fetchLikeRequestUrl, extractDomain, containsDomain } from "./globals";
+import { DEFAULT_SETTINGS, SummarViewContainer, SummarDebug, extractDomain } from "./globals";
 import { PluginUpdater } from "./pluginupdater";
 import { SummarView } from "./summarview"
-// import { SummarRecordingPanel } from "./summarrecordingpanel"
 import { SummarSettingsTab } from "./summarsettingtab";
 import { ConfluenceHandler } from "./confluencehandler";
 import { PdfHandler } from "./pdfhandler";
@@ -15,9 +14,6 @@ export default class SummarPlugin extends Plugin {
   settings: PluginSettings;
   resultContainer: HTMLTextAreaElement;
   inputField: HTMLInputElement;
-  // confluenceHandler: ConfluenceHandler;
-  // pdfHandler: PdfHandler;
-  // audioHandler: AudioHandler;
   recordingManager: AudioRecordingManager;
   recordButton: HTMLButtonElement; 
 
@@ -61,10 +57,6 @@ export default class SummarPlugin extends Plugin {
 
     this.addRibbonIcon("scroll-text", "Open Summar View", this.activateView.bind(this));
     this.registerView(SummarView.VIEW_TYPE, (leaf) => new SummarView(leaf, this));
-
-    // this.addRibbonIcon("cassette-tape", "Record panel", this.activatePanel.bind(this));
-    // this.registerView(SummarRecordingPanel.VIEW_TYPE, (leaf) => new SummarRecordingPanel(leaf, this));
-
 
     if (Platform.isDesktopApp) {
       if (Platform.isWin) {
@@ -141,8 +133,6 @@ export default class SummarPlugin extends Plugin {
         const fileInput = document.createElement("input");
         fileInput.type = "file";
         fileInput.accept = "audio/*"; // Accept only audio files
-        // fileInput.accept = "audio/*,.webm"; // Accept audio files and .webm files
-        // fileInput.webkitdirectory = true; // Allow directory selection
 
         // Handle file or directory selection
         fileInput.onchange = async (event) => {
@@ -167,54 +157,6 @@ export default class SummarPlugin extends Plugin {
       callback: async () => {
         this.activateView();
         await this.toggleRecording();
-        // if (this.recordingManager.getRecorderState() !== "recording") {
-        //   await this.recordingManager.startRecording(this.settings.recordingUnit);
-        //   this.recordButton.textContent = "recording..."
-        // } else {
-        //   this.recordButton.textContent = "record"
-
-        //   const recordingPath = await this.recordingManager.stopRecording();
-        //   SummarDebug.log(1, `main.ts - recordingPath: ${recordingPath}`);
-
-        //   try {
-        //     // Vault adapter를 사용해 디렉토리 내용을 읽음
-        //     const fileEntries = await this.app.vault.adapter.list(recordingPath);
-        //     const audioFiles = fileEntries.files.filter((file) =>
-        //       file.toLowerCase().match(/\.(webm|mp3|wav|ogg|m4a)$/)
-        //     );
-        //     // 파일명을 추출하고 로그 출력
-        //     fileEntries.files.forEach((filePath) => {
-        //       const fileName = filePath.split('/').pop(); // 파일 경로에서 마지막 부분(파일명) 추출
-        //       SummarDebug.log(1, `File found: ${fileName}`);
-        //     });            
-        //     // 파일명을 추출하고 로그 출력
-        //     audioFiles.forEach((filePath) => {
-        //       const fileName = filePath.split('/').pop(); // 파일 경로에서 파일명만 추출
-        //       SummarDebug.log(1, `Audio file found: ${fileName}`);
-        //     });
-        //     if (audioFiles.length === 0) {
-        //       // 오디오 파일이 없을 경우 사용자에게 알림
-        //       SummarDebug.Notice(1, "No audio files found in the specified directory.");
-        //       return;
-        //     }
-
-        //     // 파일 경로를 File 객체로 변환
-        //     const files = await Promise.all(
-        //       audioFiles.map(async (filePath) => {
-        //         const content = await this.app.vault.adapter.readBinary(filePath);
-        //         const blob = new Blob([content]);
-        //         SummarDebug.log(1, `stop - filePath: ${filePath}`);
-        //         return new File([blob], filePath.split("/").pop() || "unknown", { type: blob.type });
-        //       })
-        //     );
-        //     // sendAudioData에 오디오 파일 경로 전달
-        //     await this.audioHandler.sendAudioData(files, recordingPath);
-        //     SummarDebug.Notice(1, `Uploaded ${audioFiles.length} audio files successfully.`);
-        //   } catch (error) {
-        //     SummarDebug.error(0, "Error reading directory:", error);
-        //     SummarDebug.Notice(1, "Failed to access the specified directory.");
-        //   }
-        // }
       }
     });
 
@@ -226,7 +168,6 @@ export default class SummarPlugin extends Plugin {
         // Create an input element for file selection
         const fileInput = document.createElement("input");
         fileInput.type = "file";
-        //        fileInput.accept = "audio/*"; // Accept only audio files
         fileInput.accept = "audio/*,.webm"; // Accept audio files and .webm files
         fileInput.webkitdirectory = true; // Allow directory selection
 
@@ -249,7 +190,6 @@ export default class SummarPlugin extends Plugin {
               return;
             }
 
-
             // Send all selected files to sendAudioData
             const audioHandler = new AudioHandler(this.resultContainer, this);
             const text = await audioHandler.sendAudioData(files);
@@ -268,10 +208,7 @@ export default class SummarPlugin extends Plugin {
   async toggleRecording(): Promise<void> {
     if (this.recordingManager.getRecorderState() !== "recording") {
       await this.recordingManager.startRecording(this.settings.recordingUnit);
-//      this.recordButton.textContent = "recording..."
     } else {
-      // this.recordButton.textContent = "[●] record"
-
       const recordingPath = await this.recordingManager.stopRecording();
       SummarDebug.log(1, `main.ts - recordingPath: ${recordingPath}`);
 
@@ -285,7 +222,7 @@ export default class SummarPlugin extends Plugin {
         fileEntries.files.forEach((filePath) => {
           const fileName = filePath.split('/').pop(); // 파일 경로에서 마지막 부분(파일명) 추출
           SummarDebug.log(1, `File found: ${fileName}`);
-        });            
+        });
         // 파일명을 추출하고 로그 출력
         audioFiles.forEach((filePath) => {
           const fileName = filePath.split('/').pop(); // 파일 경로에서 파일명만 추출
@@ -312,7 +249,7 @@ export default class SummarPlugin extends Plugin {
         SummarDebug.Notice(1, `Uploaded ${audioFiles.length} audio files successfully.`);
         SummarDebug.log(3, `transcripted text: ${text}`);
         this.recordingManager.summarize(this.resultContainer, text);
-  } catch (error) {
+      } catch (error) {
         SummarDebug.error(0, "Error reading directory:", error);
         SummarDebug.Notice(1, "Failed to access the specified directory.");
       }
@@ -324,24 +261,6 @@ export default class SummarPlugin extends Plugin {
     this.app.workspace.detachLeavesOfType(SummarView.VIEW_TYPE);
     SummarDebug.log(1, "Summar Plugin unloaded");
   }
-
-  // async activatePanel() {
-  //   const existingLeaf = this.app.workspace.getLeavesOfType(SummarRecordingPanel.VIEW_TYPE)[0];
-
-  //   if (existingLeaf) {
-  //     this.app.workspace.revealLeaf(existingLeaf);
-  //   } else {
-  //     const newLeaf = this.app.workspace.getRightLeaf(true);
-  //     if (newLeaf) {
-  //       await newLeaf.setViewState({
-  //         type: SummarRecordingPanel.VIEW_TYPE,
-  //       });
-  //       this.app.workspace.revealLeaf(newLeaf);
-  //     } else {
-  //       SummarDebug.error(1, "No available left pane to open Summar Recording panel.");
-  //     }
-  //   }
-  // }
 
   async activateView() {
     const existingLeaf = this.app.workspace.getLeavesOfType(SummarView.VIEW_TYPE)[0];
@@ -371,8 +290,6 @@ export default class SummarPlugin extends Plugin {
       console.log("Reading settings from data.json");
       try {
         const rawData = await this.app.vault.adapter.read(this.PLUGIN_SETTINGS);
-        // const settings = JSON.parse(rawData);
-        // return Object.assign({}, DEFAULT_SETTINGS, settings);
         const settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(rawData)) as PluginSettings;
         const domain = extractDomain(settings.confluenceDomain);
         if (domain) {
@@ -403,7 +320,6 @@ export default class SummarPlugin extends Plugin {
   setLinkForCommand(link: string) {
     SummarDebug.Notice(0, `Link set for command: ${link}`);
     SummarViewContainer.updateText(this.inputField, link);
-    // this.confluenceHandler.fetchAndSummarize(link);
     const confluenceHandler = new ConfluenceHandler(this.resultContainer, this);
     confluenceHandler.fetchAndSummarize(link);
   }
@@ -412,44 +328,6 @@ export default class SummarPlugin extends Plugin {
     new UrlInputModal(this.app, callback).open();
   }
 
-
-
-  // async startRecording(): Promise<void> {
-  //   try {
-  //     const deviceId = this.settings.selectedDeviceId;
-  //     if (!deviceId) {
-  //       SummarDebug.Notice(0, "No audio device selected.", 0);
-  //       return;
-  //     }
-
-  //     // Create MediaStream from selected device
-  //     const stream = await navigator.mediaDevices.getUserMedia({
-  //       audio: { deviceId },
-  //     });
-
-  //     const recorder = new MediaRecorder(stream);
-  //     const chunks: Blob[] = [];
-
-  //     recorder.ondataavailable = (event) => chunks.push(event.data);
-  //     recorder.onstop = () => {
-  //       const audioBlob = new Blob(chunks, { type: "audio/wav" });
-  //       const audioUrl = URL.createObjectURL(audioBlob);
-
-  //       // Blob URL can be used to save or attach the file
-  //       console.log("Audio URL:", audioUrl);
-  //       SummarDebug.Notice(1, "Recording completed.");
-  //     };
-
-  //     recorder.start();
-  //     SummarDebug.Notice(1, "Recording started!");
-
-  //     // Example: Stop recording after 5 seconds
-  //     setTimeout(() => recorder.stop(), 5000);
-  //   } catch (error) {
-  //     console.error("Error starting recording:", error);
-  //     SummarDebug.Notice(1, "An error occurred during recording.");
-  //   }
-  // }
 }
 
 

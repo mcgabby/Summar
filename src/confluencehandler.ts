@@ -1,7 +1,7 @@
 import SummarPlugin from "./main";
 import { OpenAIResponse } from "./types";
 import { SummarViewContainer, SummarDebug, fetchOpenai, fetchLikeRequestUrl, containsDomain } from "./globals";
-import { SummarTimer } from "./summartimer";
+import { SummarTimer, SummarTimer2 } from "./summartimer";
 import { ConfluenceAPI } from "./confluenceapi";
 
 export class ConfluenceHandler {
@@ -23,7 +23,8 @@ export class ConfluenceHandler {
 	async fetchAndSummarize(url: string) {
 		const { confluenceApiToken, confluenceDomain, useConfluenceAPI, openaiApiKey, systemPrompt, userPrompt } = this.plugin.settings;
 		const resultContainer = this.resultContainer;
-		const timer = new SummarTimer(resultContainer);
+		// const timer = new SummarTimer(resultContainer);
+	    const timer = new SummarTimer2(this.plugin.resultContainer);
 
 		if (!openaiApiKey) {
 			SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
@@ -92,7 +93,6 @@ export class ConfluenceHandler {
 			});
 
 			//SummarViewContainer.updateText(resultContainer, body_content);
-
 			SummarViewContainer.updateText(resultContainer, "Summarizing...");
 
 			const aiResponse = await fetchOpenai(openaiApiKey, body_content);
