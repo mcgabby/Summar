@@ -108,7 +108,7 @@ export class AudioHandler extends SummarViewContainer {
 				formData.append("file", blob, fileName);
 				formData.append("model", "whisper-1");
 				formData.append("language", this.plugin.settings.recordingLanguage || "en");
-				formData.append("response_format", "json");
+				formData.append("response_format", "verbose_json");
 
 				try {
 					// Whisper API 호출 (fetch 사용)
@@ -121,12 +121,34 @@ export class AudioHandler extends SummarViewContainer {
 					});
 		
 					const data = await response.json();
-					if (data.text && data.text.length > 0) {
-						return data.text;
-					} else {
-						SummarDebug.Notice(1, `No transcription text received for file: ${fileName}`);
-						return "";
+
+					// 응답 확인
+					if (!data.segments || data.segments.length === 0) {
+						SummarDebug.log(1, `No transcription segments received for file: ${fileName}`);
+						if (data.text && data.text.length > 0) {
+							return data.text;
+						} else {
+							SummarDebug.log(1, `No transcription text received for file: ${fileName}`);
+							return "";
+						}
 					}
+
+					const match = fileName.match(/_(\d+)s\.webm$/); // `_숫자s.webm` 패턴 찾기
+					const seconds = match ? parseInt(match[1], 10) : 0; // 숫자로 변환
+					// SRT 포맷 변환
+					const srtContent = data.segments
+						.map((segment: any, index: number) => {
+							const start = this.formatTime(segment.start + seconds);
+							const end = this.formatTime(segment.end + seconds);
+							const text = segment.text.trim();
+
+							// return `${index + 1}\n${start} --> ${end}\n${text}\n`;
+							return `${start} --> ${end}\n${text}\n`;
+						})
+						.join("");
+
+					return srtContent;
+
 				} catch (error) {
 					SummarDebug.error(1, `Error processing file ${fileName}:`, error);
 					this.timer.stop();
@@ -215,5 +237,14 @@ export class AudioHandler extends SummarViewContainer {
 				file.parent.path === folder.path &&
 				this.isAudioOrWebmFile(file)
 		);
+	}
+
+	formatTime(seconds: number): string {
+		const hours = Math.floor(seconds / 3600).toString().padStart(2, "0");
+		const minutes = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
+		const secs = Math.floor(seconds % 60).toString().padStart(2, "0");
+		const milliseconds = Math.floor((seconds % 1) * 1000).toString().padStart(3, "0");
+
+		return `${hours}:${minutes}:${secs}.${milliseconds}`;
 	}
 }
