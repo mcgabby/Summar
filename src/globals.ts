@@ -1,5 +1,5 @@
 import { Notice, requestUrl } from "obsidian";
-
+import SummarPlugin from "./main";
 import { PluginSettings } from "./types";
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -40,34 +40,28 @@ MarkDown에서 title, bold(**) 속성은 쓰지 않고 모두 bullet으로만 �
   debugLevel: 0  // debug level
 };
 
-
-
 export class SummarViewContainer {
+   plugin: SummarPlugin;
+
+  constructor(plugin: SummarPlugin) {
+    this.plugin = plugin;
+  }
+
+  // setResultContainer(resultContainer: HTMLTextAreaElement) {
+  //   this.resultContainer = resultContainer;
+  // }
   /**
    * Updates the value of a result container.
    * @param resultContainer The container object to update.
    * @param message The message to set as the value.
    */
-  static updateText(resultContainer: { value: string }, message: string): void {
-    if (resultContainer)
-      resultContainer.value = message;
+  updateResultText(message: string): void {
+      this.plugin.resultContainer.value = message;
   }
 
-  static appendText(resultContainer: { value: string }, message: string): void {
-    if (resultContainer)
-      resultContainer.value += message;
+  appendResultText(message: string): void {
+      this.plugin.resultContainer.value += message;
   }
-
-  static updateText2(resultContainer: HTMLTextAreaElement, message: string): void {
-    if (resultContainer)
-      resultContainer.value = message;
-  }
-
-  static appendText2(resultContainer: HTMLTextAreaElement, message: string): void {
-    if (resultContainer)
-      resultContainer.value += message;
-  }
-
 }
 
 export async function fetchOpenai(openaiApiKey: string, bodyContent: string): Promise<any> {
@@ -225,45 +219,6 @@ export async function fetchLikeRequestUrl(
 
   throw new Error(`Too many redirects: exceeded ${maxRedirects} attempts`);
 }
-// export async function fetchLikeRequestUrl(input: string, init?: RequestInit): Promise<FetchLikeResponse> {
-//   let url = input;
-//   let method = init?.method ?? "GET";
-//   let headers = init?.headers ?? {};
-//   let body = init?.body;
-
-//   const maxRedirects = 5; // 최대 리다이렉트 횟수
-//   let redirectCount = 0;
-
-//   while (redirectCount < maxRedirects) {
-//       const response = await requestUrl({
-//           url,
-//           method,
-//           headers: headers as Record<string, string>,
-//           body: typeof body === "string" ? body : undefined,
-//       });
-
-//       SummarDebug.log(1,`response.status: ${response.status}`);
-
-//       // Redirect 처리 (30x 상태코드)
-//       if (response.status >= 300 && response.status < 400 && response.headers["location"]) {
-//           url = response.headers["location"];
-//           redirectCount++;
-//           continue;
-//       }
-
-//       const fetchLikeResponse = new FetchLikeResponse(
-//         response.status >= 200 && response.status < 300,
-//         response.status,
-//         "",
-//         response.headers,
-//         response.arrayBuffer,
-//         response.text
-//       );
-//       return fetchLikeResponse;
-//   }
-
-//   throw new Error(`Too many redirects: exceeded ${maxRedirects} attempts`);
-// }
 
 export function extractDomain(url: string): string | null {
   // URL에서 도메인을 추출하는 정규식
@@ -276,27 +231,4 @@ export function containsDomain(text: string, domain: string): boolean {
   // 정규식을 사용해 특정 도메인이 포함되어 있는지 확인
   const domainPattern = new RegExp(`(?:https?:\\/\\/)?(?:www\\.)?${domain.replace('.', '\\.')}`, 'i');
   return domainPattern.test(text);
-}
-
-export function getBaseFileName(filePath: string) {
-	// Extract the file name including extension
-	const fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
-
-	// Remove the extension from the file name
-	const baseFileName = fileName.substring(0, fileName.lastIndexOf("."));
-
-	return baseFileName;
-}
-
-export function getFolderPath(filePath: string): string {
-  // Find the last occurrence of the "/" character
-  const lastSlashIndex = filePath.lastIndexOf("/");
-
-  // If there's no "/", assume the path has no folder and return an empty string
-  if (lastSlashIndex === -1) {
-    return "";
-  }
-
-  // Extract and return the folder path (excluding the file name)
-  return filePath.substring(0, lastSlashIndex);
 }

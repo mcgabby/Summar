@@ -1,18 +1,13 @@
 import { normalizePath, Plugin } from "obsidian";
 
 import * as fs from "fs";
-// import * as os from "os";
-// import * as path from "path";
 import fss from "fs/promises";
-// import { join } from "path";
 import { spawn } from "child_process";
-
+import SummarPlugin from "./main";
 import { SummarViewContainer, SummarDebug } from "./globals";
 
-export class PdfToPng {
+export class PdfToPng extends SummarViewContainer {
   private file: File;
-  private resultContainer: { value: string };
-  private plugin: Plugin;
 
   private tempDir: string;
   private pdfName: string;
@@ -27,9 +22,8 @@ export class PdfToPng {
    * Initializes a new instance of the PdfToPng class.
    * @param resultContainer The container to display results.
    */
-  constructor(resultContainer: { value: string }, plugin: Plugin) {
-    this.resultContainer = resultContainer;
-    this.plugin = plugin;
+  constructor(plugin: SummarPlugin) {
+    super(plugin);
     this.pdftocairoPath = normalizePath("/opt/homebrew/bin/pdftocairo");
   }
 
@@ -49,7 +43,7 @@ export class PdfToPng {
     let result: string[] = [];
 
     SummarDebug.log(1, "Starting PDF to PNG conversion...");
-    SummarViewContainer.updateText(this.resultContainer, "Initial rendering...");
+    this.updateResultText("Initial rendering...");
 
     // Save the PDF file to a temporary location
     this.tempDir = normalizePath((this.plugin.app.vault.adapter as any).basePath + "/" + (this.plugin as any).PLUGIN_DIR + "/pdf_converion/temp");
@@ -58,16 +52,16 @@ export class PdfToPng {
     if (!fs.existsSync(this.tempDir)) {
       await this.createDirectory(this.tempDir);
       SummarDebug.log(1, `Temporary directory created: ${this.tempDir}`);
-      SummarViewContainer.updateText(this.resultContainer, `Temporary directory created: ${this.tempDir}`);
+      this.updateResultText(`Temporary directory created: ${this.tempDir}`);
     } else {
       SummarDebug.log(1, `Temporary directory already exists: ${this.tempDir}`);
-      SummarViewContainer.updateText(this.resultContainer, `Temporary directory already exists: ${this.tempDir}`);
+      this.updateResultText(`Temporary directory already exists: ${this.tempDir}`);
     }
 
     SummarDebug.log(1, "PDF file will be save at:", this.pdfName);
     fs.writeFileSync(this.pdfName, Buffer.from(await this.file.arrayBuffer()));
     SummarDebug.log(1, "PDF file saved at:", this.pdfName);
-    SummarViewContainer.updateText(this.resultContainer, `PDF file saved at: ${this.pdfName}`);
+    this.updateResultText(`PDF file saved at: ${this.pdfName}`);
 
     // Output directory for PNGs
     const pdfName = this.file.name.replace(".pdf", "");
@@ -75,7 +69,7 @@ export class PdfToPng {
     await this.createDirectory(this.outputDir);
 
     SummarDebug.log(1, "Converting PDF to images using Poppler...");
-    SummarViewContainer.updateText(this.resultContainer, "Converting PDF to images using Poppler...");
+    this.updateResultText("Converting PDF to images using Poppler...");
 
     SummarDebug.log(1, this.pdfName);
 
@@ -230,7 +224,7 @@ export class PdfToPng {
           base64Values.push(base64String); // Add Base64 to result
         } catch (readError) {
           SummarDebug.error(1,`Error reading file ${file}:`, readError);
-          SummarViewContainer.updateText(this.resultContainer, `Failed to process ${file}`);
+          this.updateResultText(`Failed to process ${file}`);
         }
       });
       return base64Values;

@@ -33,9 +33,6 @@ export class SummarSettingsTab extends PluginSettingTab {
       { name: 'Recording Summary', id: 'recording-tab' },
     ];
 
-    // Load last active tab from localStorage or default to the first tab
-    // const savedTabId = localStorage.getItem('obsidian-active-tab');
-    // let activeTab = savedTabId && tabs.some((tab) => tab.id === savedTabId) ? savedTabId : tabs[0].id;
     let activeTab = this.savedTabId;
 
     // Create tabs
@@ -51,10 +48,6 @@ export class SummarSettingsTab extends PluginSettingTab {
 
       tabButton.addEventListener('click', () => {
         this.savedTabId = activeTab = tab.id;
-        // activeTab = tab.id;
-
-        // Save active tab to localStorage
-        // localStorage.setItem('obsidian-active-tab', activeTab);
 
         // Update active state
         tabsContainer.querySelectorAll('.settings-tab-button').forEach((btn) => {
@@ -298,16 +291,6 @@ export class SummarSettingsTab extends PluginSettingTab {
           await this.plugin.saveSettingsToFile(this.plugin.settings);
         });
       });
-
-    // // Test recording button
-    // new Setting(containerEl)
-    //   .setName("Test Recording")
-    //   .setDesc("Test recording with the selected device.")
-    //   .addButton((button) =>
-    //     button.setButtonText("Start Test Recording").onClick(async () => {
-    //       await this.plugin.startRecording();
-    //     })
-    //   );
 
     new Setting(containerEl)
       .setName("Temporary folder")

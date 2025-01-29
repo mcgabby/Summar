@@ -1,23 +1,20 @@
+import { TFile, TFolder } from "obsidian";
 import axios from "axios";
 import SummarPlugin from "./main";
-import { normalizePath, Notice, MarkdownView } from "obsidian";
-import { SummarDebug, SummarViewContainer, getBaseFileName, getFolderPath, fetchLikeRequestUrl } from "./globals";
+import { normalizePath } from "obsidian";
+import { SummarDebug, SummarViewContainer } from "./globals";
 import { SummarTimer } from "./summartimer";
 
-export class AudioHandler {
-	private resultContainer: { value: string };
-	private plugin: SummarPlugin;
+export class AudioHandler extends SummarViewContainer {
+	private timer: SummarTimer;
 
-	constructor(resultContainer: { value: string }, plugin: SummarPlugin) {
-		this.resultContainer = resultContainer;
-		this.plugin = plugin;
+	constructor(plugin: SummarPlugin) {
+		super(plugin);
+		this.timer = new SummarTimer(plugin);
 	}
 
 	async sendAudioData(files: FileList | File[], givenFolderPath: string = ""): Promise<string> {
-		const resultContainer = this.resultContainer;
-		const timer = new SummarTimer(resultContainer);
-
-		SummarViewContainer.updateText(resultContainer, "convert audio to text");
+		this.updateResultText("convert audio to text");
 
 		let audioList = "";
 		let fullText = "";
@@ -40,8 +37,6 @@ export class AudioHandler {
 			return pathA.localeCompare(pathB);
 		});
 
-		// timer.start();
-
 		// Calculate the common folder path
 		let folderPath = "";
 		let noteFilePath = "";
@@ -49,29 +44,28 @@ export class AudioHandler {
 			if (sortedFiles.length === 1) {
 				folderPath  = sortedFiles[0].name.substring(0,sortedFiles[0].name.lastIndexOf('.')) || sortedFiles[0].name;
 				noteFilePath = normalizePath(`${this.plugin.settings.recordingDir}`);
+				SummarDebug.log(1, `sendAudioData - only one file`)
 			} else {
 				folderPath = this.getCommonFolderPath(sortedFiles);
-				console.log(`Detected folder path: ${folderPath}`); // Debug log
+				SummarDebug.log(1, `sendAudioData - Detected folder path: ${folderPath}`); // Debug log
 				noteFilePath = normalizePath(`${this.plugin.settings.recordingDir}/${folderPath}`);
 			}
 		} else {
 			noteFilePath = givenFolderPath;
 			const match = givenFolderPath.match(/[^\/]+$/);
 			folderPath = match ? match[0] : noteFilePath;
-			console.log(`Given folder path: ${folderPath}`); // Debug log
+			SummarDebug.log(1, `sendAudioData - Given folder path: ${folderPath}`); // Debug log
 		}
-//		noteFilePath = normalizePath(`${this.plugin.settings.recordingDir}/${folderPath}`);
 
-		SummarDebug.log(1, `noteFilePath: ${noteFilePath}`);
+		SummarDebug.log(1, `sendAudioData - noteFilePath: ${noteFilePath}`);
 
 		// 출력: 정렬된 파일 갯수와 이름
 		SummarDebug.log(1, `Number of sorted files: ${sortedFiles.length}`);
-		//		sortedFiles.forEach((file, index) => {
+
 		for (const [index, file] of sortedFiles.entries()) {
 			const filePath = (file as any).webkitRelativePath || file.name;
 			SummarDebug.log(1, `File ${index + 1}: ${filePath}`);
 			if (file.type.startsWith("audio/") || file.name.toLowerCase().endsWith(".webm")) {
-				// const audioFilePath = `${this.plugin.settings.recordingDir ? `${this.plugin.settings.recordingDir}/` : ""}${file.name}`;
 				const audioFilePath = normalizePath(`${noteFilePath}/${file.name}`);
 				SummarDebug.log(1, `audioFilePath: ${audioFilePath}`);
 
@@ -79,6 +73,8 @@ export class AudioHandler {
 				const fileExists = await this.plugin.app.vault.adapter.exists(audioFilePath);
 				if (!fileExists) {
 					// 파일 저장
+					await this.plugin.app.vault.adapter.mkdir(noteFilePath);
+
 					const fileContent = await file.arrayBuffer(); // File 객체의 내용을 ArrayBuffer로 변환
 					const binaryContent = new Uint8Array(fileContent);
 
@@ -95,10 +91,9 @@ export class AudioHandler {
 				audioList += `![[${audioFilePath}]]\n`;
 				SummarDebug.log(1, `audioList: ${audioList}`);
 			}
-			// });
 		}
 
-		timer.start();
+		this.timer.start();
 
 		// Process files in parallel
 		const transcriptionPromises = sortedFiles
@@ -107,10 +102,8 @@ export class AudioHandler {
 				const fileName = file.name;
 				const blob = file.slice(0, file.size, file.type);
 
-				// const audioFilePath = `${this.plugin.settings.recordingDir ? `${this.plugin.settings.recordingDir}/` : ""}${fileName}`;
 				const audioFilePath = normalizePath(`${noteFilePath}/${file.name}`);
 				SummarDebug.log(1, `audioFilePath: ${audioFilePath}`);
-				// audioList += `![[${audioFilePath}]]\n`;
 
 				const formData = new FormData();
 				formData.append("file", blob, fileName);
@@ -140,7 +133,7 @@ export class AudioHandler {
 					}
 				} catch (error) {
 					SummarDebug.error(1, `Error processing file ${fileName}:`, error);
-					timer.stop();
+					this.timer.stop();
 					return ""; // Return empty string on error
 				}
 			});
@@ -151,36 +144,51 @@ export class AudioHandler {
 		// Combine all transcriptions
 		fullText = transcriptions.join("\n");
 
-		await this.plugin.app.vault.create(
-			normalizePath(`${noteFilePath}/${folderPath}.md`),
-			`${audioList}\n${fullText}`
-		);
+		// await this.plugin.app.vault.create(
+		// 	normalizePath(`${noteFilePath}/${folderPath}.md`),
+		// 	`${audioList}\n${fullText}`
+		// );
+		// await this.plugin.app.workspace.openLinkText(
+		// 	normalizePath(`${noteFilePath}/${folderPath}.md`),
+		// 	"",
+		// 	true
+		// );
+		
+		const baseFilePath = normalizePath(`${noteFilePath}/${folderPath}`);
+
+		// Function to find the next available filename with postfix
+		const getAvailableFilePath = (basePath: string): string => {
+			let index = 1;
+			let currentPath = `${basePath}.md`;
+			while (this.plugin.app.vault.getAbstractFileByPath(currentPath)) {
+				currentPath = `${basePath} (${index}).md`;
+				index++;
+			}
+			return currentPath;
+		};
+		// Check if the file already exists
+		const existingFile = this.plugin.app.vault.getAbstractFileByPath(`${baseFilePath}.md`);
+		let newFilePath = ""
+		if (existingFile && existingFile instanceof TFile) {
+			// If the file exists, find a new unique filename
+			newFilePath = getAvailableFilePath(baseFilePath);
+			SummarDebug.log(1, `File already exists. Created new file: ${newFilePath}`);
+		} else {
+			// If the file does not exist, create it
+			newFilePath = `${baseFilePath}.md`;
+			SummarDebug.log(1, `File created: ${newFilePath}`);
+		}
+		await this.plugin.app.vault.create(newFilePath, `${audioList}\n${fullText}`);
 		await this.plugin.app.workspace.openLinkText(
-			normalizePath(`${noteFilePath}/${folderPath}.md`),
+			normalizePath(newFilePath),
 			"",
 			true
 		);
-		timer.stop();
+
+
+		this.timer.stop();
 		return fullText;
 	}
-
-	// // 타임스탬프 포맷팅 함수
-	// formatTime(seconds: number): string {
-	// 	const hours = Math.floor(seconds / 3600)
-	// 		.toString()
-	// 		.padStart(2, "0");
-	// 	const minutes = Math.floor((seconds % 3600) / 60)
-	// 		.toString()
-	// 		.padStart(2, "0");
-	// 	const secs = Math.floor(seconds % 60)
-	// 		.toString()
-	// 		.padStart(2, "0");
-	// 	const milliseconds = Math.floor((seconds % 1) * 1000)
-	// 		.toString()
-	// 		.padStart(3, "0");
-
-	// 	return `${hours}:${minutes}:${secs},${milliseconds}`;
-	// }
 
 	// Helper function to calculate the common folder path
 	private getCommonFolderPath(files: File[]): string {
@@ -205,5 +213,23 @@ export class AudioHandler {
 		}
 
 		return commonParts.join("/");
+	}
+
+	// Check if the file is an audio or webm file
+	isAudioOrWebmFile(file: TFile): boolean {
+		const audioExtensions = ["mp3", "wav", "flac", "m4a", "ogg", "webm"];
+		const extension = file.extension?.toLowerCase();
+		return audioExtensions.includes(extension);
+	}
+
+	// Check if the folder contains any audio or webm files
+	folderContainsAudioOrWebm(folder: TFolder): boolean {
+		const files = this.plugin.app.vault.getFiles();
+		return files.some(
+			(file) =>
+				file.parent !== null && // Ensure file.parent is not null
+				file.parent.path === folder.path &&
+				this.isAudioOrWebmFile(file)
+		);
 	}
 }

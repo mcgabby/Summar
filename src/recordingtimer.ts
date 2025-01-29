@@ -1,4 +1,3 @@
-// import { SummarViewContainer } from "./globals";
 import SummarPlugin from "./main";
 
 export class RecordingTimer {
@@ -21,14 +20,19 @@ export class RecordingTimer {
   
       const pad = (n: number) => (n < 10 ? "0" + n : n);
   
-      this.plugin.recordButton.textContent =`[■] ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-    }, 1000); // 500ms마다 실행
+      const timeElapsed = `[■] ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+      this.plugin.recordButton.textContent = timeElapsed;
+      this.plugin.recordButton.style.color = "red";
+      this.plugin.statusBar.update(timeElapsed, "red");
+    }, 1000); 
   }
 
   // 타이머 정지 함수
   stop(): void {
     if (this.timerInterval !== undefined) {
       this.plugin.recordButton.textContent =`[●] record`;
+      this.plugin.recordButton.style.color = "black";
+      this.plugin.statusBar.update("", "black");
       clearInterval(this.timerInterval); // 타이머 종료
     }
   }

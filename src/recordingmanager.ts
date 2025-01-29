@@ -6,9 +6,9 @@ import { NativeAudioRecorder } from "./audiorecorder";
 import { RecordingTimer } from "./recordingtimer";
 import { SummarTimer } from "./summartimer";
 
-export default class AudioRecordingManager {
-	// private resultContainer: HTMLTextAreaElement;
-	private plugin: SummarPlugin;
+export class AudioRecordingManager extends SummarViewContainer {
+	private timer: SummarTimer;
+
 	private recorder: NativeAudioRecorder;
 	private recordingInterval: number | null = null; // Use `number` for browser environment
 	private startTime: Date | null = null;
@@ -20,17 +20,14 @@ export default class AudioRecordingManager {
 	private recordingTimer: RecordingTimer;
 
 	constructor(plugin: SummarPlugin) {
-		this.plugin = plugin;
+		super(plugin);
 		this.recorder = new NativeAudioRecorder();
 		this.recordingTimer = new RecordingTimer(plugin);
+		this.timer = new SummarTimer(plugin);
 	}
 
-	async summarize(resultContainer: { value: string }, transcripted: string) {
-
-		const timer = new SummarTimer(resultContainer);
-
-		// const resultContainer = this.plugin.resultContainer;
-		SummarViewContainer.updateText(resultContainer, "Summarizing from transcripted text");
+	async summarize(transcripted: string) {
+		this.updateResultText("Summarizing from transcripted text");
 		// SummarDebug.log(2, "Fetched page content:", page_content);
 
 		const userPrompt = this.plugin.settings.recordingPrompt;
@@ -45,16 +42,16 @@ export default class AudioRecordingManager {
 				],
 				max_tokens: 16384,
 			});
-			SummarViewContainer.updateText(resultContainer, "Summarizing...");
-			timer.start();
+			this.updateResultText("Summarizing...");
+			this.timer.start();
 			const aiResponse = await fetchOpenai(openaiApiKey, body_content);
 
 			if (!aiResponse.ok) {
 				const errorText = await aiResponse.text();
 				SummarDebug.error(1, "OpenAI API Error:", errorText);
-				SummarViewContainer.updateText(resultContainer, `Error: ${aiResponse.status} - ${errorText}`);
+				this.updateResultText(`Error: ${aiResponse.status} - ${errorText}`);
 
-				timer.stop();
+				this.timer.stop();
 				return;
 			}
 
@@ -62,16 +59,15 @@ export default class AudioRecordingManager {
 
 			if (aiData.choices && aiData.choices.length > 0) {
 				const summary = aiData.choices[0].message.content || "No summary generated.";
-				SummarViewContainer.updateText(resultContainer, summary);
+				this.updateResultText(summary);
 			} else {
-				SummarViewContainer.updateText(resultContainer, "No valid response from OpenAI API.");
+				this.updateResultText("No valid response from OpenAI API.");
 			}
-			timer.stop();
+			this.timer.stop();
 		} catch (error) {
-			timer.stop();
+			this.timer.stop();
 			SummarDebug.error(1, "Error:", error);
-			SummarViewContainer.updateText(resultContainer, "An error occurred while processing the request.");
-
+			this.updateResultText("An error occurred while processing the request.");
 		}
 
 
@@ -198,8 +194,6 @@ export default class AudioRecordingManager {
 								SummarDebug.error(1, `Failed to save file: ${fileName}`, error);
 								reject(error); // 파일 생성 중 오류 발생 시 reject 호출
 							});
-
-						// resolve();
 					})
 					.catch((error) => {
 						SummarDebug.error(1, `Failed to convert Blob to ArrayBuffer for file: ${fileName}`, error);
@@ -219,8 +213,9 @@ export default class AudioRecordingManager {
 		const day = ("0" + now.getDate()).slice(-2);
 		const hours = ("0" + now.getHours()).slice(-2);
 		const minutes = ("0" + now.getMinutes()).slice(-2);
-
-		return `${year}${month}${day}-${hours}${minutes}`;
+		const seconds = ("0" + now.getSeconds()).slice(-2); // 초 단위 추가
+	
+		return `${year}${month}${day}-${hours}${minutes}${seconds}`;		
 	}
 
 	public getRecorderState(): "inactive" | "recording" | "paused" | undefined {

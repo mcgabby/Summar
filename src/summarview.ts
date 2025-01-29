@@ -2,8 +2,6 @@ import { View, WorkspaceLeaf, Platform } from "obsidian";
 
 import SummarPlugin  from "./main";
 import { SummarDebug } from "./globals";
-import { PdfHandler } from "./pdfhandler";
-import { ConfluenceHandler } from "./confluencehandler";
 
 export class SummarView extends View {
   static VIEW_TYPE = "summar-view";
@@ -136,13 +134,11 @@ export class SummarView extends View {
         SummarDebug.Notice(0, "Please enter a valid URL.");
         return;
       }
-      const confluenceHandler = new ConfluenceHandler(resultContainer, this.plugin);
-      confluenceHandler.fetchAndSummarize(url);
+      this.plugin.confluenceHandler.fetchAndSummarize(url);
     };
 
     pdfButton.onclick = async () => {
-      const pdfHandler = new PdfHandler(resultContainer, this.plugin);
-      pdfHandler.convertPdfToMarkdown();
+      this.plugin.pdfHandler.convertPdfToMarkdown();
     };
 
     recordButton.onclick = async () => {
