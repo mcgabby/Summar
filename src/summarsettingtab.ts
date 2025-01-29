@@ -28,9 +28,9 @@ export class SummarSettingsTab extends PluginSettingTab {
     const tabContents = containerEl.createDiv({ cls: 'settings-tab-contents' });
     const tabs = [
       { name: 'Common', id: 'common-tab' },
-      { name: 'Webpage Summary', id: 'webpage-tab' },
-      { name: 'PDF Summary', id: 'pdf-tab' },
-      { name: 'Recording Summary', id: 'recording-tab' },
+      { name: 'Webpage', id: 'webpage-tab' },
+      { name: 'PDF', id: 'pdf-tab' },
+      { name: 'Recording', id: 'recording-tab' },
     ];
 
     let activeTab = this.savedTabId;
