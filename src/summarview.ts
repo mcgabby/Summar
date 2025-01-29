@@ -125,6 +125,7 @@ export class SummarView extends View {
       // 버튼을 안보이게 하고 비활성화
       pdfButton.style.display = "none"; // 안보이게 하기
       pdfButton.disabled = true;        // 비활성화
+      recordButton.style.width = "100%";
     }
 
 

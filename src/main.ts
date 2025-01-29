@@ -15,7 +15,7 @@ export default class SummarPlugin extends Plugin {
   settings: PluginSettings;
   resultContainer: HTMLTextAreaElement;
   inputField: HTMLInputElement;
-  recordButton: HTMLButtonElement; 
+  recordButton: HTMLButtonElement;
 
   confluenceHandler: ConfluenceHandler;
   pdfHandler: PdfHandler;
@@ -63,221 +63,222 @@ export default class SummarPlugin extends Plugin {
     this.addRibbonIcon("scroll-text", "Open Summar View", this.activateView.bind(this));
     this.registerView(SummarView.VIEW_TYPE, (leaf) => new SummarView(leaf, this));
 
-    this.confluenceHandler = new ConfluenceHandler(this);
-    this.pdfHandler = new PdfHandler(this);
-    this.audioHandler = new AudioHandler(this);
-    this.recordingManager = new AudioRecordingManager(this);
-    this.statusBar = new StatusBar(this);
+//    this.app.workspace.onLayoutReady(() => {
+      this.confluenceHandler = new ConfluenceHandler(this);
+      this.pdfHandler = new PdfHandler(this);
+      this.audioHandler = new AudioHandler(this);
+      this.recordingManager = new AudioRecordingManager(this);
+      this.statusBar = new StatusBar(this);
 
 
-    if (Platform.isDesktopApp) {
-      if (Platform.isWin) {
-        SummarDebug.log(1, "Running on Windows Desktop");
-      } else if (Platform.isMacOS) {
-        SummarDebug.log(1, "Running on macOS Desktop");
-      } else if (Platform.isLinux) {
-        SummarDebug.log(1, "Running on Linux Desktop");
+      if (Platform.isDesktopApp) {
+        if (Platform.isWin) {
+          SummarDebug.log(1, "Running on Windows Desktop");
+        } else if (Platform.isMacOS) {
+          SummarDebug.log(1, "Running on macOS Desktop");
+        } else if (Platform.isLinux) {
+          SummarDebug.log(1, "Running on Linux Desktop");
+        }
+      } else if (Platform.isMobile) {
+        if (Platform.isIosApp) {
+          SummarDebug.log(1, "Running on iOS");
+        } else if (Platform.isAndroidApp) {
+          SummarDebug.log(1, "Running on Android");
+        }
+      } else {
+        SummarDebug.log(1, "Unknown platform");
       }
-    } else if (Platform.isMobile) {
-      if (Platform.isIosApp) {
-        SummarDebug.log(1, "Running on iOS");
-      } else if (Platform.isAndroidApp) {
-        SummarDebug.log(1, "Running on Android");
-      }
-    } else {
-      SummarDebug.log(1, "Unknown platform");
-    }
 
-    // URL 컨텍스트 메뉴 등록
-    this.registerEvent(
-      this.app.workspace.on('url-menu', (menu: Menu, url: string) => {
-        menu.addItem((item) => {
-          item.setTitle("Summary web page using Summar")
-            .setIcon("star")
-            .onClick(() => {
-              this.activateView();
-              this.setLinkForCommand(url);
-            });
-        });
+      // URL 컨텍스트 메뉴 등록
+      this.registerEvent(
+        this.app.workspace.on('url-menu', (menu: Menu, url: string) => {
+          menu.addItem((item) => {
+            item.setTitle("Summary web page using Summar")
+              .setIcon("star")
+              .onClick(() => {
+                this.activateView();
+                this.setLinkForCommand(url);
+              });
+          });
 
-      })
-    );
+        })
+      );
 
-    // Register an event to modify the context menu in the file explorer
-    this.registerEvent(
-      this.app.workspace.on("file-menu", (menu, file) => {
-        // Add menu item for files
-        if (file instanceof TFile) {
-          // Add menu item for audio and webm files
-          if (file instanceof TFile && this.audioHandler.isAudioOrWebmFile(file)) {
+      // Register an event to modify the context menu in the file explorer
+      this.registerEvent(
+        this.app.workspace.on("file-menu", (menu, file) => {
+          // Add menu item for files
+          if (file instanceof TFile) {
+            // Add menu item for audio and webm files
+            if (file instanceof TFile && this.audioHandler.isAudioOrWebmFile(file)) {
+              menu.addItem((item) => {
+                item
+                  .setTitle("Summarize meeting from audio file")
+                  .setIcon("file")
+                  .onClick(async () => {
+                    try {
+                      // this.handleFileAction(file);
+                      const files = await this.convertTFileToFileArray([file]);
+                      SummarDebug.log(1, `File selected: ${file.path}`);
+                      if (files && files.length > 0) {
+                        const text = await this.audioHandler.sendAudioData(files);
+                        SummarDebug.log(3, `transcripted text: ${text}`);
+                        this.recordingManager.summarize(text);
+                      }
+                    } catch (error) {
+                      SummarDebug.error(1, "Error handling file:", error);
+                    }
+                  });
+              });
+            }
+          }
+
+          // Add menu item for directories containing audio or webm files
+          if (file instanceof TFolder && this.audioHandler.folderContainsAudioOrWebm(file)) {
             menu.addItem((item) => {
               item
-                .setTitle("Summarize meeting from audio file")
-                .setIcon("file")
-                .onClick(async() => {
-                  try {
-                    // this.handleFileAction(file);
-                    const files = await this.convertTFileToFileArray([file]);
-                    SummarDebug.log(1, `File selected: ${file.path}`);
-                    if ( files && files.length > 0) {
-                      const text = await this.audioHandler.sendAudioData(files);
-                      SummarDebug.log(3, `transcripted text: ${text}`);
-                      this.recordingManager.summarize(text);
+                .setTitle("Summarize meeting from multiple audio files")
+                .setIcon("folder")
+                .onClick(async () => {
+                  // this.handleFolderAction(file);
+                  const files = await this.convertTFolderToFileArray(file);
+                  SummarDebug.log(1, `Folder selected: ${file.path}`);
+                  if (files && files.length > 0) {
+                    // Filter only audio files
+                    const audioFiles = Array.from(files).filter((file) => {
+                      // Check MIME type or file extension
+                      return (
+                        file.type.startsWith("audio/") ||
+                        file.name.toLowerCase().endsWith(".webm") // Include .webm files
+                      );
+                    });
+
+                    if (audioFiles.length === 0) {
+                      SummarDebug.Notice(1, "No audio files found in the selected directory.");
+                      return;
                     }
-                  } catch (error) {
-                    SummarDebug.error(1, "Error handling file:", error);
+
+                    // Send all selected files to sendAudioData
+                    const text = await this.audioHandler.sendAudioData(files, file.path);
+                    SummarDebug.log(3, `transcripted text: ${text}`);
+                    this.recordingManager.summarize(text);
                   }
                 });
             });
           }
-        }
-
-        // Add menu item for directories containing audio or webm files
-        if (file instanceof TFolder && this.audioHandler.folderContainsAudioOrWebm(file)) {
-          menu.addItem((item) => {
-            item
-              .setTitle("Summarize meeting from multiple audio files")
-              .setIcon("folder")
-              .onClick(async () => {
-                // this.handleFolderAction(file);
-                const files = await this.convertTFolderToFileArray(file);
-                SummarDebug.log(1, `Folder selected: ${file.path}`);
-                if (files && files.length > 0) {
-                  // Filter only audio files
-                  const audioFiles = Array.from(files).filter((file) => {
-                    // Check MIME type or file extension
-                    return (
-                      file.type.startsWith("audio/") ||
-                      file.name.toLowerCase().endsWith(".webm") // Include .webm files
-                    );
-                  });
-
-                  if (audioFiles.length === 0) {
-                    SummarDebug.Notice(1, "No audio files found in the selected directory.");
-                    return;
-                  }
-
-                  // Send all selected files to sendAudioData
-                  const text = await this.audioHandler.sendAudioData(files, file.path);
-                  SummarDebug.log(3, `transcripted text: ${text}`);
-                  this.recordingManager.summarize(text);
-                }
-              });
-          });
-        }
-      })
-    );
+        })
+      );
 
 
-    // 커맨드 추가
-    this.addCommand({
-      id: "fetch-and-summarize-link",
-      name: "Summarize web page",
-      callback: () => {
-        this.openUrlInputDialog((url) => {
-          if (url) {
-            this.activateView();
-            this.setLinkForCommand(url);
-          } else {
-            SummarDebug.Notice(0, "No URL provided.");
-          }
-        });
-      },
-    });
-
-    this.addCommand({
-      id: "pdf-to-markdown",
-      name: "Convert PDF to Markdown",
-      callback: () => {
-        this.activateView();
-
-        this.pdfHandler.convertPdfToMarkdown();
-      },
-    });
-
-    this.addCommand({
-      id: "start-top-recording-to-transcript",
-      name: "Start/Stop recording",
-      callback: async () => {
-        this.activateView();
-        await this.toggleRecording();
-      },
-      hotkeys: [
-        {
-          // modifiers: Platform.isMacOS ? ["Mod", "Shift"] : ["Ctrl", "Shift"],
-          modifiers: Platform.isMacOS ? ["Mod"] : ["Ctrl"],
-          key: "R", // R 키
-        },
-      ],
-    });
-
-    this.addCommand({
-      id: "upload-audio-to-transcript",
-      name: "Summarize meeting from audio file",
-      callback: () => {
-        this.activateView();
-        // Create an input element for file selection
-        const fileInput = document.createElement("input");
-        fileInput.type = "file";
-        fileInput.accept = "audio/*"; // Accept only audio files
-
-        // Handle file or directory selection
-        fileInput.onchange = async (event) => {
-          const files = (event.target as HTMLInputElement).files;
-          if (files && files.length > 0) {
-            // Send all selected files to sendAudioData
-            const text = await this.audioHandler.sendAudioData(files);
-            SummarDebug.log(3, `transcripted text: ${text}`);
-            this.recordingManager.summarize(text);
-          }
-        };
-
-        // Programmatically open the file dialog
-        fileInput.click();
-      },
-    });
-
-    this.addCommand({
-      id: "upload-audiolist-to-transcript",
-      name: "Summarize meeting from multiple audio files",
-      callback: () => {
-        this.activateView();
-        // Create an input element for file selection
-        const fileInput = document.createElement("input");
-        fileInput.type = "file";
-        fileInput.accept = "audio/*,.webm"; // Accept audio files and .webm files
-        fileInput.webkitdirectory = true; // Allow directory selection
-
-        // Handle file or directory selection
-        fileInput.onchange = async (event) => {
-          const files = (event.target as HTMLInputElement).files;
-          if (files && files.length > 0) {
-            // Filter only audio files
-            const audioFiles = Array.from(files).filter((file) => {
-              // Check MIME type or file extension
-              return (
-                file.type.startsWith("audio/") ||
-                file.name.toLowerCase().endsWith(".webm") // Include .webm files
-              );
-            });
-
-            if (audioFiles.length === 0) {
-              SummarDebug.Notice(1, "No audio files found in the selected directory.");
-              return;
+      // 커맨드 추가
+      this.addCommand({
+        id: "fetch-and-summarize-link",
+        name: "Summarize web page",
+        callback: () => {
+          this.openUrlInputDialog((url) => {
+            if (url) {
+              this.activateView();
+              this.setLinkForCommand(url);
+            } else {
+              SummarDebug.Notice(0, "No URL provided.");
             }
+          });
+        },
+      });
 
-            // Send all selected files to sendAudioData
-            const text = await this.audioHandler.sendAudioData(files);
-            SummarDebug.log(3, `transcripted text: ${text}`);
-            this.recordingManager.summarize(text);
-          }
-        };
+      this.addCommand({
+        id: "pdf-to-markdown",
+        name: "Convert PDF to Markdown",
+        callback: () => {
+          this.activateView();
 
-        // Programmatically open the file dialog
-        fileInput.click();
-      },
-    });
+          this.pdfHandler.convertPdfToMarkdown();
+        },
+      });
 
+      this.addCommand({
+        id: "start-top-recording-to-transcript",
+        name: "Start/Stop recording",
+        callback: async () => {
+          this.activateView();
+          await this.toggleRecording();
+        },
+        hotkeys: [
+          {
+            // modifiers: Platform.isMacOS ? ["Mod", "Shift"] : ["Ctrl", "Shift"],
+            modifiers: Platform.isMacOS ? ["Mod"] : ["Ctrl"],
+            key: "R", // R 키
+          },
+        ],
+      });
+
+      this.addCommand({
+        id: "upload-audio-to-transcript",
+        name: "Summarize meeting from audio file",
+        callback: () => {
+          this.activateView();
+          // Create an input element for file selection
+          const fileInput = document.createElement("input");
+          fileInput.type = "file";
+          fileInput.accept = "audio/*"; // Accept only audio files
+
+          // Handle file or directory selection
+          fileInput.onchange = async (event) => {
+            const files = (event.target as HTMLInputElement).files;
+            if (files && files.length > 0) {
+              // Send all selected files to sendAudioData
+              const text = await this.audioHandler.sendAudioData(files);
+              SummarDebug.log(3, `transcripted text: ${text}`);
+              this.recordingManager.summarize(text);
+            }
+          };
+
+          // Programmatically open the file dialog
+          fileInput.click();
+        },
+      });
+
+      this.addCommand({
+        id: "upload-audiolist-to-transcript",
+        name: "Summarize meeting from multiple audio files",
+        callback: () => {
+          this.activateView();
+          // Create an input element for file selection
+          const fileInput = document.createElement("input");
+          fileInput.type = "file";
+          fileInput.accept = "audio/*,.webm"; // Accept audio files and .webm files
+          fileInput.webkitdirectory = true; // Allow directory selection
+
+          // Handle file or directory selection
+          fileInput.onchange = async (event) => {
+            const files = (event.target as HTMLInputElement).files;
+            if (files && files.length > 0) {
+              // Filter only audio files
+              const audioFiles = Array.from(files).filter((file) => {
+                // Check MIME type or file extension
+                return (
+                  file.type.startsWith("audio/") ||
+                  file.name.toLowerCase().endsWith(".webm") // Include .webm files
+                );
+              });
+
+              if (audioFiles.length === 0) {
+                SummarDebug.Notice(1, "No audio files found in the selected directory.");
+                return;
+              }
+
+              // Send all selected files to sendAudioData
+              const text = await this.audioHandler.sendAudioData(files);
+              SummarDebug.log(3, `transcripted text: ${text}`);
+              this.recordingManager.summarize(text);
+            }
+          };
+
+          // Programmatically open the file dialog
+          fileInput.click();
+        },
+      });
+//    });
   }
 
   async toggleRecording(): Promise<void> {
@@ -405,30 +406,30 @@ export default class SummarPlugin extends Plugin {
   }
 
   // Convert TFile to File[]
-private async convertTFileToFileArray(tFiles: TFile[]): Promise<File[]> {
-  const files: File[] = [];
-  for (const tFile of tFiles) {
+  private async convertTFileToFileArray(tFiles: TFile[]): Promise<File[]> {
+    const files: File[] = [];
+    for (const tFile of tFiles) {
       const fileContent = await this.app.vault.readBinary(tFile);
       const file = new File([fileContent], tFile.name);
       files.push(file);
+    }
+    return files;
   }
-  return files;
-}
 
-// Convert TFolder to File[] (all files in the folder)
-private async convertTFolderToFileArray(folder: TFolder): Promise<File[]> {
-  const files: File[] = [];
-  const folderFiles = this.app.vault.getFiles().filter(
+  // Convert TFolder to File[] (all files in the folder)
+  private async convertTFolderToFileArray(folder: TFolder): Promise<File[]> {
+    const files: File[] = [];
+    const folderFiles = this.app.vault.getFiles().filter(
       (file) => file.path.startsWith(folder.path)
-  );
+    );
 
-  for (const tFile of folderFiles) {
+    for (const tFile of folderFiles) {
       const fileContent = await this.app.vault.readBinary(tFile);
       const file = new File([fileContent], tFile.name);
       files.push(file);
+    }
+    return files;
   }
-  return files;
-}
 }
 
 

@@ -1,5 +1,4 @@
 import { TFile, TFolder } from "obsidian";
-import axios from "axios";
 import SummarPlugin from "./main";
 import { normalizePath } from "obsidian";
 import { SummarDebug, SummarViewContainer } from "./globals";
@@ -112,29 +111,26 @@ export class AudioHandler extends SummarViewContainer {
 				formData.append("response_format", "json");
 
 				try {
-					// Whisper API 호출
-					const response = await axios.post(
-						"https://api.openai.com/v1/audio/transcriptions",
-						formData,
-						{
-							headers: {
-								"Content-Type": "multipart/form-data",
-								Authorization: `Bearer ${this.plugin.settings.openaiApiKey}`,
-							},
-						}
-					);
-
-					const text = response.data.text;
-					if (text && text.length > 0) {
-						return text;
+					// Whisper API 호출 (fetch 사용)
+					const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+						method: "POST",
+						headers: {
+							Authorization: `Bearer ${this.plugin.settings.openaiApiKey}`,
+						},
+						body: formData,
+					});
+		
+					const data = await response.json();
+					if (data.text && data.text.length > 0) {
+						return data.text;
 					} else {
 						SummarDebug.Notice(1, `No transcription text received for file: ${fileName}`);
-						return ""; // Return empty string if no text
+						return "";
 					}
 				} catch (error) {
 					SummarDebug.error(1, `Error processing file ${fileName}:`, error);
 					this.timer.stop();
-					return ""; // Return empty string on error
+					return "";
 				}
 			});
 
@@ -144,16 +140,6 @@ export class AudioHandler extends SummarViewContainer {
 		// Combine all transcriptions
 		fullText = transcriptions.join("\n");
 
-		// await this.plugin.app.vault.create(
-		// 	normalizePath(`${noteFilePath}/${folderPath}.md`),
-		// 	`${audioList}\n${fullText}`
-		// );
-		// await this.plugin.app.workspace.openLinkText(
-		// 	normalizePath(`${noteFilePath}/${folderPath}.md`),
-		// 	"",
-		// 	true
-		// );
-		
 		const baseFilePath = normalizePath(`${noteFilePath}/${folderPath}`);
 
 		// Function to find the next available filename with postfix
@@ -184,8 +170,6 @@ export class AudioHandler extends SummarViewContainer {
 			"",
 			true
 		);
-
-
 		this.timer.stop();
 		return fullText;
 	}
