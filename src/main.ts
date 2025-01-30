@@ -120,9 +120,9 @@ export default class SummarPlugin extends Plugin {
                     const files = await this.convertTFileToFileArray([file]);
                     SummarDebug.log(1, `File selected: ${file.path}`);
                     if (files && files.length > 0) {
+                      this.activateView();
                       const text = await this.audioHandler.sendAudioData(files);
                       SummarDebug.log(3, `transcripted text: ${text}`);
-                      this.activateView();
                       this.recordingManager.summarize(text);
                     }
                   } catch (error) {
@@ -159,9 +159,9 @@ export default class SummarPlugin extends Plugin {
                   }
 
                   // Send all selected files to sendAudioData
+                  this.activateView();
                   const text = await this.audioHandler.sendAudioData(files, file.path);
                   SummarDebug.log(3, `transcripted text: ${text}`);
-                  this.activateView();
                   this.recordingManager.summarize(text);
                 }
               });
