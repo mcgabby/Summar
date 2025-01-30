@@ -15,6 +15,52 @@ export class PluginUpdater {
     this.plugin = plugin;
   }
 
+  async updatePlugin(): Promise<void> {
+    try {
+      // 최신 플러그인 다운로드 및 설치
+      const zipName = normalizePath(this.plugin.PLUGIN_DIR + "/" + this.plugin.PLUGIN_ID + ".zip");
+      SummarDebug.log(1, `Downloading plugin as ${zipName}`);
+      await this.downloadPlugin(this.PLUGIN_ZIP_URL, zipName);
+      await this.extractZip(zipName, this.plugin.PLUGIN_DIR);
+      await this.plugin.app.vault.adapter.remove(zipName);
+
+      SummarDebug.log(1, 'Summar update complete! Please reload Obsidian to apply changes.');
+      const fragment = document.createDocumentFragment();
+
+      {
+        // 설명 메시지 추가
+        const message1 = document.createElement("span");
+        message1.textContent = "Summar update completed! Please click ";
+        fragment.appendChild(message1);
+
+        // 링크 생성 및 스타일링
+        const link = document.createElement("a");
+        link.textContent = "HERE";
+        link.href = "#";
+        link.style.cursor = "pointer";
+        link.style.color = "blue"; // 링크 색상 설정 (옵션)
+
+        // 클릭 이벤트 핸들러
+        link.addEventListener("click", (event) => {
+          event.preventDefault(); // 기본 동작 방지
+          window.location.reload(); // Obsidian 재로드
+        });
+
+        // Fragment에 링크 추가
+        fragment.appendChild(link);
+
+        // 설명 메시지 추가
+        const message2 = document.createElement("span");
+        message2.textContent = " to reload Obsidian and apply the changes.";
+        fragment.appendChild(message2); // Fragment에 메시지 추가
+
+        SummarDebug.Notice(0, fragment, 0);
+      }
+    } catch (error) {
+      SummarDebug.error(1, 'Failed to update plugin:', error);
+    }
+  }
+
   /**
    * 플러그인 업데이트 확인 및 수행
    */
@@ -31,46 +77,9 @@ export class PluginUpdater {
         SummarDebug.log(1, 'Plugin is not installed. Installing now...');
       } else if (semver.gt(remoteVersion, localVersion)) {
         SummarDebug.log(1, `Updating plugin from version ${localVersion} to ${remoteVersion}...`);
+        
+        await this.updatePlugin();
 
-        // 최신 플러그인 다운로드 및 설치
-        const zipName = normalizePath(this.plugin.PLUGIN_DIR + "/" + this.plugin.PLUGIN_ID + ".zip");
-        SummarDebug.log(1, `Downloading plugin as ${zipName}`);
-        await this.downloadPlugin(this.PLUGIN_ZIP_URL, zipName);
-        await this.extractZip(zipName, this.plugin.PLUGIN_DIR);
-        await this.plugin.app.vault.adapter.remove(zipName);
-
-        SummarDebug.log(1, 'Summar update complete! Please reload Obsidian to apply changes.');
-        const fragment = document.createDocumentFragment();
-
-        {
-          // 설명 메시지 추가
-          const message1 = document.createElement("span");
-          message1.textContent = "Summar update completed! Please click ";
-          fragment.appendChild(message1);
-
-          // 링크 생성 및 스타일링
-          const link = document.createElement("a");
-          link.textContent = "HERE";
-          link.href = "#";
-          link.style.cursor = "pointer";
-          link.style.color = "blue"; // 링크 색상 설정 (옵션)
-
-          // 클릭 이벤트 핸들러
-          link.addEventListener("click", (event) => {
-            event.preventDefault(); // 기본 동작 방지
-            window.location.reload(); // Obsidian 재로드
-          });
-
-          // Fragment에 링크 추가
-          fragment.appendChild(link);
-
-          // 설명 메시지 추가
-          const message2 = document.createElement("span");
-          message2.textContent = " to reload Obsidian and apply the changes.";
-          fragment.appendChild(message2); // Fragment에 메시지 추가
-
-          SummarDebug.Notice(0, fragment, 0);
-        }
       } else if (localVersion === remoteVersion) {
         SummarDebug.log(1, 'Plugin is already up to date.');
         return;

@@ -1,5 +1,6 @@
 import { PluginSettingTab, Setting } from "obsidian";
 import { SummarDebug } from "./globals";
+import { PluginUpdater } from "./pluginupdater";
 import SummarPlugin from "./main";
 
 
@@ -96,26 +97,56 @@ export class SummarSettingsTab extends PluginSettingTab {
   async buildCommonSettings(containerEl: HTMLElement): Promise<void> {
     containerEl.createEl("h2", { text: "Common Settings" });
 
+
+    // Current version: #.#.# - Click here to force an update, and click here to reload Obsidian.
     // 설명 메시지 추가
     const message1 = document.createElement("span");
-    message1.textContent = "current version: " + this.plugin.manifest.version + " - If you want to reload Obsidian, click ";
+    message1.textContent = "Current version: " + this.plugin.manifest.version + " - Click ";
     containerEl.appendChild(message1);
 
+    const forceUpdate = document.createElement("a");
+    forceUpdate.textContent = "here";
+    forceUpdate.href = "#";
+    forceUpdate.style.cursor = "pointer";
+    forceUpdate.style.color = "blue"; // 링크 색상 설정 (옵션)
+    // 클릭 이벤트 핸들러
+    forceUpdate.addEventListener("click", (event) => {
+      event.preventDefault(); // 기본 동작 방지
+      setTimeout(async () => {
+        try {
+          SummarDebug.log(1, "Checking for plugin updates...");
+          const pluginUpdater = new PluginUpdater(this.plugin);
+          await pluginUpdater.updatePlugin();
+        } catch (error) {
+          SummarDebug.error(1, "Error during plugin update:", error);
+        }
+      }, 100); // 0.1s    
+    });
+    // Fragment에 링크 추가
+    containerEl.appendChild(forceUpdate);
+
+    const message2 = document.createElement("span");
+    message2.textContent = " to force an update, and click ";
+    containerEl.appendChild(message2);
+
     // 링크 생성 및 스타일링
-    const link = document.createElement("a");
-    link.textContent = "HERE";
-    link.href = "#";
-    link.style.cursor = "pointer";
-    link.style.color = "blue"; // 링크 색상 설정 (옵션)
+    const forceReload = document.createElement("a");
+    forceReload.textContent = "here";
+    forceReload.href = "#";
+    forceReload.style.cursor = "pointer";
+    forceReload.style.color = "blue"; // 링크 색상 설정 (옵션)
 
     // 클릭 이벤트 핸들러
-    link.addEventListener("click", (event) => {
+    forceReload.addEventListener("click", (event) => {
         event.preventDefault(); // 기본 동작 방지
         window.location.reload(); // Obsidian 재로드
     });
-
     // Fragment에 링크 추가
-    containerEl.appendChild(link);
+    containerEl.appendChild(forceReload);
+
+    const message3 = document.createElement("span");
+    message3.textContent = " to reload Obsidian.";
+    containerEl.appendChild(message3);
 
     new Setting(containerEl)
         .setName("OpenAI API Key")
