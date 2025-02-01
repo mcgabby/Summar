@@ -1,4 +1,4 @@
-import { Notice, requestUrl } from "obsidian";
+import { Notice, requestUrl, Hotkey, Modifier } from "obsidian";
 import SummarPlugin from "./main";
 import { PluginSettings } from "./types";
 
@@ -38,6 +38,8 @@ MarkDown에서 title, bold(**) 속성은 쓰지 않고 모두 bullet으로만 �
 //////
   testUrl: "",        // initial URL of the page to summarize
   debugLevel: 0  // debug level
+  ,
+  cmd_count: 0
 };
 
 export class SummarViewContainer {
@@ -231,4 +233,21 @@ export function containsDomain(text: string, domain: string): boolean {
   // 정규식을 사용해 특정 도메인이 포함되어 있는지 확인
   const domainPattern = new RegExp(`(?:https?:\\/\\/)?(?:www\\.)?${domain.replace('.', '\\.')}`, 'i');
   return domainPattern.test(text);
+}
+
+export function parseHotkey(hotkeyString: string): Hotkey {
+  const parts = hotkeyString.split('+').map(part => part.trim().toLowerCase());
+  const key = parts.pop() || '';  // 마지막 부분은 실제 키
+
+  const modifiers: Modifier[] = parts.map(part => {
+    switch (part) {
+      case 'ctrl': return 'Mod';
+      case 'shift': return 'Shift';
+      case 'alt': return 'Alt';
+      case 'cmd': return 'Meta';
+      default: return '' as Modifier;  // 빈 문자열을 Modifier로 캐스팅
+    }
+  }).filter(Boolean) as Modifier[];  // 타입 필터링
+
+  return { modifiers, key };
 }

@@ -14,6 +14,11 @@ export class SummarSettingsTab extends PluginSettingTab {
     this.savedTabId = 'common-tab';
   }
 
+  async hide(): Promise<void> {
+    await this.plugin.saveSettingsToFile();
+    this.plugin.registerCustomCommandAndMenus();
+  }
+
   async display(): Promise<void> {
     const { containerEl } = this;
 
@@ -32,6 +37,7 @@ export class SummarSettingsTab extends PluginSettingTab {
       { name: 'Webpage', id: 'webpage-tab' },
       { name: 'PDF', id: 'pdf-tab' },
       { name: 'Recording', id: 'recording-tab' },
+      { name: 'Custom command', id: 'custom-tab' },
     ];
 
     let activeTab = this.savedTabId;
@@ -88,6 +94,9 @@ export class SummarSettingsTab extends PluginSettingTab {
             break;
           case 'recording-tab':
             await this.buildRecordingSettings(tabContent);
+            break;
+          case 'custom-tab':
+            await this.buildCustomCommandSettings(tabContent);
             break;
         }
       }
@@ -157,7 +166,6 @@ export class SummarSettingsTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.openaiApiKey || "")
                 .onChange(async (value) => {
                     this.plugin.settings.openaiApiKey = value;
-                    await this.plugin.saveSettingsToFile(this.plugin.settings);
                 });
 
             const textAreaEl = text.inputEl;
@@ -173,7 +181,6 @@ export class SummarSettingsTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.confluenceApiToken || "")
                 .onChange(async (value) => {
                     this.plugin.settings.confluenceApiToken = value;
-                    await this.plugin.saveSettingsToFile(this.plugin.settings);
                 });
 
             const textAreaEl = text.inputEl;
@@ -185,7 +192,6 @@ export class SummarSettingsTab extends PluginSettingTab {
         .addToggle((toggle) =>
             toggle.setValue(this.plugin.settings.useConfluenceAPI).onChange(async (value) => {
                 this.plugin.settings.useConfluenceAPI = value;
-                await this.plugin.saveSettingsToFile(this.plugin.settings);
 
                 // Dynamically enable/disable the input field
                 const inputField = containerEl.querySelector<HTMLInputElement>(".confluence-url-input");
@@ -199,7 +205,7 @@ export class SummarSettingsTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.confluenceDomain || "wiki.workers-hub.com")
                 .onChange(async (value) => {
                     this.plugin.settings.confluenceDomain = value;
-                    await this.plugin.saveSettingsToFile(this.plugin.settings);
+                    // await this.plugin.saveSettingsToFile(this.plugin.settings);
                 });
 
             const textAreaEl = text.inputEl;
@@ -230,7 +236,6 @@ export class SummarSettingsTab extends PluginSettingTab {
           .setValue(this.plugin.settings.systemPrompt || "")
           .onChange(async (value) => {
             this.plugin.settings.systemPrompt = value;
-            await this.plugin.saveSettingsToFile(this.plugin.settings);
           });
 
         const textAreaEl = text.inputEl;
@@ -259,7 +264,6 @@ export class SummarSettingsTab extends PluginSettingTab {
           .setValue(this.plugin.settings.userPrompt || "")
           .onChange(async (value) => {
             this.plugin.settings.userPrompt = value;
-            await this.plugin.saveSettingsToFile(this.plugin.settings);
           });
 
         const textAreaEl = text.inputEl;
@@ -284,7 +288,6 @@ export class SummarSettingsTab extends PluginSettingTab {
           .setValue(this.plugin.settings.pdfPrompt || "")
           .onChange(async (value) => {
             this.plugin.settings.pdfPrompt = value;
-            await this.plugin.saveSettingsToFile(this.plugin.settings);
           });
 
         const textAreaEl = text.inputEl;
@@ -319,7 +322,6 @@ export class SummarSettingsTab extends PluginSettingTab {
         dropdown.setValue(this.plugin.settings.selectedDeviceId || "");
         dropdown.onChange(async (value) => {
           this.plugin.settings.selectedDeviceId = value;
-          await this.plugin.saveSettingsToFile(this.plugin.settings);
         });
       });
 
@@ -332,7 +334,6 @@ export class SummarSettingsTab extends PluginSettingTab {
           .setValue(this.plugin.settings.recordingDir || "")
           .onChange(async (value) => {
             this.plugin.settings.recordingDir = value;
-            await this.plugin.saveSettingsToFile(this.plugin.settings);
           });
 
         const textAreaEl = text.inputEl;
@@ -350,7 +351,6 @@ export class SummarSettingsTab extends PluginSettingTab {
                 .setDynamicTooltip()
                 .onChange(async (value) => {
                     this.plugin.settings.recordingUnit = value;
-                    await this.plugin.saveSettingsToFile(this.plugin.settings);
                 });
         });
 
@@ -365,7 +365,6 @@ export class SummarSettingsTab extends PluginSettingTab {
           .setValue(this.plugin.settings.recordingPrompt || "")
           .onChange(async (value) => {
             this.plugin.settings.recordingPrompt = value;
-            await this.plugin.saveSettingsToFile(this.plugin.settings);
           });
 
         const textAreaEl = text.inputEl;
@@ -375,4 +374,110 @@ export class SummarSettingsTab extends PluginSettingTab {
       })
       ;        
   }
+
+  async buildCustomCommandSettings(containerEl: HTMLElement): Promise<void> {
+    containerEl.createEl("h2", { text: "Custom commands" });
+
+    new Setting(containerEl)
+      .setName("Custom Prompt (for Selected Text in the Note)")
+      .setDesc("The menu name you enter here will appear in the context menu or command palette when you select highlighted text in your note. \nRunning this menu will trigger the prompt you set here.");
+
+
+    for (let i = 1; i <= this.plugin.settings.cmd_count; i++) {
+      this.createCustomCommandSetting(containerEl, i);
+    }  
+    new Setting(containerEl)
+    .addButton(button => button
+      .setButtonText('Add Command')
+      .onClick(async() => {
+        if (this.plugin.settings.cmd_count < 5) {
+          this.plugin.settings.cmd_count += 1;
+          this.plugin.settings[`cmd_text_${this.plugin.settings.cmd_count}`] = '';
+          this.plugin.settings[`cmd_prompt_${this.plugin.settings.cmd_count}`] = '';
+          this.plugin.settings[`cmd_hotkey_${this.plugin.settings.cmd_count}`] = '';
+          this.display();
+        } else {
+          SummarDebug.Notice(0, 'You can only add up to 5 commands.');
+        }
+      }));
+  }
+
+  createCustomCommandSetting(containerEl: HTMLElement, index: number): void {
+    new Setting(containerEl)
+      .setHeading()
+      .addText((text) => {
+        text
+          .setPlaceholder('Menu Name')
+          .setValue(this.plugin.settings[`cmd_text_${index}`] as string)
+          .onChange(async (value) => {
+            this.plugin.settings[`cmd_text_${index}`] = value;
+          });
+        const textEl = text.inputEl;
+        textEl.style.width = "100%";
+      })
+      .addText((hotkeyInput) => {
+        hotkeyInput
+          .setPlaceholder('Press a hotkey...')
+          .setValue(this.plugin.settings[`cmd_hotkey_${index}`] as string)
+          .onChange(async (value) => {
+            this.plugin.settings[`cmd_hotkey_${index}`] = value;
+          });
+        const hotkeyEl = hotkeyInput.inputEl;
+        hotkeyEl.style.width = "150px";
+        hotkeyEl.readOnly = true;
+  
+        // 핫키 입력 리스너 추가
+        hotkeyEl.addEventListener('keydown', async (event) => {
+          event.preventDefault(); // 기본 입력 방지
+  
+          const modifiers = [];
+          // if (event.ctrlKey || event.metaKey) modifiers.push('Ctrl');
+          if (event.ctrlKey) modifiers.push('Ctrl');
+          if (event.metaKey) modifiers.push('Cmd');
+          if (event.shiftKey) modifiers.push('Shift');
+          if (event.altKey) modifiers.push('Alt');
+  
+          const key = event.key.length === 1 ? event.key.toUpperCase() : event.key;
+          const hotkey = [...modifiers, key].join('+');
+
+          if (hotkey === 'Backspace' || hotkey === 'Delete' || hotkey === ' ')
+            hotkeyEl.value = "";
+          else
+            hotkeyEl.value = hotkey;
+          this.plugin.settings[`cmd_hotkey_${index}`] = hotkey;
+
+        });
+      })      
+      .addExtraButton(button => button
+        .setIcon('trash-2')
+        .setTooltip('Remove Command')
+        .onClick(async () => {
+          for (let i = index; i < this.plugin.settings.cmd_count; i++) {
+            this.plugin.settings[`cmd_text_${i}`] = this.plugin.settings[`cmd_text_${i+1}`];
+            this.plugin.settings[`cmd_prompt_${i}`] = this.plugin.settings[`cmd_prompt_${i+1}`];
+            this.plugin.settings[`cmd_hotkey_${i}`] = this.plugin.settings[`cmd_hotkey_${i+1}`];
+          }
+          delete this.plugin.settings[`cmd_text_${this.plugin.settings.cmd_count}`];
+          delete this.plugin.settings[`cmd_prompt_${this.plugin.settings.cmd_count}`];
+          delete this.plugin.settings[`cmd_hotkey_${this.plugin.settings.cmd_count}`];
+          this.plugin.settings.cmd_count -= 1;
+          this.display();
+        }));
+
+    new Setting(containerEl)
+      .setHeading()
+      .addTextArea((textarea) => {
+        textarea
+          .setPlaceholder('Run OpenAI’s API using the text you selected in the note. Type the prompt you want to use here.')
+          .setValue(this.plugin.settings[`cmd_prompt_${index}`] as string)
+          .onChange(async (value) => {
+            this.plugin.settings[`cmd_prompt_${index}`] = value;
+          })
+        const textAreaEl = textarea.inputEl;
+        textAreaEl.style.width = "100%";
+        textAreaEl.style.height = "150px";
+        textAreaEl.style.resize = "none";
+      });
+  }
+
 }

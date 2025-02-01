@@ -1,6 +1,6 @@
-import { App, Plugin, Setting, Platform, Menu, TFile, TFolder, Modal, normalizePath } from "obsidian";
+import { App, Plugin, Setting, Platform, Menu, TFile, TFolder, Modal, normalizePath, MarkdownView } from "obsidian";
 import { PluginSettings } from "./types";
-import { DEFAULT_SETTINGS, SummarDebug, extractDomain } from "./globals";
+import { DEFAULT_SETTINGS, SummarDebug, extractDomain, parseHotkey } from "./globals";
 import { PluginUpdater } from "./pluginupdater";
 import { SummarView } from "./summarview"
 import { SummarSettingsTab } from "./summarsettingtab";
@@ -8,6 +8,7 @@ import { ConfluenceHandler } from "./confluencehandler";
 import { PdfHandler } from "./pdfhandler";
 import { AudioHandler } from "./audiohandler";
 import { AudioRecordingManager } from "./recordingmanager";
+import { CustomCommandHandler } from "./customcommandhandler";
 import { StatusBar } from "./statusbar";
 
 
@@ -21,8 +22,12 @@ export default class SummarPlugin extends Plugin {
   pdfHandler: PdfHandler;
   recordingManager: AudioRecordingManager;
   audioHandler: AudioHandler;
+  commandHandler: CustomCommandHandler;
 
   statusBar: StatusBar;
+
+  customCommandIds: string[] = [];
+  customCommandMenu: any;
 
   OBSIDIAN_PLUGIN_DIR: string = "";
   PLUGIN_ID: string = ""; // 플러그인 아이디
@@ -67,6 +72,7 @@ export default class SummarPlugin extends Plugin {
     this.pdfHandler = new PdfHandler(this);
     this.audioHandler = new AudioHandler(this);
     this.recordingManager = new AudioRecordingManager(this);
+    this.commandHandler = new CustomCommandHandler(this);
     this.statusBar = new StatusBar(this);
 
 
@@ -278,6 +284,66 @@ export default class SummarPlugin extends Plugin {
         fileInput.click();
       },
     });
+
+    this.registerCustomCommandAndMenus();
+  }
+
+  registerCustomCommandAndMenus() {
+    this.unregisterCustomCommandAndMenus();
+
+
+    for (let i = 1; i <= this.settings.cmd_count; i++) {
+      const cmdId = `openai-command-${i}`;
+      const cmdText = this.settings[`cmd_text_${i}`] as string;
+      const cmdPrompt = this.settings[`cmd_prompt_${i}`] as string;
+      const cmdHotkey = this.settings[`cmd_hotkey_${i}`] as string;
+
+      const hotKey = parseHotkey(cmdHotkey);
+
+      if (cmdId && cmdId.length > 0) {
+        this.addCommand({
+          id: cmdId,
+          name: cmdText,
+          checkCallback: (checking: boolean) => {
+            const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
+            if (editor) {
+              if (!checking) {
+                this.commandHandler.executePrompt(editor.getSelection(), cmdPrompt);
+              }
+              return true;
+            }
+            return false;
+          },
+          hotkeys: [hotKey]
+          // hotkeys: [{ modifiers: [], key: cmdHotkey }]
+        });
+        this.customCommandIds.push(cmdId);
+      }
+    }
+
+    this.customCommandMenu = this.app.workspace.on('editor-menu', (menu, editor) => {
+      for (let i = 1; i <= this.settings.cmd_count; i++) {
+        const cmdText = this.settings[`cmd_text_${i}`] as string;
+        const cmdPrompt = this.settings[`cmd_prompt_${i}`] as string;
+
+        if (cmdText && cmdText.length > 0) {
+          menu.addItem((item) => {
+            item.setTitle(cmdText)
+              .onClick(() => this.commandHandler.executePrompt(editor.getSelection(), cmdPrompt));
+          });
+        }
+      }
+    });
+  }
+
+  unregisterCustomCommandAndMenus() {
+    this.customCommandIds.forEach(id => this.removeCommand(id));
+    this.customCommandIds = [];
+
+    if (this.customCommandMenu) {
+      this.app.workspace.offref(this.customCommandMenu);
+      this.customCommandMenu = null;
+    }
   }
 
   async toggleRecording(): Promise<void> {
@@ -382,10 +448,10 @@ export default class SummarPlugin extends Plugin {
     return DEFAULT_SETTINGS;
   }
 
-  async saveSettingsToFile(settings: PluginSettings): Promise<void> {
+  async saveSettingsToFile(): Promise<void> {
     try {
       await this.app.vault.adapter.mkdir(this.PLUGIN_DIR);
-      await this.app.vault.adapter.write(this.PLUGIN_SETTINGS, JSON.stringify(settings, null, 2));
+      await this.app.vault.adapter.write(this.PLUGIN_SETTINGS, JSON.stringify(this.settings, null, 2));
       SummarDebug.log(1, "Settings saved to data.json");
     } catch (error) {
       SummarDebug.error(1, "Error saving settings file:", error);
