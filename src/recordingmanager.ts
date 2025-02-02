@@ -1,7 +1,7 @@
 import { normalizePath, Notice } from "obsidian";
 import SummarPlugin from "./main";
 import { OpenAIResponse } from "./types";
-import { SummarDebug, SummarViewContainer, fetchOpenai } from "./globals";
+import { SummarDebug, SummarViewContainer, fetchOpenai, getDeviceId } from "./globals";
 import { NativeAudioRecorder } from "./audiorecorder";
 import { RecordingTimer } from "./recordingtimer";
 import { SummarTimer } from "./summartimer";
@@ -19,11 +19,18 @@ export class AudioRecordingManager extends SummarViewContainer {
 	private recordingCounter: number = 0;
 	private recordingTimer: RecordingTimer;
 
+	private deviceId: string;
+
 	constructor(plugin: SummarPlugin) {
 		super(plugin);
 		this.recorder = new NativeAudioRecorder();
 		this.recordingTimer = new RecordingTimer(plugin);
 		this.timer = new SummarTimer(plugin);
+
+		// 비동기 초기화 (가독성이 떨어짐)
+		getDeviceId(plugin).then(deviceId => {
+		this.deviceId = deviceId as string;
+		});
 	}
 
 	async summarize(transcripted: string) {
@@ -83,15 +90,14 @@ export class AudioRecordingManager extends SummarViewContainer {
 				throw new Error("Recorder is recording or paused. Cannot start recording.");
 			}
 
-			const deviceId = this.plugin.settings.selectedDeviceId;
-			if (!deviceId) {
+			// const deviceId = await getDeviceId(this.plugin);
+			const selectedDeviceId = this.plugin.settings[this.deviceId] as string;
+			if (!selectedDeviceId) {
 				this.recordingTimer.stop();
 				SummarDebug.Notice(0, "No audio device selected.", 0);
 				return;
 			}
-
-
-			await this.recorder.startRecording(deviceId);
+			await this.recorder.startRecording(selectedDeviceId);
 			this.startTime = new Date();
 			this.timeStamp = this.getTimestamp();
 			this.elapsedTime = 0;
@@ -121,7 +127,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 				this.recordingCounter++;
 
 				// Restart the recording
-				await this.recorder.startRecording(deviceId);
+				await this.recorder.startRecording(selectedDeviceId);
 			}, intervalInMinutes * 60 * 1000);
 
 			new Notice("Recording started.");

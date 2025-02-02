@@ -7,11 +7,16 @@ import SummarPlugin from "./main";
 export class SummarSettingsTab extends PluginSettingTab {
   plugin: SummarPlugin;
   savedTabId: string;
+  deviceId: string;
 
   constructor(plugin: SummarPlugin) {
     super(plugin.app, plugin);
     this.plugin = plugin;
     this.savedTabId = 'common-tab';
+      // 비동기 초기화 (가독성이 떨어짐)
+    getDeviceId(plugin).then(deviceId => {
+      this.deviceId = deviceId as string;
+    });
   }
 
   async hide(): Promise<void> {
@@ -315,22 +320,15 @@ export class SummarSettingsTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Audio Input Device")
       .setDesc("Select the audio input device for recording.")
-      .addDropdown((dropdown) => {
+      .addDropdown(async (dropdown) => {
         audioDevices.forEach((device) =>
           dropdown.addOption(device.deviceId, device.label || "Unknown Device")
         );
-        if (Platform.isMacOS)
-        {
-          dropdown.setValue(this.plugin.settings[`selectedDeviceId_${getDeviceId(this.plugin)}`] as string || "");
-          dropdown.onChange(async (value) => {
-            this.plugin.settings[`selectedDeviceId_${getDeviceId(this.plugin)}`] = value;
-          });
-        } else {
-          dropdown.setValue(this.plugin.settings.selectedDeviceId || "");
-          dropdown.onChange(async (value) => {
-            this.plugin.settings.selectedDeviceId = value;
-          });
-        }
+
+        dropdown.setValue(this.plugin.settings[this.deviceId] as string || "");
+        dropdown.onChange(async (value) => {
+          this.plugin.settings[this.deviceId] = value;
+        });
       });
 
     new Setting(containerEl)

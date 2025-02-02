@@ -1,5 +1,6 @@
-import { Notice, requestUrl, Hotkey, Modifier, Platform } from "obsidian";
-import * as crypto from "crypto"
+import { Notice, requestUrl, Hotkey, Modifier } from "obsidian";
+import * as os from 'os';
+import { Device } from '@capacitor/device';
 
 import SummarPlugin from "./main";
 import { PluginSettings } from "./types";
@@ -51,9 +52,6 @@ export class SummarViewContainer {
     this.plugin = plugin;
   }
 
-  // setResultContainer(resultContainer: HTMLTextAreaElement) {
-  //   this.resultContainer = resultContainer;
-  // }
   /**
    * Updates the value of a result container.
    * @param resultContainer The container object to update.
@@ -254,20 +252,35 @@ export function parseHotkey(hotkeyString: string): Hotkey {
   return { modifiers, key };
 }
 
+async function getDeviceName(): Promise<string> {
+  // 데스크탑 환경인 경우
+  if (os && os.hostname) {
+    SummarDebug.log(1, `desktop: ${os.hostname()}`);
+    return os.hostname();
+  }
+
+  // 모바일(Android, iOS) 환경인 경우
+  try {
+      const info = await Device.getInfo();
+      SummarDebug.log(1, `mobile: ${info.name}`);
+      return info.name || "Unknown Device";
+  } catch (error) {
+      SummarDebug.error(1, 'Failed to get device name:', error);
+      return "Unknown Device";
+  }
+}
+
+function replaceAllSpecialChars(input: string): string {
+  // 알파벳, 숫자를 제외한 모든 문자를 '_'로 변환
+  const allSpecialCharsRegex = /[^a-zA-Z0-9]/g;
+  return input.replace(allSpecialCharsRegex, '_');
+}
 
 // 디바이스 ID 로드 또는 생성
-export function getDeviceId(plugin: any): string {
-    // const storedId = localStorage.getItem('myPluginDeviceId');
-    // if (storedId) {
-    //     return storedId;
-    // } else {
-    //     const newId = uuidv4();
-    //     localStorage.setItem('myPluginDeviceId', newId);
-    //     return newId;
-    // }
-  
-    SummarDebug.log(1,`Platform: ${Platform.resourcePathPrefix}`);
-    const vaultPath = plugin.app.vault.adapter.getBasePath();
-    const deviceId = crypto.createHash('sha256').update(`${Platform.resourcePathPrefix}_${vaultPath}`).digest('hex');
-    return deviceId;
+export async function getDeviceId(plugin: any): Promise<string> {
+  const deviceName = await getDeviceName();
+
+  const deviceId = `selectedDeviceId_${replaceAllSpecialChars(deviceName)}`;
+  SummarDebug.log(1, `deviceId: ${deviceId}`);
+  return deviceId;
 }
