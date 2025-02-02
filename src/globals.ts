@@ -1,4 +1,6 @@
-import { Notice, requestUrl, Hotkey, Modifier } from "obsidian";
+import { Notice, requestUrl, Hotkey, Modifier, Platform } from "obsidian";
+import * as crypto from "crypto"
+
 import SummarPlugin from "./main";
 import { PluginSettings } from "./types";
 
@@ -250,4 +252,22 @@ export function parseHotkey(hotkeyString: string): Hotkey {
   }).filter(Boolean) as Modifier[];  // 타입 필터링
 
   return { modifiers, key };
+}
+
+
+// 디바이스 ID 로드 또는 생성
+export function getDeviceId(plugin: any): string {
+    // const storedId = localStorage.getItem('myPluginDeviceId');
+    // if (storedId) {
+    //     return storedId;
+    // } else {
+    //     const newId = uuidv4();
+    //     localStorage.setItem('myPluginDeviceId', newId);
+    //     return newId;
+    // }
+  
+    SummarDebug.log(1,`Platform: ${Platform.resourcePathPrefix}`);
+    const vaultPath = plugin.app.vault.adapter.getBasePath();
+    const deviceId = crypto.createHash('sha256').update(`${Platform.resourcePathPrefix}_${vaultPath}`).digest('hex');
+    return deviceId;
 }

@@ -1,5 +1,5 @@
-import { PluginSettingTab, Setting } from "obsidian";
-import { SummarDebug } from "./globals";
+import { PluginSettingTab, Setting, Platform } from "obsidian";
+import { getDeviceId, SummarDebug } from "./globals";
 import { PluginUpdater } from "./pluginupdater";
 import SummarPlugin from "./main";
 
@@ -305,6 +305,7 @@ export class SummarSettingsTab extends PluginSettingTab {
     // containerEl.createEl("h2", { text: "Audio Input Plugin Settings" });
 
     // Get list of audio devices
+    await navigator.mediaDevices.getUserMedia({audio: true});
     const devices = await navigator.mediaDevices.enumerateDevices();
     const audioDevices = devices.filter(
       (device) => device.kind === "audioinput"
@@ -318,11 +319,18 @@ export class SummarSettingsTab extends PluginSettingTab {
         audioDevices.forEach((device) =>
           dropdown.addOption(device.deviceId, device.label || "Unknown Device")
         );
-
-        dropdown.setValue(this.plugin.settings.selectedDeviceId || "");
-        dropdown.onChange(async (value) => {
-          this.plugin.settings.selectedDeviceId = value;
-        });
+        if (Platform.isMacOS)
+        {
+          dropdown.setValue(this.plugin.settings[`selectedDeviceId_${getDeviceId(this.plugin)}`] as string || "");
+          dropdown.onChange(async (value) => {
+            this.plugin.settings[`selectedDeviceId_${getDeviceId(this.plugin)}`] = value;
+          });
+        } else {
+          dropdown.setValue(this.plugin.settings.selectedDeviceId || "");
+          dropdown.onChange(async (value) => {
+            this.plugin.settings.selectedDeviceId = value;
+          });
+        }
       });
 
     new Setting(containerEl)
