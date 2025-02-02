@@ -1,5 +1,5 @@
 import { PluginSettingTab, Setting, Platform } from "obsidian";
-import { getDeviceId, SummarDebug } from "./globals";
+import { SummarDebug, getDeviceId, sanitizeLabel } from "./globals";
 import { PluginUpdater } from "./pluginupdater";
 import SummarPlugin from "./main";
 
@@ -313,7 +313,7 @@ export class SummarSettingsTab extends PluginSettingTab {
     await navigator.mediaDevices.getUserMedia({audio: true});
     const devices = await navigator.mediaDevices.enumerateDevices();
     const audioDevices = devices.filter(
-      (device) => device.kind === "audioinput"
+      (audioDevice) => audioDevice.kind === "audioinput"
     );
 
     // Audio device dropdown
@@ -321,11 +321,29 @@ export class SummarSettingsTab extends PluginSettingTab {
       .setName("Audio Input Device")
       .setDesc("Select the audio input device for recording.")
       .addDropdown(async (dropdown) => {
-        audioDevices.forEach((device) =>
-          dropdown.addOption(device.deviceId, device.label || "Unknown Device")
-        );
+        // audioDevices.forEach((device) =>
+        //   dropdown.addOption(device.deviceId, device.label || "Unknown Device")
+        // );
 
-        dropdown.setValue(this.plugin.settings[this.deviceId] as string || "");
+        // dropdown.setValue(this.plugin.settings[this.deviceId] as string || "");
+        // dropdown.onChange(async (value) => {
+        //   this.plugin.settings[this.deviceId] = value;
+        // });
+        if (audioDevices.length === 0) {
+          dropdown.addOption("", "No Devices Found");
+        } else {
+          audioDevices.forEach((audioDevice) => {
+            const label = audioDevice.label || "Unknown Device";
+            const sanitizedLabel = sanitizeLabel(label);
+
+            dropdown.addOption(sanitizedLabel, label);
+          });
+        }
+
+        // 이전에 선택한 장치 라벨 불러오기
+        const savedDeviceLabel = this.plugin.settings[this.deviceId] as string || "";
+        dropdown.setValue(savedDeviceLabel);
+
         dropdown.onChange(async (value) => {
           this.plugin.settings[this.deviceId] = value;
         });

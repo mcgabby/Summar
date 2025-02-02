@@ -272,8 +272,9 @@ async function getDeviceName(): Promise<string> {
 
 function replaceAllSpecialChars(input: string): string {
   // 알파벳, 숫자를 제외한 모든 문자를 '_'로 변환
+  const encodedInput = encodeURIComponent(input);
   const allSpecialCharsRegex = /[^a-zA-Z0-9]/g;
-  return input.replace(allSpecialCharsRegex, '_');
+  return encodedInput.replace(allSpecialCharsRegex, '_');
 }
 
 // 디바이스 ID 로드 또는 생성
@@ -283,4 +284,47 @@ export async function getDeviceId(plugin: any): Promise<string> {
   const deviceId = `selectedDeviceId_${replaceAllSpecialChars(deviceName)}`;
   SummarDebug.log(1, `deviceId: ${deviceId}`);
   return deviceId;
+}
+
+// 특수문자 제거 및 안전한 키 생성 함수
+export function sanitizeLabel(label: string): string {
+  return label.replace(/[ .,+'"']/g, '_').toLowerCase();
+}
+
+// 저장된 라벨을 기반으로 deviceId를 반환하는 함수
+export async function getDeviceIdFromLabel(savedLabel: string): Promise<string | null> {
+  try {
+      // 마이크 권한 요청 및 초기화
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+
+      // 초기화 지연 (Android 환경 안정화)
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // 장치 목록 가져오기
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioDevices = devices.filter(device => device.kind === 'audioinput');
+
+      // 저장된 라벨을 정규화
+      const normalizedSavedLabel = sanitizeLabel(savedLabel);
+
+      // 라벨 비교를 통해 일치하는 deviceId 찾기
+      for (const device of audioDevices) {
+          const deviceLabel = device.label || "Unknown Device";
+          const normalizedDeviceLabel = sanitizeLabel(deviceLabel);
+
+          if (normalizedDeviceLabel === normalizedSavedLabel) {
+              return device.deviceId;
+          }
+      }
+
+      // 일치하는 장치가 없는 경우
+      // console.warn("No matching device found for label:", savedLabel);
+      SummarDebug.log(1,`No matching device found for label: ${savedLabel}`);
+      return null;
+
+  } catch (error) {
+      SummarDebug.error(1, "Error while retrieving deviceId from label:", error);
+      return null;
+  }
 }

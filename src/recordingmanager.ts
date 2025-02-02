@@ -1,7 +1,7 @@
 import { normalizePath, Notice } from "obsidian";
 import SummarPlugin from "./main";
 import { OpenAIResponse } from "./types";
-import { SummarDebug, SummarViewContainer, fetchOpenai, getDeviceId } from "./globals";
+import { SummarDebug, SummarViewContainer, fetchOpenai, getDeviceId, getDeviceIdFromLabel } from "./globals";
 import { NativeAudioRecorder } from "./audiorecorder";
 import { RecordingTimer } from "./recordingtimer";
 import { SummarTimer } from "./summartimer";
@@ -91,13 +91,15 @@ export class AudioRecordingManager extends SummarViewContainer {
 			}
 
 			// const deviceId = await getDeviceId(this.plugin);
-			const selectedDeviceId = this.plugin.settings[this.deviceId] as string;
-			if (!selectedDeviceId) {
+			const selectedDeviceLabel = this.plugin.settings[this.deviceId] as string;
+			if (!selectedDeviceLabel) {
 				this.recordingTimer.stop();
 				SummarDebug.Notice(0, "No audio device selected.", 0);
 				return;
 			}
+			const selectedDeviceId = await getDeviceIdFromLabel(selectedDeviceLabel) as string;
 			await this.recorder.startRecording(selectedDeviceId);
+
 			this.startTime = new Date();
 			this.timeStamp = this.getTimestamp();
 			this.elapsedTime = 0;
