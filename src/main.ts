@@ -542,18 +542,28 @@ class UrlInputModal extends Modal {
         }).catch((err) => {
           SummarDebug.error(1, "Failed to read clipboard content: ", err);
         });
+
+        // Enter 키를 누르면 OK 버튼 핸들러 실행 (OK 버튼을 default로 설정)
+        input.addEventListener("keydown", (evt: KeyboardEvent) => {
+          if (evt.key === "Enter") {
+            evt.preventDefault();
+            okButtonHandler();
+          }
+        });
       });
 
     // 확인 및 취소 버튼
     new Setting(contentEl)
-      .addButton((btn) =>
+      .addButton((btn) => {
         btn
           .setButtonText("OK")
           .setCta()
           .onClick(() => {
             okButtonHandler();
-          })
-      )
+          });
+        // OK 버튼의 배경색을 빨간색으로 설정
+        // btn.buttonEl.style.backgroundColor = "red";
+      })
       .addButton((btn) =>
         btn
           .setButtonText("Cancel")
