@@ -1,8 +1,9 @@
 import { PluginSettingTab, Setting, Platform } from "obsidian";
+
 import { SummarDebug, getDeviceId, sanitizeLabel } from "./globals";
 import { PluginUpdater } from "./pluginupdater";
 import SummarPlugin from "./main";
-
+import { updateScheduledMeetings } from "./calendarevent";
 
 export class SummarSettingsTab extends PluginSettingTab {
   plugin: SummarPlugin;
@@ -43,6 +44,7 @@ export class SummarSettingsTab extends PluginSettingTab {
       { name: 'PDF', id: 'pdf-tab' },
       { name: 'Recording', id: 'recording-tab' },
       { name: 'Custom command', id: 'custom-tab' },
+      { name: 'Schedule', id: 'schedule-tab' },
     ];
 
     let activeTab = this.savedTabId;
@@ -102,6 +104,12 @@ export class SummarSettingsTab extends PluginSettingTab {
             break;
           case 'custom-tab':
             await this.buildCustomCommandSettings(tabContent);
+            break;
+
+          case 'schedule-tab':
+            if (Platform.isMacOS) {
+              await this.buildScheduleSettings(tabContent);
+            }
             break;
         }
       }
@@ -504,4 +512,33 @@ export class SummarSettingsTab extends PluginSettingTab {
       });
   }
 
+  async buildScheduleSettings(containerEl: HTMLElement): Promise<void> {
+    containerEl.createEl("h2", { text: "Today's Schedule" });
+  
+    new Setting(containerEl)
+      .setName("Custom Prompt (for Selected Text in the Note)")
+      .setDesc("The menu name you enter here will appear in the context menu or command palette when you select highlighted text in your note. \nRunning this menu will trigger the prompt you set here.");
+  
+    await updateScheduledMeetings();
+    setInterval(updateScheduledMeetings, 10 * 60 * 1000); // 10분마다 업데이트
+    
+    // for (let i = 1; i <= this.plugin.settings.cmd_count; i++) {
+    //   this.createCustomCommandSetting(containerEl, i);
+    // }  
+    // new Setting(containerEl)
+    // .addButton(button => button
+    //   .setButtonText('Add Command')
+    //   .onClick(async() => {
+    //     if (this.plugin.settings.cmd_count < 5) {
+    //       this.plugin.settings.cmd_count += 1;
+    //       this.plugin.settings[`cmd_text_${this.plugin.settings.cmd_count}`] = '';
+    //       this.plugin.settings[`cmd_prompt_${this.plugin.settings.cmd_count}`] = '';
+    //       this.plugin.settings[`cmd_hotkey_${this.plugin.settings.cmd_count}`] = '';
+    //       this.display();
+    //     } else {
+    //       SummarDebug.Notice(0, 'You can only add up to 5 commands.');
+    //     }
+    //   }));
+  }
 }
+
