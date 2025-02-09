@@ -329,14 +329,7 @@ export class SummarSettingsTab extends PluginSettingTab {
       .setName("Audio Input Device")
       .setDesc("Select the audio input device for recording.")
       .addDropdown(async (dropdown) => {
-        // audioDevices.forEach((device) =>
-        //   dropdown.addOption(device.deviceId, device.label || "Unknown Device")
-        // );
 
-        // dropdown.setValue(this.plugin.settings[this.deviceId] as string || "");
-        // dropdown.onChange(async (value) => {
-        //   this.plugin.settings[this.deviceId] = value;
-        // });
         if (audioDevices.length === 0) {
           dropdown.addOption("", "No Devices Found");
         } else {
@@ -519,7 +512,7 @@ export class SummarSettingsTab extends PluginSettingTab {
       .setName("Custom Prompt (for Selected Text in the Note)")
       .setDesc("The menu name you enter here will appear in the context menu or command palette when you select highlighted text in your note. \nRunning this menu will trigger the prompt you set here.");
   
-    await updateScheduledMeetings();
+    await updateScheduledMeetings(this.plugin);
     setInterval(updateScheduledMeetings, 10 * 60 * 1000); // 10분마다 업데이트
     
     // for (let i = 1; i <= this.plugin.settings.cmd_count; i++) {

@@ -1,4 +1,5 @@
-import { exec } from "child_process";
+import { normalizePath } from "obsidian";
+import { exec, spawn } from "child_process";
 import { promisify } from "util";
 import { SummarDebug } from "./globals";
 
@@ -17,11 +18,39 @@ interface CalendarEvent {
  */
 const scheduledMeetings = new Map<string, NodeJS.Timeout>();
 
+async function runAppleScript(scriptPath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+      const process = spawn("osascript", [scriptPath]);
+
+      let output = "";
+
+      process.stdout.on("data", (data) => {
+          output += data.toString(); // 데이터를 실시간으로 받아서 저장
+      });
+
+      process.stderr.on("data", (data) => {
+          console.error(`stderr: ${data.toString()}`);
+      });
+
+      process.on("close", (code) => {
+          if (code === 0) {
+              resolve(output.trim()); // 정상 종료 시 결과 반환
+          } else {
+              reject(new Error(`AppleScript 실행 실패 (exit code: ${code})`));
+          }
+      });
+
+      process.on("error", (err) => {
+          reject(new Error(`AppleScript 실행 오류: ${err.message}`));
+      });
+  });
+}
+
 /**
  * macOS의 Calendar 앱에서 **현재 시각부터 24시간 이내**의 이벤트 중
  * 제목, 설명, 또는 위치에 "zoom"이 포함된 이벤트들을 가져오는 함수.
  */
-async function fetchTodaysZoomMeetingsMac(): Promise<CalendarEvent[]> {
+async function fetchTodaysZoomMeetingsMac(plugin: any): Promise<CalendarEvent[]> {
     const appleScriptLines = [
         'tell application "Calendar"',
         '    set matchingEvents to {}',
@@ -44,15 +73,29 @@ async function fetchTodaysZoomMeetingsMac(): Promise<CalendarEvent[]> {
       
     // 각 줄마다 -e 옵션을 붙여서 실행
     const scriptArgs = appleScriptLines.map(line => `-e ${JSON.stringify(line)}`).join(" ");
+
+    ////
+    const scpPath = normalizePath(this.app.vault.adapter.basePath + "/.obsidian/plugins/summar/cal.scpt");
+    ////
     try {
-        const { stdout, stderr } = await execAsync(`osascript ${scriptArgs}`);
-        if (stderr && stderr.trim()) {
-          console.error("AppleScript 에러:", stderr);
-        }
-        const output = stdout.trim();
-        if (!output) return [];
+      SummarDebug.log(1, "macOS에서 Zoom 미팅 일정 가져오는 중...1");
+      SummarDebug.log(1, `scpPath: ${scpPath}`);
+        // const { stdout, stderr } = await execAsync(`osascript ${scriptArgs}`);
+        // const { stdout, stderr } = await execAsync(`osascript ${scpPath}`);
+        // if (stderr && stderr.trim()) {
+        //   console.error("AppleScript 에러:", stderr);
+        // }
+        // SummarDebug.log(1, "macOS에서 Zoom 미팅 일정 가져오는 중...2");
+        // const output = stdout.trim();
+        // if (!output) {
+        //   SummarDebug.log(1, "일정이 없습니다.");
+        //   return [];
+        // }
+        const result = await runAppleScript(scriptArgs);
+        SummarDebug.log(1, `result: ${result}`);
     
-        const lines = output.split("\n").map(line => line.trim()).filter(line => line.length > 0);
+        // const lines = output.split("\n").map(line => line.trim()).filter(line => line.length > 0);
+        const lines = result.split("\n").map(line => line.trim()).filter(line => line.length > 0);
         const events: CalendarEvent[] = [];
         for (const line of lines) {
           const parts = line.split("||");
@@ -115,17 +158,18 @@ async function fetchTodaysZoomMeetingsMac(): Promise<CalendarEvent[]> {
  * 새 일정은 해당 시작시간에 맞춰 Zoom 미팅을 실행하도록 예약하고,
  * 더 이상 존재하지 않거나 변경된 일정에 대해서는 기존 예약을 취소합니다.
  */
-export async function updateScheduledMeetings(): Promise<void> {
+export async function updateScheduledMeetings(plugin: any): Promise<void> {
   SummarDebug.log(1, "일정 업데이트 중...");
   try {
-    const events = await fetchTodaysZoomMeetingsMac();
+    const events = await fetchTodaysZoomMeetingsMac(plugin);
     const now = new Date();
     const newMeetingKeys = new Set<string>();
 
     let count = 0;
     for (const event of events) {
       // 고유 키: 이벤트 제목과 시작시간을 조합
-      SummarDebug.log(1, `schedule count: ${++count}`);
+      count++;
+      SummarDebug.log(1, `schedule count: ${count}`);
       const meetingKey = `${event.title}-${event.start.toISOString()}`;
       newMeetingKeys.add(meetingKey);
 

@@ -1,6 +1,5 @@
-import { TFile, TFolder } from "obsidian";
+import { TFile, TFolder, normalizePath } from "obsidian";
 import SummarPlugin from "./main";
-import { normalizePath } from "obsidian";
 import { SummarDebug, SummarViewContainer } from "./globals";
 import { SummarTimer } from "./summartimer";
 
