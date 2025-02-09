@@ -3,7 +3,6 @@ import { PluginSettingTab, Setting, Platform } from "obsidian";
 import { SummarDebug, getDeviceId, sanitizeLabel } from "./globals";
 import { PluginUpdater } from "./pluginupdater";
 import SummarPlugin from "./main";
-import { updateScheduledMeetings } from "./calendarevent";
 
 export class SummarSettingsTab extends PluginSettingTab {
   plugin: SummarPlugin;
@@ -593,8 +592,6 @@ export class SummarSettingsTab extends PluginSettingTab {
       .setName("Custom Prompt (for Selected Text in the Note)")
       .setDesc("The menu name you enter here will appear in the context menu or command palette when you select highlighted text in your note. \nRunning this menu will trigger the prompt you set here.");
   
-    await updateScheduledMeetings(this.plugin);
-    setInterval(updateScheduledMeetings, 10 * 60 * 1000); // 10분마다 업데이트
     
     // for (let i = 1; i <= this.plugin.settings.cmd_count; i++) {
     //   this.createCustomCommandSetting(containerEl, i);

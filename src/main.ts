@@ -9,6 +9,7 @@ import { PdfHandler } from "./pdfhandler";
 import { AudioHandler } from "./audiohandler";
 import { AudioRecordingManager } from "./recordingmanager";
 import { CustomCommandHandler } from "./customcommandhandler";
+import { CalendarHandler } from "./calendarhandler";
 import { StatusBar } from "./statusbar";
 
 
@@ -23,6 +24,7 @@ export default class SummarPlugin extends Plugin {
   recordingManager: AudioRecordingManager;
   audioHandler: AudioHandler;
   commandHandler: CustomCommandHandler;
+  calendarHandler: CalendarHandler;
 
   statusBar: StatusBar;
 
@@ -74,6 +76,7 @@ export default class SummarPlugin extends Plugin {
     this.recordingManager = new AudioRecordingManager(this);
     this.commandHandler = new CustomCommandHandler(this);
     this.statusBar = new StatusBar(this);
+    this.calendarHandler = new CalendarHandler(this);
 
 
     if (Platform.isDesktopApp) {
