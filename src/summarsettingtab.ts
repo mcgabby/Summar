@@ -37,6 +37,85 @@ export class SummarSettingsTab extends PluginSettingTab {
 
     // Create tabs container
     const tabsContainer = containerEl.createDiv({ cls: 'settings-tabs' });
+
+    // 터치패드 및 마우스 휠 이벤트 처리 (좌우 스크롤)
+    tabsContainer.addEventListener("wheel", (event) => {
+      if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+          // 터치패드에서 수직 스크롤이 발생할 경우 가로 스크롤로 변환
+          event.preventDefault();
+          tabsContainer.scrollBy({
+              left: event.deltaY * 2,
+              behavior: "smooth",
+          });
+      }
+  });
+
+  // 탭 버튼 클릭 시 자동 스크롤 조정
+  document.querySelectorAll(".settings-tab-button").forEach((button) => {
+      button.addEventListener("click", (event) => {
+          const target = event.currentTarget as HTMLElement;
+          const containerRect = tabsContainer.getBoundingClientRect();
+          const buttonRect = target.getBoundingClientRect();
+
+          if (buttonRect.left < containerRect.left) {
+              // 왼쪽에 가려진 경우
+              tabsContainer.scrollBy({
+                  left: buttonRect.left - containerRect.left - 10,
+                  behavior: "smooth",
+              });
+          } else if (buttonRect.right > containerRect.right) {
+              // 오른쪽에 가려진 경우
+              tabsContainer.scrollBy({
+                  left: buttonRect.right - containerRect.right + 10,
+                  behavior: "smooth",
+              });
+          }
+      });
+  });
+
+  // 모바일 및 터치스크린을 위한 터치 스크롤 기능 추가
+  let isDragging = false;
+  let startX = 0;
+  let scrollLeft = 0;
+
+  tabsContainer.addEventListener("mousedown", (event) => {
+      isDragging = true;
+      startX = event.pageX - tabsContainer.offsetLeft;
+      scrollLeft = tabsContainer.scrollLeft;
+  });
+
+  tabsContainer.addEventListener("mouseleave", () => {
+      isDragging = false;
+  });
+
+  tabsContainer.addEventListener("mouseup", () => {
+      isDragging = false;
+  });
+
+  tabsContainer.addEventListener("mousemove", (event) => {
+      if (!isDragging) return;
+      event.preventDefault();
+      const x = event.pageX - tabsContainer.offsetLeft;
+      const walk = (x - startX) * 2; // 이동 거리 계산
+      tabsContainer.scrollLeft = scrollLeft - walk;
+  });
+
+  // 터치스크린 지원 (모바일 환경)
+  let touchStartX = 0;
+  let touchScrollLeft = 0;
+
+  tabsContainer.addEventListener("touchstart", (event) => {
+      touchStartX = event.touches[0].pageX - tabsContainer.offsetLeft;
+      touchScrollLeft = tabsContainer.scrollLeft;
+  });
+
+  tabsContainer.addEventListener("touchmove", (event) => {
+      event.preventDefault();
+      const touchX = event.touches[0].pageX - tabsContainer.offsetLeft;
+      const touchMove = (touchX - touchStartX) * 2; // 이동 거리 계산
+      tabsContainer.scrollLeft = touchScrollLeft - touchMove;
+  });
+
     const tabContents = containerEl.createDiv({ cls: 'settings-tab-contents' });
     const tabs = [
       { name: 'Common', id: 'common-tab' },
@@ -51,29 +130,31 @@ export class SummarSettingsTab extends PluginSettingTab {
 
     // Create tabs
     tabs.forEach((tab) => {
-      const tabButton = tabsContainer.createEl('button', {
-        text: tab.name,
-        cls: 'settings-tab-button',
-      });
+      if (tab.id !== 'schedule-tab' || Platform.isMacOS) {
+        const tabButton = tabsContainer.createEl('button', {
+          text: tab.name,
+          cls: 'settings-tab-button',
+        });
 
-      if (tab.id === activeTab) {
-        tabButton.addClass('active');
+        if (tab.id === activeTab) {
+          tabButton.addClass('active');
+        }
+
+        tabButton.addEventListener('click', () => {
+          this.savedTabId = activeTab = tab.id;
+
+          // Update active state
+          tabsContainer.querySelectorAll('.settings-tab-button').forEach((btn) => {
+            btn.removeClass('active');
+          });
+          tabButton.addClass('active');
+
+          // Show active tab content
+          tabContents.querySelectorAll('.settings-tab-content').forEach((content) => {
+            content.toggleClass('hidden', content.id !== activeTab);
+          });
+        });
       }
-
-      tabButton.addEventListener('click', () => {
-        this.savedTabId = activeTab = tab.id;
-
-        // Update active state
-        tabsContainer.querySelectorAll('.settings-tab-button').forEach((btn) => {
-          btn.removeClass('active');
-        });
-        tabButton.addClass('active');
-
-        // Show active tab content
-        tabContents.querySelectorAll('.settings-tab-content').forEach((content) => {
-          content.toggleClass('hidden', content.id !== activeTab);
-        });
-      });
     });   
 
 

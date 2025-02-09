@@ -2,6 +2,20 @@
     display: flex;
     margin-bottom: 1rem;
     gap: 10px;
+    overflow-x: auto;  /* 스크롤 가능하도록 설정 */
+    white-space: nowrap;  /* 줄 바꿈 방지 */
+    padding-bottom: 5px; /* 스크롤바와의 여백 */
+    scrollbar-width: thin; /* 파이어폭스용 */
+    scroll-behavior: smooth; /* 부드러운 스크롤 */
+}
+
+.settings-tabs::-webkit-scrollbar {
+    height: 6px; /* 스크롤바 높이 */
+}
+
+.settings-tabs::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
 }
 
 .settings-tab-button {
@@ -10,6 +24,7 @@
     border: 1px solid var(--color-border);
     border-radius: 4px;
     background-color: var(--background-primary);
+    flex-shrink: 0; /* 크기 축소 방지 */
 }
 
 .settings-tab-button.active {
