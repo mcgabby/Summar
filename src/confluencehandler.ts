@@ -79,12 +79,12 @@ export class ConfluenceHandler extends SummarViewContainer {
 			SummarDebug.log(2, "Fetched page content:", page_content);
 
 			const body_content = JSON.stringify({
-				model: "gpt-4o",
+				model: "o1-mini",
 				messages: [
-					{ role: "system", content: systemPrompt },
+					// { role: "system", content: systemPrompt },
 					{ role: "user", content: `${userPrompt}\n\n${page_content}` },
 				],
-				max_tokens: 16384,
+				// max_tokens: 16384,
 			});
 
 			this.updateResultText( "Summarizing...");

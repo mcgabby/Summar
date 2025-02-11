@@ -317,33 +317,33 @@ export class SummarSettingsTab extends PluginSettingTab {
   async buildWebpageSettings(containerEl: HTMLElement): Promise<void> {
     containerEl.createEl("h2", { text: "Webpage Summary" });
 
-    new Setting(containerEl)
-      .setName("System Prompt (for Web page summary)")
-      .setDesc("This prompt will be added to the beginning of every chat.")
+    // new Setting(containerEl)
+    //   .setName("System Prompt (for Web page summary)")
+    //   .setDesc("This prompt will be added to the beginning of every chat.")
 
-    new Setting(containerEl)
-      .setHeading()
-      .addTextArea((text) => {
-        text
-          .setPlaceholder("Enter system prompt")
-          .setValue(this.plugin.settings.systemPrompt || "")
-          .onChange(async (value) => {
-            this.plugin.settings.systemPrompt = value;
-          });
+    // new Setting(containerEl)
+    //   .setHeading()
+    //   .addTextArea((text) => {
+    //     text
+    //       .setPlaceholder("Enter system prompt")
+    //       .setValue(this.plugin.settings.systemPrompt || "")
+    //       .onChange(async (value) => {
+    //         this.plugin.settings.systemPrompt = value;
+    //       });
 
-        const textAreaEl = text.inputEl;
-        textAreaEl.style.width = "100%";
-        textAreaEl.style.height = "150px";
-        textAreaEl.style.resize = "none";
+    //     const textAreaEl = text.inputEl;
+    //     textAreaEl.style.width = "100%";
+    //     textAreaEl.style.height = "150px";
+    //     textAreaEl.style.resize = "none";
 
-        // 간격을 좁히는 스타일 추가
-        const descriptionEl = containerEl.querySelector('.setting-item-description') as HTMLElement;
-        if (descriptionEl) {
-          descriptionEl.style.marginBottom = "1px"; // 설명과 textarea 사이 간격 조정
-        }
-        textAreaEl.style.marginTop = "1px"; // textarea의 위쪽 간격 조정          
-      })
-      ;
+    //     // 간격을 좁히는 스타일 추가
+    //     const descriptionEl = containerEl.querySelector('.setting-item-description') as HTMLElement;
+    //     if (descriptionEl) {
+    //       descriptionEl.style.marginBottom = "1px"; // 설명과 textarea 사이 간격 조정
+    //     }
+    //     textAreaEl.style.marginTop = "1px"; // textarea의 위쪽 간격 조정          
+    //   })
+    //   ;
 
     new Setting(containerEl)
       .setName("User Prompt (for Web page summary)")
