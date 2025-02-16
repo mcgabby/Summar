@@ -195,14 +195,29 @@ export class CalendarHandler {
     }
 
     createEventElement(event: CalendarEvent, index: number): HTMLElement {
+        const formattedDate = event.start.getFullYear().toString().slice(2) +
+                              String(event.start.getMonth()+1).padStart(2, "0") +
+                              event.start.getDate().toString().padStart(2, "0") + "-" +
+                              event.start.getHours().toString().padStart(2, "0") +
+                              event.start.getMinutes().toString().padStart(2, "0");
+
         const eventEl = document.createElement("div");
         eventEl.classList.add("event");
         eventEl.innerHTML = `
             <div class="event-title">📅 ${event.title}</div>
             <div class="event-time">⏳${event.start.toLocaleString()} - ⏳${event.end.toLocaleString()}</div>
             <a href="${event.zoom_link}" class="event-zoom-link" target="_blank">🔗Join Zoom Meeting</a>
+            <a href="#" class="event-obsidian-link">📝 Create Note in Obsidian</a>
             <p>
         `;
+
+        // ✅ Obsidian 내에서 새 탭으로 노트 열기
+        const obsidianLinkEl = eventEl.querySelector(".event-obsidian-link");
+        obsidianLinkEl?.addEventListener("click", (e) => {
+            e.preventDefault();
+            this.plugin.app.workspace.openLinkText(formattedDate, "", true); // ✅ 새 탭에서 열기
+        });
+
         return eventEl;
     }
 
