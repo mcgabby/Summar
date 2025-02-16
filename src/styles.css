@@ -57,3 +57,32 @@
 .setting-container input[type="text"] {
     flex: 1;
 }
+
+/* 기본 버튼 스타일 */
+.clickable-icon {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+/* 활성화된 버튼 스타일 */
+.clickable-icon.active {
+    background-color: var(--interactive-accent); /* Obsidian의 주요 색상 */
+    color: white;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    transform: scale(1.1);
+}
+
+/* 아이콘 강조 효과 */
+.clickable-icon.active svg {
+
+    stroke: white;
+}
+
+/* 활성화된 버튼 호버 효과 */
+.clickable-icon.active:hover {
+    background-color: var(--interactive-accent-hover);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+}

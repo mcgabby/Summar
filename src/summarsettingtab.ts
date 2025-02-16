@@ -117,12 +117,19 @@ export class SummarSettingsTab extends PluginSettingTab {
 
     const tabContents = containerEl.createDiv({ cls: 'settings-tab-contents' });
     const tabs = [
-      { name: 'Common', id: 'common-tab' },
-      { name: 'Webpage', id: 'webpage-tab' },
-      { name: 'PDF', id: 'pdf-tab' },
-      { name: 'Recording', id: 'recording-tab' },
-      { name: 'Custom command', id: 'custom-tab' },
-      { name: 'Schedule', id: 'schedule-tab' },
+      // { name: 'Common', id: 'common-tab' },
+      // { name: 'Webpage', id: 'webpage-tab' },
+      // { name: 'PDF', id: 'pdf-tab' },
+      // { name: 'Recording', id: 'recording-tab' },
+      // { name: 'Schedule', id: 'schedule-tab' },
+      // { name: 'Custom command', id: 'custom-tab' },
+      { name: 'Common', icon: 'settings', id: 'common-tab', tooltip: 'Common Settings' },
+      { name: 'Webpage', icon: 'globe', id: 'webpage-tab', tooltip: 'Webpage Summary' },
+      { name: 'PDF', icon: 'file-text', id: 'pdf-tab', tooltip: 'PDF Summary' },
+      { name: 'Recording', icon: 'voicemail', id: 'recording-tab', tooltip: 'Transcription Summary' },
+      { name: 'Schedule', icon: 'calendar-check', id: 'schedule-tab', tooltip: 'Auto recording' },
+      { name: 'Custom command', icon: 'wand-sparkles', id: 'custom-tab', tooltip: 'Custom Commands' },
+
     ];
 
     let activeTab = this.savedTabId;
@@ -130,29 +137,59 @@ export class SummarSettingsTab extends PluginSettingTab {
     // Create tabs
     tabs.forEach((tab) => {
       if (tab.id !== 'schedule-tab' || Platform.isMacOS) {
-        const tabButton = tabsContainer.createEl('button', {
-          text: tab.name,
-          cls: 'settings-tab-button',
-        });
+        // const tabButton = tabsContainer.createEl('button', {
+        //   text: tab.name,
+        //   cls: 'settings-tab-button',
+        // });
 
+        // if (tab.id === activeTab) {
+        //   tabButton.addClass('active');
+        // }
+
+        // tabButton.addEventListener('click', () => {
+        //   this.savedTabId = activeTab = tab.id;
+
+        //   // Update active state
+        //   tabsContainer.querySelectorAll('.settings-tab-button').forEach((btn) => {
+        //     btn.removeClass('active');
+        //   });
+        //   tabButton.addClass('active');
+
+        //   // Show active tab content
+        //   tabContents.querySelectorAll('.settings-tab-content').forEach((content) => {
+        //     content.toggleClass('hidden', content.id !== activeTab);
+        //   });
+        // });
+        const setting = new Setting(tabsContainer);
+
+        const tabButton = setting.addExtraButton((button) => {
+            button.setIcon(tab.icon) // 적절한 아이콘 선택
+                  .setTooltip(tab.tooltip)
+                  .onClick(() => {
+                      this.savedTabId = activeTab = tab.id;
+            
+                      // Update active state
+                      tabsContainer.querySelectorAll('.clickable-icon').forEach((btn) => {
+                          btn.removeClass('active');
+                      });
+            
+                      // ExtraButton의 내부 요소에 클래스 추가
+                      const buttonEl = setting.settingEl.querySelector('.clickable-icon');
+                      if (buttonEl) buttonEl.addClass('active');
+            
+                      // Show active tab content
+                      tabContents.querySelectorAll('.settings-tab-content').forEach((content) => {
+                          content.toggleClass('hidden', content.id !== activeTab);
+                      });
+                  });
+        });
+        
+        // ExtraButton의 요소 직접 가져와 활성화
         if (tab.id === activeTab) {
-          tabButton.addClass('active');
+            const buttonEl = setting.settingEl.querySelector('.clickable-icon');
+            if (buttonEl) buttonEl.addClass('active');
         }
-
-        tabButton.addEventListener('click', () => {
-          this.savedTabId = activeTab = tab.id;
-
-          // Update active state
-          tabsContainer.querySelectorAll('.settings-tab-button').forEach((btn) => {
-            btn.removeClass('active');
-          });
-          tabButton.addClass('active');
-
-          // Show active tab content
-          tabContents.querySelectorAll('.settings-tab-content').forEach((content) => {
-            content.toggleClass('hidden', content.id !== activeTab);
-          });
-        });
+                
       }
     });   
 
@@ -385,14 +422,14 @@ export class SummarSettingsTab extends PluginSettingTab {
 
         const textAreaEl = text.inputEl;
         textAreaEl.style.width = "100%";
-        textAreaEl.style.height = "150px";
+        textAreaEl.style.height = "100px";
         textAreaEl.style.resize = "none";
       })
       ;
   }
 
   async buildRecordingSettings(containerEl: HTMLElement): Promise<void> {
-    containerEl.createEl("h2", { text: "Recording Summary" });
+    containerEl.createEl("h2", { text: "Transcription Summary" });
 
     /////////////////////////////////////////////////////
     // containerEl.createEl("h2", { text: "Audio Input Plugin Settings" });
@@ -580,36 +617,84 @@ export class SummarSettingsTab extends PluginSettingTab {
           })
         const textAreaEl = textarea.inputEl;
         textAreaEl.style.width = "100%";
-        textAreaEl.style.height = "150px";
+        textAreaEl.style.height = "80px";
         textAreaEl.style.resize = "none";
       });
   }
 
+  createCalendarField(containerEl: HTMLElement, index: number): void {
+    const setting = new Setting(containerEl)
+    // .setName(`Calendar ${index + 1}`)
+    .setHeading()
+    .addText((text) => {
+      text
+        .setPlaceholder("Enter Calendar Name")
+        .setValue(this.plugin.settings[`calendar_${index}`] as string)
+        .onChange((value) => {
+            this.plugin.settings[`calendar_${index}`] = value;            
+        });
+        const textEl = text.inputEl;
+        textEl.style.width = "100%";
+        // Focus가 떠날 때 dirty flag 설정
+          textEl.addEventListener("blur", async() => {
+            // this.plugin.calendarHandler.dirtyFlag = true;
+            // SummarDebug.Notice(3, "Calendar name changed. Please save the settings.");
+            await this.plugin.saveSettingsToFile();
+            await this.plugin.calendarHandler.updateScheduledMeetings();
+            await this.plugin.calendarHandler.displayEvents();
+        });
+      }
+    )
+    .addExtraButton(button => button
+        .setIcon(`trash-2`)
+        .setTooltip(`Remove Calendar`)
+        .onClick(async() => {
+          for (let i = index; i < this.plugin.settings.calendar_count; i++) {
+            this.plugin.settings[`calendar_${i}`] = this.plugin.settings[`calendar_${i+1}`];
+          }
+          delete this.plugin.settings[`calendar_${this.plugin.settings.calendar_count}`];
+          this.plugin.settings.calendar_count -= 1;
+          this.display();
+          await this.plugin.saveSettingsToFile();
+          await this.plugin.calendarHandler.updateScheduledMeetings();
+          await this.plugin.calendarHandler.displayEvents();
+        })
+    ); 
+  }
+
   async buildScheduleSettings(containerEl: HTMLElement): Promise<void> {
-    containerEl.createEl("h2", { text: "Today's Schedule" });
+    containerEl.createEl("h2", { text: "Auto recording" });
   
     new Setting(containerEl)
-      .setName("Custom Prompt (for Selected Text in the Note)")
-      .setDesc("The menu name you enter here will appear in the context menu or command palette when you select highlighted text in your note. \nRunning this menu will trigger the prompt you set here.");
+      .setName("Enter the macOS calendar to search for Zoom meetings")
+      .setDesc("Leave blank to search all calendars.")
+      .addButton(button => button
+        .setButtonText('Add Calendar')
+        .onClick(async() => {
+          if (this.plugin.settings.calendar_count < 5) {
+            this.plugin.settings.calendar_count += 1;
+            this.plugin.settings[`calendar_${this.plugin.settings.calendar_count}`] = '';
+            this.display();
+          } else {
+            SummarDebug.Notice(0, 'You can only add up to 5 calendars.');
+          }
+        }));
   
-    
-    // for (let i = 1; i <= this.plugin.settings.cmd_count; i++) {
-    //   this.createCustomCommandSetting(containerEl, i);
-    // }  
-    // new Setting(containerEl)
-    // .addButton(button => button
-    //   .setButtonText('Add Command')
-    //   .onClick(async() => {
-    //     if (this.plugin.settings.cmd_count < 5) {
-    //       this.plugin.settings.cmd_count += 1;
-    //       this.plugin.settings[`cmd_text_${this.plugin.settings.cmd_count}`] = '';
-    //       this.plugin.settings[`cmd_prompt_${this.plugin.settings.cmd_count}`] = '';
-    //       this.plugin.settings[`cmd_hotkey_${this.plugin.settings.cmd_count}`] = '';
-    //       this.display();
-    //     } else {
-    //       SummarDebug.Notice(0, 'You can only add up to 5 commands.');
-    //     }
-    //   }));
+    const calendarContainer = containerEl.createDiv();
+    for (let i = 1; i <= this.plugin.settings.calendar_count; i++) {
+      this.createCalendarField(containerEl, i);
+    }
+
+    new Setting(containerEl)
+      .setName("Automatically records events that include Zoom meetings.")
+      .setDesc("If the toggle switch is turned on, recording will automatically start at the scheduled time of events that include Zoom meetings.")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.autoRecording).onChange(async (value) => {
+          this.plugin.settings.autoRecording = value;
+          await this.plugin.calendarHandler.displayEvents(value);
+        }));
+        // const eventContainer = containerEl.createDiv();
+        await this.plugin.calendarHandler.displayEvents(this.plugin.settings.autoRecording, containerEl.createDiv());
   }
 }
 

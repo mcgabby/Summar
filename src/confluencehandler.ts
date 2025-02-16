@@ -20,7 +20,7 @@ export class ConfluenceHandler extends SummarViewContainer {
 	 * @param plugin 플러그인 인스턴스
 	 */
 	async fetchAndSummarize(url: string) {
-		const { confluenceApiToken, confluenceDomain, useConfluenceAPI, openaiApiKey, systemPrompt, userPrompt } = this.plugin.settings;
+		const { confluenceApiToken, confluenceDomain, useConfluenceAPI, openaiApiKey, userPrompt } = this.plugin.settings;
 		if (!openaiApiKey) {
 			SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
 			this.updateResultText("Please configure OpenAI API key in the plugin settings.");

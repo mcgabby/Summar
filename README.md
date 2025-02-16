@@ -20,3 +20,4 @@ npm run build
 - **2025-01-10**: Refactored codebase for improved efficiency
 - **2025-01-27**: Added transcription and summarization features
 - **2025-02-01**: Added custom command to run OpenAI API with selected text.
+- **2025-02-16**: Fetch the calendar schedule and apply auto recording.

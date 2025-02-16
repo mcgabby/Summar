@@ -62,7 +62,7 @@ export default class SummarPlugin extends Plugin {
       } catch (error) {
         SummarDebug.error(1, "Error during plugin update:", error);
       }
-    }, 1000 * 6); // 1분 (60초)    
+    }, 1000 * 6); // 6s    
 
     SummarDebug.log(1, "Summar Plugin loaded");
 

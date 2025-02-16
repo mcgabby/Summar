@@ -19,6 +19,11 @@ export interface PluginSettings {
   /////
   cmd_count: number;
   [key: string]: string | number | boolean;  
+  
+  calendar_count: number;
+  calendar_fetchdays: number;
+  calendar_polling_interval: number;
+  autoRecording: boolean;
 }
 
 export interface OpenAIResponse {
