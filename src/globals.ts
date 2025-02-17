@@ -82,7 +82,7 @@ requestCalendarAccess { granted in
         let notes = event.notes ?? ""
 
         // Zoom 키워드가 포함된 일정만 필터링
-        if containsZoom(text: title) || containsZoom(text: location) || containsZoom(text: notes) {
+        //if containsZoom(text: title) || containsZoom(text: location) || containsZoom(text: notes) {
             let zoomLink = extractZoomLink(from: notes) ?? extractZoomLink(from: location) ?? ""
 
             let eventData: [String: Any] = [
@@ -94,7 +94,7 @@ requestCalendarAccess { granted in
                 "zoom_link": zoomLink
             ]
             filteredEvents.append(eventData)
-        }
+        //}
     }
 
     // JSON 변환 후 출력
@@ -153,6 +153,7 @@ MarkDown에서 title, bold(**) 속성은 쓰지 않고 모두 bullet으로만 �
   calendar_count: 0,
   calendar_fetchdays: 1,
   calendar_polling_interval: 600000,
+  calendar_zoom_only: false,
   autoRecording: false
 };
 

@@ -1,4 +1,4 @@
-import { App, Plugin, Setting, Platform, Menu, TFile, TFolder, Modal, normalizePath, MarkdownView } from "obsidian";
+import { App, Plugin, Setting, Platform, Menu, TFile, TFolder, Modal, normalizePath, MarkdownView, Stat } from "obsidian";
 import { PluginSettings } from "./types";
 import { DEFAULT_SETTINGS, SummarDebug, extractDomain, parseHotkey } from "./globals";
 import { PluginUpdater } from "./pluginupdater";
@@ -26,7 +26,8 @@ export default class SummarPlugin extends Plugin {
   commandHandler: CustomCommandHandler;
   calendarHandler: CalendarHandler;
 
-  statusBar: StatusBar;
+  recordingStatus: StatusBar;
+  reservedStatus: StatusBar;
 
   customCommandIds: string[] = [];
   customCommandMenu: any;
@@ -75,7 +76,8 @@ export default class SummarPlugin extends Plugin {
     this.audioHandler = new AudioHandler(this);
     this.recordingManager = new AudioRecordingManager(this);
     this.commandHandler = new CustomCommandHandler(this);
-    this.statusBar = new StatusBar(this);
+    this.recordingStatus = new StatusBar(this);
+    this.reservedStatus = new StatusBar(this);
     this.calendarHandler = new CalendarHandler(this);
 
 
@@ -402,7 +404,8 @@ export default class SummarPlugin extends Plugin {
 
   async onunload() {
     this.app.workspace.detachLeavesOfType(SummarView.VIEW_TYPE);
-    this.statusBar.remove();
+    this.recordingStatus.remove();
+    this.reservedStatus.remove();
 
     SummarDebug.log(1, "Summar Plugin unloaded");
   }

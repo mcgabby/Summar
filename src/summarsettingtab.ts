@@ -684,7 +684,16 @@ export class SummarSettingsTab extends PluginSettingTab {
     for (let i = 1; i <= this.plugin.settings.calendar_count; i++) {
       this.createCalendarField(containerEl, i);
     }
-
+    
+    new Setting(containerEl)
+      .setName("Show Zoom meetings only")
+      .setDesc("When the toggle switch is on, only Zoom meetings are listed. When it is off, all events are displayed.")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.calendar_zoom_only).onChange(async (value) => {
+          this.plugin.settings.calendar_zoom_only = value;
+          await this.plugin.calendarHandler.displayEvents();
+        }));
+    
     new Setting(containerEl)
       .setName("Automatically records events that include Zoom meetings.")
       .setDesc("If the toggle switch is turned on, recording will automatically start at the scheduled time of events that include Zoom meetings.")
@@ -692,9 +701,11 @@ export class SummarSettingsTab extends PluginSettingTab {
         toggle.setValue(this.plugin.settings.autoRecording).onChange(async (value) => {
           this.plugin.settings.autoRecording = value;
           await this.plugin.calendarHandler.displayEvents(value);
+          this.plugin.reservedStatus.update(value ? "⏰" : "", value ? "green" : "black");
         }));
-        // const eventContainer = containerEl.createDiv();
-        await this.plugin.calendarHandler.displayEvents(this.plugin.settings.autoRecording, containerEl.createDiv());
+
+    // const eventContainer = containerEl.createDiv();
+    await this.plugin.calendarHandler.displayEvents(this.plugin.settings.autoRecording, containerEl.createDiv());
   }
 }
 

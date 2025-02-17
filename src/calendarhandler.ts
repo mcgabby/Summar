@@ -41,6 +41,7 @@ export class CalendarHandler {
         try {
             // 초기 실행
             await this.updateScheduledMeetings();
+            this.plugin.reservedStatus.update(this.plugin.settings.autoRecording ? "⏰" : "", this.plugin.settings.autoRecording ? "green" : "black");
 
             // 10분마다 업데이트 실행
             this.intervalId = setInterval(() => {
@@ -186,38 +187,50 @@ export class CalendarHandler {
         this.eventContainer.replaceChildren(); // 모든 자식 요소 제거
 
         // display가 true일 경우에만 이벤트 표시
-        if (this.autoRecord) {
+        // if (this.autoRecord) {
             this.events.forEach((event, index) => {
                 const eventEl = this.createEventElement(event, index);
                 this.eventContainer.appendChild(eventEl);
             });
+        // }
+        if (this.autoRecord) {
+            this.eventContainer.style.opacity = "1";
+        } else {
+            this.eventContainer.style.opacity = "0.4";
         }
     }
 
     createEventElement(event: CalendarEvent, index: number): HTMLElement {
-        const formattedDate = event.start.getFullYear().toString().slice(2) +
-                              String(event.start.getMonth()+1).padStart(2, "0") +
-                              event.start.getDate().toString().padStart(2, "0") + "-" +
-                              event.start.getHours().toString().padStart(2, "0") +
-                              event.start.getMinutes().toString().padStart(2, "0");
-
         const eventEl = document.createElement("div");
-        eventEl.classList.add("event");
-        eventEl.innerHTML = `
+
+        if (!this.plugin.settings.calendar_zoom_only || (event.zoom_link && event.zoom_link.length >0 )) {
+            const formattedDate = event.start.getFullYear().toString().slice(2) +
+                String(event.start.getMonth() + 1).padStart(2, "0") +
+                event.start.getDate().toString().padStart(2, "0") + "-" +
+                event.start.getHours().toString().padStart(2, "0") +
+                event.start.getMinutes().toString().padStart(2, "0");
+
+            eventEl.classList.add("event");
+            // eventEl.innerHTML = `
+            let strInnerHTML = `
             <div class="event-title">📅 ${event.title}</div>
-            <div class="event-time">⏳${event.start.toLocaleString()} - ⏳${event.end.toLocaleString()}</div>
-            <a href="${event.zoom_link}" class="event-zoom-link" target="_blank">🔗Join Zoom Meeting</a>
-            <a href="#" class="event-obsidian-link">📝 Create Note in Obsidian</a>
+            <div class="event-time">⏳${event.start.toLocaleString()} - ⏳${event.end.toLocaleString()}</div>`;
+            if (event.zoom_link && event.zoom_link.length > 0) {
+                strInnerHTML += `<a href="${event.zoom_link}" class="event-zoom-link" target="_blank">🔗Join Zoom Meeting</a>`;
+            }
+            strInnerHTML += `<a href="#" class="event-obsidian-link">📝 Create Note in Obsidian</a>
             <p>
         `;
+            eventEl.innerHTML = strInnerHTML;
 
-        // ✅ Obsidian 내에서 새 탭으로 노트 열기
-        const obsidianLinkEl = eventEl.querySelector(".event-obsidian-link");
-        obsidianLinkEl?.addEventListener("click", (e) => {
-            e.preventDefault();
-            this.plugin.app.workspace.openLinkText(formattedDate, "", true); // ✅ 새 탭에서 열기
-        });
+            // ✅ Obsidian 내에서 새 탭으로 노트 열기
+            const obsidianLinkEl = eventEl.querySelector(".event-obsidian-link");
+            obsidianLinkEl?.addEventListener("click", (e) => {
+                e.preventDefault();
+                this.plugin.app.workspace.openLinkText(formattedDate, "", true); // ✅ 새 탭에서 열기
+            });
 
+        }
         return eventEl;
     }
 

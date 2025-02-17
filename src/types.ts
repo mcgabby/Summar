@@ -23,6 +23,8 @@ export interface PluginSettings {
   calendar_count: number;
   calendar_fetchdays: number;
   calendar_polling_interval: number;
+  calendar_zoom_only: boolean;
+  
   autoRecording: boolean;
 }
 

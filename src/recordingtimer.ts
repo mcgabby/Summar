@@ -23,7 +23,7 @@ export class RecordingTimer {
       const timeElapsed = `[■] ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
       this.plugin.recordButton.textContent = timeElapsed;
       this.plugin.recordButton.style.color = "red";
-      this.plugin.statusBar.update(timeElapsed, "red");
+      this.plugin.recordingStatus.update(timeElapsed, "red");
     }, 1000); 
   }
 
@@ -32,7 +32,7 @@ export class RecordingTimer {
     if (this.timerInterval !== undefined) {
       this.plugin.recordButton.textContent =`[●] record`;
       this.plugin.recordButton.style.color = "black";
-      this.plugin.statusBar.update("", "black");
+      this.plugin.recordingStatus.update("", "black");
       clearInterval(this.timerInterval); // 타이머 종료
     }
   }

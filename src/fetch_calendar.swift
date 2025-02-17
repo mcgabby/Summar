@@ -1,3 +1,4 @@
+
 import EventKit
 
 let eventStore = EKEventStore()
@@ -5,7 +6,7 @@ let now = Date()
 let endDate = Calendar.current.date(byAdding: .day, value: 1, to: now)!
 
 // ✅ 특정 캘린더만 조회하도록 설정 (여기에 원하는 캘린더 이름을 추가하세요)
-let targetCalendars: Set<String> = ["Snow Kwon", "クォンスノ"]
+let targetCalendars: Set<String> = ["Snow Kwon", "クォンスノ", ]
 
 // macOS 14 이상에서는 requestFullAccessToEventsWithCompletion 사용
 func requestCalendarAccess(completion: @escaping (Bool) -> Void) {
@@ -38,16 +39,16 @@ func formatDateToLocalString(date: Date) -> String {
 // Zoom 링크를 추출하는 함수 (http로 시작하고 zoom.us 도메인이 포함된 URL 찾기)
 func extractZoomLink(from text: String?) -> String? {
     guard let text = text else { return nil }
-    
-    let pattern = #"https?:\/\/[^\s]*zoom\.us[^\s]*"#
+
+    let pattern = #"https?://\S*zoom\.us\S*"#
     let regex = try? NSRegularExpression(pattern: pattern, options: [])
-    
+
     if let match = regex?.firstMatch(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count)) {
         if let range = Range(match.range, in: text) {
             return String(text[range])
         }
     }
-    
+
     return nil
 }
 
@@ -74,7 +75,7 @@ requestCalendarAccess { granted in
         let notes = event.notes ?? ""
 
         // Zoom 키워드가 포함된 일정만 필터링
-        if containsZoom(text: title) || containsZoom(text: location) || containsZoom(text: notes) {
+        //if containsZoom(text: title) || containsZoom(text: location) || containsZoom(text: notes) {
             let zoomLink = extractZoomLink(from: notes) ?? extractZoomLink(from: location) ?? ""
 
             let eventData: [String: Any] = [
@@ -86,7 +87,7 @@ requestCalendarAccess { granted in
                 "zoom_link": zoomLink
             ]
             filteredEvents.append(eventData)
-        }
+        //}
     }
 
     // JSON 변환 후 출력
