@@ -132,10 +132,10 @@ export class AudioRecordingManager extends SummarViewContainer {
 				await this.recorder.startRecording(selectedDeviceId);
 			}, intervalInMinutes * 60 * 1000);
 
-			new Notice("Recording started.");
+			SummarDebug.Notice(0, "Recording started.");
 		} catch (err) {
 			this.recordingTimer.stop();
-			new Notice("Error starting recording: " + (err as Error).message);
+			SummarDebug.Notice(0, "Error starting recording: " + (err as Error).message);
 			console.error(err);
 		}
 	}

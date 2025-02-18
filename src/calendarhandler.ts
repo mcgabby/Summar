@@ -29,7 +29,8 @@ export class CalendarHandler {
     private events: CalendarEvent[] = [];
     autoRecord: boolean = false;
     eventContainer: HTMLElement;
-    private timers: { title: string; start: Date, timeoutId: NodeJS.Timeout }[] = [];
+    // private timers: { title: string; start: Date, timeoutId: NodeJS.Timeout }[] = [];
+    private timers: Map<number, NodeJS.Timeout> = new Map();
 
     constructor(plugin: any) {
         this.plugin = plugin; // 플러그인 저장
@@ -132,11 +133,17 @@ export class CalendarHandler {
                 zoom_link: meeting.zoom_link,
             })));
 
-            this.timers.forEach(({ timeoutId, title }) => {
+            // this.timers.forEach(({ timeoutId, title }) => {
+            //     clearTimeout(timeoutId);
+            //     SummarDebug.log(1, `🗑️ "${title}" 타이머 제거됨`);
+            // });
+            // this.timers = [];
+            this.timers.forEach((timeoutId, start) => {
                 clearTimeout(timeoutId);
-                SummarDebug.log(1, `🗑️ "${title}" 타이머 제거됨`);
+                SummarDebug.log(1, `🗑️ Timer for "${new Date(start)}" removed`);
             });
-            this.timers = [];
+            this.timers.clear();
+
 
             const MAX_DELAY = this.plugin.settings.calendar_polling_interval * 3;
 
@@ -155,15 +162,18 @@ export class CalendarHandler {
                 const delayMs = event.start.getTime() - now.getTime();
 
                 if (this.plugin.settings.autoRecording && delayMs > 0 && delayMs < MAX_DELAY) {
-                    const timer = setTimeout(async() => {
-                        if (this.plugin.recordingManager.getRecorderState() !== "recording") {
-                            await this.plugin.recordingManager.startRecording(this.plugin.settings.recordingUnit);
-                        }
-                        this.launchZoomMeeting(event.zoom_link as string);
-                        clearTimeout(timer);
-                    }, delayMs);
-                    SummarDebug.log(1, `   🚀 Zoom meeting reserved: ${event.start}`);
-                    this.timers.push({ title: event.title, start: event.start, timeoutId: timer });
+                    if (!this.timers.has(event.start.getTime())) {
+                        const timer = setTimeout(async () => {
+                            if (this.plugin.recordingManager.getRecorderState() !== "recording") {
+                                await this.plugin.recordingManager.startRecording(this.plugin.settings.recordingUnit);
+                            }
+                            this.launchZoomMeeting(event.zoom_link as string);
+                            clearTimeout(timer);
+                        }, delayMs);
+                        SummarDebug.log(1, `   🚀 Zoom meeting reserved: ${event.start}`);
+                        // this.timers.push({ title: event.title, start: event.start, timeoutId: timer });
+                        this.timers.set(event.start.getTime(), timer);
+                    }
                 }
                 SummarDebug.log(1, "================================================");
             });
