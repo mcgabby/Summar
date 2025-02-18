@@ -1,4 +1,4 @@
-import { normalizePath, FileSystemAdapter } from "obsidian";
+import { Platform, normalizePath, FileSystemAdapter } from "obsidian";
 import { spawn, exec } from "child_process";
 import { promisify } from "util";
 import { SWIFT_SCRIPT_TEMPLATE, SummarDebug } from "./globals";
@@ -27,7 +27,6 @@ export class CalendarHandler {
     private intervalId: NodeJS.Timeout;
     private plugin: SummarPlugin;
     private events: CalendarEvent[] = [];
-    // dirtyFlag: boolean = false;
     autoRecord: boolean = false;
     eventContainer: HTMLElement;
     private timers: { title: string; start: Date, timeoutId: NodeJS.Timeout }[] = [];
@@ -39,15 +38,16 @@ export class CalendarHandler {
 
     private async init() {
         try {
-            // 초기 실행
-            await this.updateScheduledMeetings();
-            this.plugin.reservedStatus.update(this.plugin.settings.autoRecording ? "⏰" : "", this.plugin.settings.autoRecording ? "green" : "black");
+            if (Platform.isMacOS) {
+                // 초기 실행
+                await this.updateScheduledMeetings();
+                this.plugin.reservedStatus.update(this.plugin.settings.autoRecording ? "⏰" : "", this.plugin.settings.autoRecording ? "green" : "black");
 
-            // 10분마다 업데이트 실행
-            this.intervalId = setInterval(() => {
-                this.updateScheduledMeetings();
-            }, this.plugin.settings.calendar_polling_interval); // 10분 (600,000ms)
-            // }, 10 * 60 * 1000); // 10분 (600,000ms)
+                // 10분마다 업데이트 실행
+                this.intervalId = setInterval(() => {
+                    this.updateScheduledMeetings();
+                }, this.plugin.settings.calendar_polling_interval); // 10분 (600,000ms)
+            }
         } catch (error) {
             console.error("Error initializing CalendarHandler:", error);
         }

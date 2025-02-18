@@ -18,7 +18,7 @@ export class CustomCommandHandler extends SummarViewContainer {
 	 * @param url 가져올 URL
 	 * @param plugin 플러그인 인스턴스
 	 */
-	async executePrompt(selectedText: string, userPrompt: string) {
+	async executePrompt(selectedText: string, webPrompt: string) {
 		const { openaiApiKey } = this.plugin.settings;
 		if (!openaiApiKey) {
 			SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
@@ -35,7 +35,7 @@ export class CustomCommandHandler extends SummarViewContainer {
 				model: "gpt-4o",
 				messages: [
 					// { role: "system", content: systemPrompt },
-					{ role: "user", content: `${userPrompt}\n\n${selectedText}` },
+					{ role: "user", content: `${webPrompt}\n\n${selectedText}` },
 				],
 				max_tokens: 16384,
 			});

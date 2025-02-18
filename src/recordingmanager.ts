@@ -37,7 +37,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 		this.updateResultText("Summarizing from transcripted text");
 		// SummarDebug.log(2, "Fetched page content:", page_content);
 
-		const userPrompt = this.plugin.settings.recordingPrompt;
+		const webPrompt = this.plugin.settings.recordingPrompt;
 		const openaiApiKey = this.plugin.settings.openaiApiKey;
 
 		try {
@@ -45,7 +45,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 				model: "gpt-4o",
 				messages: [
 					// { role: "system", content: systemPrompt },
-					{ role: "user", content: `${userPrompt}\n\n${transcripted}` },
+					{ role: "user", content: `${webPrompt}\n\n${transcripted}` },
 				],
 				max_tokens: 16384,
 			});

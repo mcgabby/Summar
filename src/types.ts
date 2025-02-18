@@ -4,7 +4,7 @@ export interface PluginSettings {
   useConfluenceAPI:boolean;
   confluenceDomain: string;
   systemPrompt: string;
-  userPrompt: string;
+  webPrompt: string;
   pdfPrompt: string;
 
   /////

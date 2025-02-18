@@ -117,12 +117,6 @@ export class SummarSettingsTab extends PluginSettingTab {
 
     const tabContents = containerEl.createDiv({ cls: 'settings-tab-contents' });
     const tabs = [
-      // { name: 'Common', id: 'common-tab' },
-      // { name: 'Webpage', id: 'webpage-tab' },
-      // { name: 'PDF', id: 'pdf-tab' },
-      // { name: 'Recording', id: 'recording-tab' },
-      // { name: 'Schedule', id: 'schedule-tab' },
-      // { name: 'Custom command', id: 'custom-tab' },
       { name: 'Common', icon: 'settings', id: 'common-tab', tooltip: 'Common Settings' },
       { name: 'Webpage', icon: 'globe', id: 'webpage-tab', tooltip: 'Webpage Summary' },
       { name: 'PDF', icon: 'file-text', id: 'pdf-tab', tooltip: 'PDF Summary' },
@@ -137,29 +131,6 @@ export class SummarSettingsTab extends PluginSettingTab {
     // Create tabs
     tabs.forEach((tab) => {
       if (tab.id !== 'schedule-tab' || Platform.isMacOS) {
-        // const tabButton = tabsContainer.createEl('button', {
-        //   text: tab.name,
-        //   cls: 'settings-tab-button',
-        // });
-
-        // if (tab.id === activeTab) {
-        //   tabButton.addClass('active');
-        // }
-
-        // tabButton.addEventListener('click', () => {
-        //   this.savedTabId = activeTab = tab.id;
-
-        //   // Update active state
-        //   tabsContainer.querySelectorAll('.settings-tab-button').forEach((btn) => {
-        //     btn.removeClass('active');
-        //   });
-        //   tabButton.addClass('active');
-
-        //   // Show active tab content
-        //   tabContents.querySelectorAll('.settings-tab-content').forEach((content) => {
-        //     content.toggleClass('hidden', content.id !== activeTab);
-        //   });
-        // });
         const setting = new Setting(tabsContainer);
 
         const tabButton = setting.addExtraButton((button) => {
@@ -391,9 +362,9 @@ export class SummarSettingsTab extends PluginSettingTab {
       .addTextArea((text) => {
         text
           .setPlaceholder("Enter user prompt")
-          .setValue(this.plugin.settings.userPrompt || "")
+          .setValue(this.plugin.settings.webPrompt || "")
           .onChange(async (value) => {
-            this.plugin.settings.userPrompt = value;
+            this.plugin.settings.webPrompt = value;
           });
 
         const textAreaEl = text.inputEl;
@@ -637,7 +608,6 @@ export class SummarSettingsTab extends PluginSettingTab {
         textEl.style.width = "100%";
         // Focus가 떠날 때 dirty flag 설정
           textEl.addEventListener("blur", async() => {
-            // this.plugin.calendarHandler.dirtyFlag = true;
             // SummarDebug.Notice(3, "Calendar name changed. Please save the settings.");
             await this.plugin.saveSettingsToFile();
             await this.plugin.calendarHandler.updateScheduledMeetings();

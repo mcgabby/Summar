@@ -121,7 +121,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 Wiki의 컨텐츠를 읽고 한국어로 문서의 내용을 전달해주는 일을 하고 있어.
 다음 단어는 주의해줘: 出澤(Idezawa), 三枝(Saegusa), 坂上(Sakaue), 妹尾(Senoo), 片野(Katano), 大寺(Odera)
 사람이름은 모두 영문(대문자로 시작)으로 표시하되 존칭어는 생략해줘`,
-  userPrompt: `다음의 Wiki컨텐츠를 읽고 의미를 놓치지 않는 수준의 내용의 한국어로 정리해줘.
+  webPrompt: `다음의 Wiki컨텐츠를 읽고 의미를 놓치지 않는 수준의 내용의 한국어로 정리해줘.
 테이블로 구성된 정보는 표로 인식하고 정보를 해석해야 해.
 출력 포맷은 MarkDown입니다.
 MarkDown의 Heading과 Bold는 사용하지마.

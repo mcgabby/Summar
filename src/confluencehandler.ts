@@ -20,7 +20,7 @@ export class ConfluenceHandler extends SummarViewContainer {
 	 * @param plugin 플러그인 인스턴스
 	 */
 	async fetchAndSummarize(url: string) {
-		const { confluenceApiToken, confluenceDomain, useConfluenceAPI, openaiApiKey, userPrompt } = this.plugin.settings;
+		const { confluenceApiToken, confluenceDomain, useConfluenceAPI, openaiApiKey, webPrompt } = this.plugin.settings;
 		if (!openaiApiKey) {
 			SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
 			this.updateResultText("Please configure OpenAI API key in the plugin settings.");
@@ -82,7 +82,7 @@ export class ConfluenceHandler extends SummarViewContainer {
 				model: "o1-mini",
 				messages: [
 					// { role: "system", content: systemPrompt },
-					{ role: "user", content: `${userPrompt}\n\n${page_content}` },
+					{ role: "user", content: `${webPrompt}\n\n${page_content}` },
 				],
 				// max_tokens: 16384,
 			});
