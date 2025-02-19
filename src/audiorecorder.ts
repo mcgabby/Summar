@@ -65,6 +65,23 @@ export class NativeAudioRecorder implements AudioRecorder {
 		this.recorder.start(100);
 	}
 
+	// MediaRecorder가 완전히 비활성화될 때까지 대기
+	async waitForInactive(): Promise<void> {
+		return new Promise((resolve) => {
+			if (this.recorder && this.recorder.state !== "inactive") {
+				// stop 이벤트가 발생할 때까지 대기
+				this.recorder.addEventListener("stop", () => {
+					// state가 inactive인지 확인
+					if (this.recorder?.state === "inactive") {
+						resolve();
+					}
+				}, { once: true });
+			} else {
+				resolve();
+			}
+		});
+	}
+	
 	async pauseRecording(): Promise<void> {
 		if (!this.recorder) {
 			return;

@@ -161,19 +161,20 @@ export class CalendarHandler {
                 const now = new Date();
                 const delayMs = event.start.getTime() - now.getTime();
 
-                if (this.plugin.settings.autoRecording && delayMs > 0 && delayMs < MAX_DELAY) {
-                    if (!this.timers.has(event.start.getTime())) {
-                        const timer = setTimeout(async () => {
-                            if (this.plugin.recordingManager.getRecorderState() !== "recording") {
-                                await this.plugin.recordingManager.startRecording(this.plugin.settings.recordingUnit);
-                            }
-                            this.launchZoomMeeting(event.zoom_link as string);
-                            clearTimeout(timer);
-                        }, delayMs);
-                        SummarDebug.log(1, `   🚀 Zoom meeting reserved: ${event.start}`);
-                        // this.timers.push({ title: event.title, start: event.start, timeoutId: timer });
-                        this.timers.set(event.start.getTime(), timer);
-                    }
+                if (this.plugin.settings.autoRecording &&
+                    delayMs > 0 && delayMs < MAX_DELAY &&
+                    !this.timers.has(event.start.getTime()) &&
+                    event.zoom_link && event.zoom_link.length > 0) {
+                    const timer = setTimeout(async () => {
+                        if (this.plugin.recordingManager.getRecorderState() !== "recording") {
+                            await this.plugin.recordingManager.startRecording(this.plugin.settings.recordingUnit);
+                        }
+                        this.launchZoomMeeting(event.zoom_link as string);
+                        clearTimeout(timer);
+                    }, delayMs);
+                    SummarDebug.log(1, `   🚀 Zoom meeting reserved: ${event.start}`);
+                    // this.timers.push({ title: event.title, start: event.start, timeoutId: timer });
+                    this.timers.set(event.start.getTime(), timer);
                 }
                 SummarDebug.log(1, "================================================");
             });

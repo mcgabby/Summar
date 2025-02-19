@@ -13,7 +13,7 @@ export class SummarSettingsTab extends PluginSettingTab {
     super(plugin.app, plugin);
     this.plugin = plugin;
     this.savedTabId = 'common-tab';
-      // 비동기 초기화 (가독성이 떨어짐)
+    // 비동기 초기화 (가독성이 떨어짐)
     getDeviceId(plugin).then(deviceId => {
       this.deviceId = deviceId as string;
     });
@@ -40,80 +40,80 @@ export class SummarSettingsTab extends PluginSettingTab {
     // 터치패드 및 마우스 휠 이벤트 처리 (좌우 스크롤)
     tabsContainer.addEventListener("wheel", (event) => {
       if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-          // 터치패드에서 수직 스크롤이 발생할 경우 가로 스크롤로 변환
-          event.preventDefault();
-          tabsContainer.scrollBy({
-              left: event.deltaY * 2,
-              behavior: "smooth",
-          });
+        // 터치패드에서 수직 스크롤이 발생할 경우 가로 스크롤로 변환
+        event.preventDefault();
+        tabsContainer.scrollBy({
+          left: event.deltaY * 2,
+          behavior: "smooth",
+        });
       }
-  });
+    });
 
-  // 탭 버튼 클릭 시 자동 스크롤 조정
-  document.querySelectorAll(".settings-tab-button").forEach((button) => {
+    // 탭 버튼 클릭 시 자동 스크롤 조정
+    document.querySelectorAll(".settings-tab-button").forEach((button) => {
       button.addEventListener("click", (event) => {
-          const target = event.currentTarget as HTMLElement;
-          const containerRect = tabsContainer.getBoundingClientRect();
-          const buttonRect = target.getBoundingClientRect();
+        const target = event.currentTarget as HTMLElement;
+        const containerRect = tabsContainer.getBoundingClientRect();
+        const buttonRect = target.getBoundingClientRect();
 
-          if (buttonRect.left < containerRect.left) {
-              // 왼쪽에 가려진 경우
-              tabsContainer.scrollBy({
-                  left: buttonRect.left - containerRect.left - 10,
-                  behavior: "smooth",
-              });
-          } else if (buttonRect.right > containerRect.right) {
-              // 오른쪽에 가려진 경우
-              tabsContainer.scrollBy({
-                  left: buttonRect.right - containerRect.right + 10,
-                  behavior: "smooth",
-              });
-          }
+        if (buttonRect.left < containerRect.left) {
+          // 왼쪽에 가려진 경우
+          tabsContainer.scrollBy({
+            left: buttonRect.left - containerRect.left - 10,
+            behavior: "smooth",
+          });
+        } else if (buttonRect.right > containerRect.right) {
+          // 오른쪽에 가려진 경우
+          tabsContainer.scrollBy({
+            left: buttonRect.right - containerRect.right + 10,
+            behavior: "smooth",
+          });
+        }
       });
-  });
+    });
 
-  // 모바일 및 터치스크린을 위한 터치 스크롤 기능 추가
-  let isDragging = false;
-  let startX = 0;
-  let scrollLeft = 0;
+    // 모바일 및 터치스크린을 위한 터치 스크롤 기능 추가
+    let isDragging = false;
+    let startX = 0;
+    let scrollLeft = 0;
 
-  tabsContainer.addEventListener("mousedown", (event) => {
+    tabsContainer.addEventListener("mousedown", (event) => {
       isDragging = true;
       startX = event.pageX - tabsContainer.offsetLeft;
       scrollLeft = tabsContainer.scrollLeft;
-  });
+    });
 
-  tabsContainer.addEventListener("mouseleave", () => {
+    tabsContainer.addEventListener("mouseleave", () => {
       isDragging = false;
-  });
+    });
 
-  tabsContainer.addEventListener("mouseup", () => {
+    tabsContainer.addEventListener("mouseup", () => {
       isDragging = false;
-  });
+    });
 
-  tabsContainer.addEventListener("mousemove", (event) => {
+    tabsContainer.addEventListener("mousemove", (event) => {
       if (!isDragging) return;
       event.preventDefault();
       const x = event.pageX - tabsContainer.offsetLeft;
       const walk = (x - startX) * 2; // 이동 거리 계산
       tabsContainer.scrollLeft = scrollLeft - walk;
-  });
+    });
 
-  // 터치스크린 지원 (모바일 환경)
-  let touchStartX = 0;
-  let touchScrollLeft = 0;
+    // 터치스크린 지원 (모바일 환경)
+    let touchStartX = 0;
+    let touchScrollLeft = 0;
 
-  tabsContainer.addEventListener("touchstart", (event) => {
+    tabsContainer.addEventListener("touchstart", (event) => {
       touchStartX = event.touches[0].pageX - tabsContainer.offsetLeft;
       touchScrollLeft = tabsContainer.scrollLeft;
-  });
+    });
 
-  tabsContainer.addEventListener("touchmove", (event) => {
+    tabsContainer.addEventListener("touchmove", (event) => {
       event.preventDefault();
       const touchX = event.touches[0].pageX - tabsContainer.offsetLeft;
       const touchMove = (touchX - touchStartX) * 2; // 이동 거리 계산
       tabsContainer.scrollLeft = touchScrollLeft - touchMove;
-  });
+    });
 
     const tabContents = containerEl.createDiv({ cls: 'settings-tab-contents' });
     const tabs = [
@@ -134,35 +134,35 @@ export class SummarSettingsTab extends PluginSettingTab {
         const setting = new Setting(tabsContainer);
 
         const tabButton = setting.addExtraButton((button) => {
-            button.setIcon(tab.icon) // 적절한 아이콘 선택
-                  .setTooltip(tab.tooltip)
-                  .onClick(() => {
-                      this.savedTabId = activeTab = tab.id;
-            
-                      // Update active state
-                      tabsContainer.querySelectorAll('.clickable-icon').forEach((btn) => {
-                          btn.removeClass('active');
-                      });
-            
-                      // ExtraButton의 내부 요소에 클래스 추가
-                      const buttonEl = setting.settingEl.querySelector('.clickable-icon');
-                      if (buttonEl) buttonEl.addClass('active');
-            
-                      // Show active tab content
-                      tabContents.querySelectorAll('.settings-tab-content').forEach((content) => {
-                          content.toggleClass('hidden', content.id !== activeTab);
-                      });
-                  });
+          button.setIcon(tab.icon) // 적절한 아이콘 선택
+            .setTooltip(tab.tooltip)
+            .onClick(() => {
+              this.savedTabId = activeTab = tab.id;
+
+              // Update active state
+              tabsContainer.querySelectorAll('.clickable-icon').forEach((btn) => {
+                btn.removeClass('active');
+              });
+
+              // ExtraButton의 내부 요소에 클래스 추가
+              const buttonEl = setting.settingEl.querySelector('.clickable-icon');
+              if (buttonEl) buttonEl.addClass('active');
+
+              // Show active tab content
+              tabContents.querySelectorAll('.settings-tab-content').forEach((content) => {
+                content.toggleClass('hidden', content.id !== activeTab);
+              });
+            });
         });
-        
+
         // ExtraButton의 요소 직접 가져와 활성화
         if (tab.id === activeTab) {
-            const buttonEl = setting.settingEl.querySelector('.clickable-icon');
-            if (buttonEl) buttonEl.addClass('active');
+          const buttonEl = setting.settingEl.querySelector('.clickable-icon');
+          if (buttonEl) buttonEl.addClass('active');
         }
-                
+
       }
-    });   
+    });
 
 
     // Create tab contents
@@ -248,8 +248,8 @@ export class SummarSettingsTab extends PluginSettingTab {
 
     // 클릭 이벤트 핸들러
     forceReload.addEventListener("click", (event) => {
-        event.preventDefault(); // 기본 동작 방지
-        window.location.reload(); // Obsidian 재로드
+      event.preventDefault(); // 기본 동작 방지
+      window.location.reload(); // Obsidian 재로드
     });
     // Fragment에 링크 추가
     containerEl.appendChild(forceReload);
@@ -259,67 +259,67 @@ export class SummarSettingsTab extends PluginSettingTab {
     containerEl.appendChild(message3);
 
     new Setting(containerEl)
-        .setName("OpenAI API Key")
-        .setDesc("Enter your OpenAI API key.")
-        .addText((text) => {
-            text
-                .setPlaceholder("Enter OpenAI API Key")
-                .setValue(this.plugin.settings.openaiApiKey || "")
-                .onChange(async (value) => {
-                    this.plugin.settings.openaiApiKey = value;
-                });
+      .setName("OpenAI API Key")
+      .setDesc("Enter your OpenAI API key.")
+      .addText((text) => {
+        text
+          .setPlaceholder("Enter OpenAI API Key")
+          .setValue(this.plugin.settings.openaiApiKey || "")
+          .onChange(async (value) => {
+            this.plugin.settings.openaiApiKey = value;
+          });
 
-            const textAreaEl = text.inputEl;
-            textAreaEl.style.width = "100%";
-        });
+        const textAreaEl = text.inputEl;
+        textAreaEl.style.width = "100%";
+      });
 
     new Setting(containerEl)
-        .setName("Confluence API Token")
-        .setDesc("Enter your Confluence API token.")
-        .addText((text) => {
-            text
-                .setPlaceholder("Enter Confluence API Token")
-                .setValue(this.plugin.settings.confluenceApiToken || "")
-                .onChange(async (value) => {
-                    this.plugin.settings.confluenceApiToken = value;
-                });
+      .setName("Confluence API Token")
+      .setDesc("Enter your Confluence API token.")
+      .addText((text) => {
+        text
+          .setPlaceholder("Enter Confluence API Token")
+          .setValue(this.plugin.settings.confluenceApiToken || "")
+          .onChange(async (value) => {
+            this.plugin.settings.confluenceApiToken = value;
+          });
 
-            const textAreaEl = text.inputEl;
-            textAreaEl.style.width = "100%";
-        });
+        const textAreaEl = text.inputEl;
+        textAreaEl.style.width = "100%";
+      });
 
     // Confluence Base URL with a checkbox in the same line
     new Setting(containerEl)
-        .addToggle((toggle) =>
-            toggle.setValue(this.plugin.settings.useConfluenceAPI).onChange(async (value) => {
-                this.plugin.settings.useConfluenceAPI = value;
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.useConfluenceAPI).onChange(async (value) => {
+          this.plugin.settings.useConfluenceAPI = value;
 
-                // Dynamically enable/disable the input field
-                const inputField = containerEl.querySelector<HTMLInputElement>(".confluence-url-input");
-                if (inputField) {
-                    inputField.disabled = !value;
-                }
-            })
-        )
-        .addText((text) => {
-            text.setPlaceholder("Enter your Confluence Domain")
-                .setValue(this.plugin.settings.confluenceDomain || "wiki.workers-hub.com")
-                .onChange(async (value) => {
-                    this.plugin.settings.confluenceDomain = value;
-                    // await this.plugin.saveSettingsToFile(this.plugin.settings);
-                });
-
-            const textAreaEl = text.inputEl;
-            textAreaEl.style.width = "100%";
-
-            // Assign a custom class for targeting
-            text.inputEl.classList.add("confluence-url-input");
-
-            // Disable the text field if "useConfluenceAPI" is false on initialization
-            text.inputEl.disabled = !this.plugin.settings.useConfluenceAPI;
+          // Dynamically enable/disable the input field
+          const inputField = containerEl.querySelector<HTMLInputElement>(".confluence-url-input");
+          if (inputField) {
+            inputField.disabled = !value;
+          }
         })
-        .setName("Confluence Domain")
-        .setDesc("If you want to use the Confluence Open API, toggle it on; if not, toggle it off.");
+      )
+      .addText((text) => {
+        text.setPlaceholder("Enter your Confluence Domain")
+          .setValue(this.plugin.settings.confluenceDomain || "wiki.workers-hub.com")
+          .onChange(async (value) => {
+            this.plugin.settings.confluenceDomain = value;
+            // await this.plugin.saveSettingsToFile(this.plugin.settings);
+          });
+
+        const textAreaEl = text.inputEl;
+        textAreaEl.style.width = "100%";
+
+        // Assign a custom class for targeting
+        text.inputEl.classList.add("confluence-url-input");
+
+        // Disable the text field if "useConfluenceAPI" is false on initialization
+        text.inputEl.disabled = !this.plugin.settings.useConfluenceAPI;
+      })
+      .setName("Confluence Domain")
+      .setDesc("If you want to use the Confluence Open API, toggle it on; if not, toggle it off.");
   }
 
   async buildWebpageSettings(containerEl: HTMLElement): Promise<void> {
@@ -406,7 +406,7 @@ export class SummarSettingsTab extends PluginSettingTab {
     // containerEl.createEl("h2", { text: "Audio Input Plugin Settings" });
 
     // Get list of audio devices
-    await navigator.mediaDevices.getUserMedia({audio: true});
+    await navigator.mediaDevices.getUserMedia({ audio: true });
     const devices = await navigator.mediaDevices.enumerateDevices();
     const audioDevices = devices.filter(
       (audioDevice) => audioDevice.kind === "audioinput"
@@ -455,17 +455,17 @@ export class SummarSettingsTab extends PluginSettingTab {
 
     // Recording Unit
     new Setting(containerEl)
-        .setName("Recording Unit")
-        .setDesc("Set the unit of time for recording (in seconds).")
-        .addSlider((slider) => {
-            slider
-                .setLimits(1, 20, 1)
-                .setValue(this.plugin.settings.recordingUnit)
-                .setDynamicTooltip()
-                .onChange(async (value) => {
-                    this.plugin.settings.recordingUnit = value;
-                });
-        });
+      .setName("Recording Unit")
+      .setDesc("Set the unit of time for recording (in seconds).")
+      .addSlider((slider) => {
+        slider
+          .setLimits(1, 20, 1)
+          .setValue(this.plugin.settings.recordingUnit)
+          .setDynamicTooltip()
+          .onChange(async (value) => {
+            this.plugin.settings.recordingUnit = value;
+          });
+      });
 
     new Setting(containerEl)
       .setName("System Prompt (for summarizing recorded content))")
@@ -485,7 +485,7 @@ export class SummarSettingsTab extends PluginSettingTab {
         textAreaEl.style.height = "150px";
         textAreaEl.style.resize = "none";
       })
-      ;        
+      ;
   }
 
   async buildCustomCommandSettings(containerEl: HTMLElement): Promise<void> {
@@ -498,21 +498,21 @@ export class SummarSettingsTab extends PluginSettingTab {
 
     for (let i = 1; i <= this.plugin.settings.cmd_count; i++) {
       this.createCustomCommandSetting(containerEl, i);
-    }  
+    }
     new Setting(containerEl)
-    .addButton(button => button
-      .setButtonText('Add Command')
-      .onClick(async() => {
-        if (this.plugin.settings.cmd_count < 5) {
-          this.plugin.settings.cmd_count += 1;
-          this.plugin.settings[`cmd_text_${this.plugin.settings.cmd_count}`] = '';
-          this.plugin.settings[`cmd_prompt_${this.plugin.settings.cmd_count}`] = '';
-          this.plugin.settings[`cmd_hotkey_${this.plugin.settings.cmd_count}`] = '';
-          this.display();
-        } else {
-          SummarDebug.Notice(0, 'You can only add up to 5 commands.');
-        }
-      }));
+      .addButton(button => button
+        .setButtonText('Add Command')
+        .onClick(async () => {
+          if (this.plugin.settings.cmd_count < 5) {
+            this.plugin.settings.cmd_count += 1;
+            this.plugin.settings[`cmd_text_${this.plugin.settings.cmd_count}`] = '';
+            this.plugin.settings[`cmd_prompt_${this.plugin.settings.cmd_count}`] = '';
+            this.plugin.settings[`cmd_hotkey_${this.plugin.settings.cmd_count}`] = '';
+            this.display();
+          } else {
+            SummarDebug.Notice(0, 'You can only add up to 5 commands.');
+          }
+        }));
   }
 
   createCustomCommandSetting(containerEl: HTMLElement, index: number): void {
@@ -538,18 +538,18 @@ export class SummarSettingsTab extends PluginSettingTab {
         const hotkeyEl = hotkeyInput.inputEl;
         hotkeyEl.style.width = "150px";
         hotkeyEl.readOnly = true;
-  
+
         // 핫키 입력 리스너 추가
         hotkeyEl.addEventListener('keydown', async (event) => {
           event.preventDefault(); // 기본 입력 방지
-  
+
           const modifiers = [];
           // if (event.ctrlKey || event.metaKey) modifiers.push('Ctrl');
           if (event.ctrlKey) modifiers.push('Ctrl');
           if (event.metaKey) modifiers.push('Cmd');
           if (event.shiftKey) modifiers.push('Shift');
           if (event.altKey) modifiers.push('Alt');
-  
+
           const key = event.key.length === 1 ? event.key.toUpperCase() : event.key;
           const hotkey = [...modifiers, key].join('+');
 
@@ -560,15 +560,15 @@ export class SummarSettingsTab extends PluginSettingTab {
           this.plugin.settings[`cmd_hotkey_${index}`] = hotkey;
 
         });
-      })      
+      })
       .addExtraButton(button => button
         .setIcon('trash-2')
         .setTooltip('Remove Command')
         .onClick(async () => {
           for (let i = index; i < this.plugin.settings.cmd_count; i++) {
-            this.plugin.settings[`cmd_text_${i}`] = this.plugin.settings[`cmd_text_${i+1}`];
-            this.plugin.settings[`cmd_prompt_${i}`] = this.plugin.settings[`cmd_prompt_${i+1}`];
-            this.plugin.settings[`cmd_hotkey_${i}`] = this.plugin.settings[`cmd_hotkey_${i+1}`];
+            this.plugin.settings[`cmd_text_${i}`] = this.plugin.settings[`cmd_text_${i + 1}`];
+            this.plugin.settings[`cmd_prompt_${i}`] = this.plugin.settings[`cmd_prompt_${i + 1}`];
+            this.plugin.settings[`cmd_hotkey_${i}`] = this.plugin.settings[`cmd_hotkey_${i + 1}`];
           }
           delete this.plugin.settings[`cmd_text_${this.plugin.settings.cmd_count}`];
           delete this.plugin.settings[`cmd_prompt_${this.plugin.settings.cmd_count}`];
@@ -595,32 +595,32 @@ export class SummarSettingsTab extends PluginSettingTab {
 
   createCalendarField(containerEl: HTMLElement, index: number): void {
     const setting = new Setting(containerEl)
-    // .setName(`Calendar ${index + 1}`)
-    .setHeading()
-    .addText((text) => {
-      text
-        .setPlaceholder("Enter Calendar Name")
-        .setValue(this.plugin.settings[`calendar_${index}`] as string)
-        .onChange((value) => {
-            this.plugin.settings[`calendar_${index}`] = value;            
-        });
+      // .setName(`Calendar ${index + 1}`)
+      .setHeading()
+      .addText((text) => {
+        text
+          .setPlaceholder("Enter Calendar Name")
+          .setValue(this.plugin.settings[`calendar_${index}`] as string)
+          .onChange((value) => {
+            this.plugin.settings[`calendar_${index}`] = value;
+          });
         const textEl = text.inputEl;
         textEl.style.width = "100%";
         // Focus가 떠날 때 dirty flag 설정
-          textEl.addEventListener("blur", async() => {
-            // SummarDebug.Notice(3, "Calendar name changed. Please save the settings.");
-            await this.plugin.saveSettingsToFile();
-            await this.plugin.calendarHandler.updateScheduledMeetings();
-            await this.plugin.calendarHandler.displayEvents();
+        textEl.addEventListener("blur", async () => {
+          // SummarDebug.Notice(3, "Calendar name changed. Please save the settings.");
+          await this.plugin.saveSettingsToFile();
+          await this.plugin.calendarHandler.updateScheduledMeetings();
+          await this.plugin.calendarHandler.displayEvents();
         });
       }
-    )
-    .addExtraButton(button => button
+      )
+      .addExtraButton(button => button
         .setIcon(`trash-2`)
         .setTooltip(`Remove Calendar`)
-        .onClick(async() => {
+        .onClick(async () => {
           for (let i = index; i < this.plugin.settings.calendar_count; i++) {
-            this.plugin.settings[`calendar_${i}`] = this.plugin.settings[`calendar_${i+1}`];
+            this.plugin.settings[`calendar_${i}`] = this.plugin.settings[`calendar_${i + 1}`];
           }
           delete this.plugin.settings[`calendar_${this.plugin.settings.calendar_count}`];
           this.plugin.settings.calendar_count -= 1;
@@ -629,18 +629,18 @@ export class SummarSettingsTab extends PluginSettingTab {
           await this.plugin.calendarHandler.updateScheduledMeetings();
           await this.plugin.calendarHandler.displayEvents();
         })
-    ); 
+      );
   }
 
   async buildScheduleSettings(containerEl: HTMLElement): Promise<void> {
     containerEl.createEl("h2", { text: "Auto recording" });
-  
+
     new Setting(containerEl)
       .setName("Enter the macOS calendar to search for Zoom meetings")
       .setDesc("Leave blank to search all calendars.")
       .addButton(button => button
         .setButtonText('Add Calendar')
-        .onClick(async() => {
+        .onClick(async () => {
           if (this.plugin.settings.calendar_count < 5) {
             this.plugin.settings.calendar_count += 1;
             this.plugin.settings[`calendar_${this.plugin.settings.calendar_count}`] = '';
@@ -649,12 +649,12 @@ export class SummarSettingsTab extends PluginSettingTab {
             SummarDebug.Notice(0, 'You can only add up to 5 calendars.');
           }
         }));
-  
+
     const calendarContainer = containerEl.createDiv();
     for (let i = 1; i <= this.plugin.settings.calendar_count; i++) {
       this.createCalendarField(containerEl, i);
     }
-    
+
     new Setting(containerEl)
       .setName("Show Zoom meetings only")
       .setDesc("When the toggle switch is on, only Zoom meetings are listed. When it is off, all events are displayed.")
@@ -663,7 +663,7 @@ export class SummarSettingsTab extends PluginSettingTab {
           this.plugin.settings.calendar_zoom_only = value;
           await this.plugin.calendarHandler.displayEvents();
         }));
-    
+
     new Setting(containerEl)
       .setName("Automatically records events that include Zoom meetings.")
       .setDesc("If the toggle switch is turned on, recording will automatically start at the scheduled time of events that include Zoom meetings.")
@@ -677,5 +677,6 @@ export class SummarSettingsTab extends PluginSettingTab {
     // const eventContainer = containerEl.createDiv();
     await this.plugin.calendarHandler.displayEvents(this.plugin.settings.autoRecording, containerEl.createDiv());
   }
+
 }
 

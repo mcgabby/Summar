@@ -20,6 +20,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 	private recordingTimer: RecordingTimer;
 
 	private deviceId: string;
+	private isRecording: boolean = false;
 
 	constructor(plugin: SummarPlugin) {
 		super(plugin);
@@ -81,6 +82,11 @@ export class AudioRecordingManager extends SummarViewContainer {
 	}
 
 	async startRecording(intervalInMinutes: number): Promise<void> {
+		if (this.isRecording) {
+			SummarDebug.Notice(0, "Recording is already in progress.");
+			return;
+		}
+		this.isRecording = true;
 		this.recordingTimer.start();
 		try {
 			const recorderState = this.getRecorderState();
@@ -95,6 +101,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 			if (!selectedDeviceLabel) {
 				this.recordingTimer.stop();
 				SummarDebug.Notice(0, "No audio device selected.", 0);
+				this.isRecording = false;
 				return;
 			}
 			const selectedDeviceId = await getDeviceIdFromLabel(selectedDeviceLabel) as string;
@@ -111,8 +118,9 @@ export class AudioRecordingManager extends SummarViewContainer {
 			SummarDebug.log(1,`recordingPath: ${this.recordingPath}`);
 
 			this.recordingInterval = window.setInterval(async () => {
-				if (!this.startTime) {
-					this.recordingTimer.stop();
+				if (!this.isRecording || !this.startTime) {
+					// this.recordingTimer.stop();
+					// this.isRecording = false;
 					return;
 				}
 
@@ -124,13 +132,29 @@ export class AudioRecordingManager extends SummarViewContainer {
 
 				await this.saveFile(blob, fileName);
 
-				this.elapsedTime = Math.floor((new Date().getTime() - this.startTime.getTime()) / 1000);
-				this.timeStamp = this.getTimestamp();
-				this.recordingCounter++;
+				// 녹음이 중지되었으므로 일정 시간 대기 후 재시작
+				// setTimeout(async () => {
 
-				// Restart the recording
-				await this.recorder.startRecording(selectedDeviceId);
+				    // MediaRecorder가 완전히 비활성화될 때까지 기다림
+					await this.recorder.waitForInactive();
+					
+					if (this.isRecording) {
+						if (this.startTime) {
+							this.elapsedTime = Math.floor((new Date().getTime() - this.startTime.getTime()) / 1000);
+						} else {
+							this.elapsedTime = 0;
+						}
+						this.timeStamp = this.getTimestamp();
+						this.recordingCounter++;
+
+						await this.recorder.startRecording(selectedDeviceId);
+					}
+				// }, 1000); // 1초 대기 후 재시작
 			}, intervalInMinutes * 60 * 1000);
+
+			// 	// Restart the recording
+			// 	await this.recorder.startRecording(selectedDeviceId);
+			// }, intervalInMinutes * 60 * 1000);
 
 			SummarDebug.Notice(0, "Recording started.");
 		} catch (err) {
@@ -143,13 +167,21 @@ export class AudioRecordingManager extends SummarViewContainer {
 	async stopRecording(): Promise<string> {
 		return new Promise(async (resolve, reject) => {
 			try {
+				if (!this.isRecording) {
+					SummarDebug.Notice(0, "No active recording to stop.");
+					resolve("");
+					return;
+				}
+				this.isRecording = false;
+				this.recordingTimer.stop();
+
 				const recorderState = this.getRecorderState();
 
 				if (recorderState === undefined) {
-					this.recordingTimer.stop();
+					// this.recordingTimer.stop();
 					throw new Error("Recorder state is undefined. Cannot stop recording.");
 				} else if (recorderState !== "recording" && recorderState !== "paused") {
-					this.recordingTimer.stop();
+					// this.recordingTimer.stop();
 					throw new Error("Recorder is not recording or paused. Cannot stop recording.");
 				}
 
@@ -159,7 +191,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 				}
 
 				if (!this.startTime) {
-					this.recordingTimer.stop();
+					// this.recordingTimer.stop();
 					resolve("");
 					return;
 				}
@@ -168,8 +200,12 @@ export class AudioRecordingManager extends SummarViewContainer {
 				const fileName = normalizePath(this.recordingPath + `/summar_audio_${this.timeStamp}_${this.elapsedTime}s.${extension}`);
 				await this.saveFile(blob, fileName);
 
+				if (blob.size === 0) {
+					SummarDebug.Notice(0, "Recording failed: No audio data captured.");
+				}
+
 				SummarDebug.Notice(0, "Recording stopped.");
-				this.recordingTimer.stop();
+				// this.recordingTimer.stop();
 				resolve(this.recordingPath);
 			} catch (err) {
 				this.recordingTimer.stop();

@@ -19,6 +19,7 @@ export default class SummarPlugin extends Plugin {
   inputField: HTMLInputElement;
   recordButton: HTMLButtonElement;
 
+  summarSettingTab: SummarSettingsTab;
   confluenceHandler: ConfluenceHandler;
   pdfHandler: PdfHandler;
   recordingManager: AudioRecordingManager;
@@ -67,7 +68,9 @@ export default class SummarPlugin extends Plugin {
 
     SummarDebug.log(1, "Summar Plugin loaded");
 
-    this.addSettingTab(new SummarSettingsTab(this));
+    this.summarSettingTab = new SummarSettingsTab(this);
+    this.addSettingTab(this.summarSettingTab);
+    // this.addSettingTab(new SummarSettingsTab(this));
     this.addRibbonIcon("scroll-text", "Open Summar View", this.activateView.bind(this));
     this.registerView(SummarView.VIEW_TYPE, (leaf) => new SummarView(leaf, this));
 
