@@ -196,9 +196,9 @@ export class PluginUpdater {
         }
       }
 
-      console.log("ZIP extraction completed.");
+      SummarDebug.log(1, "ZIP extraction completed.");
     } catch (error) {
-      console.error("Error extracting ZIP file:", error);
+      SummarDebug.error(1, "Error extracting ZIP file:", error);
       throw error;
     }
   }

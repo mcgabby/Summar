@@ -80,7 +80,7 @@ export default class SummarPlugin extends Plugin {
     this.recordingManager = new AudioRecordingManager(this);
     this.commandHandler = new CustomCommandHandler(this);
     this.recordingStatus = new StatusBar(this);
-    this.reservedStatus = new StatusBar(this);
+    this.reservedStatus = new StatusBar(this,true);
     this.calendarHandler = new CalendarHandler(this);
 
 
@@ -163,6 +163,10 @@ export default class SummarPlugin extends Plugin {
                     // Check MIME type or file extension
                     return (
                       file.type.startsWith("audio/") ||
+                      file.name.toLowerCase().endsWith(".mp3") || // Include .mp3 files
+                      file.name.toLowerCase().endsWith(".wav") || // Include .wav files
+                      file.name.toLowerCase().endsWith(".ogg") || // Include .ogg files
+                      file.name.toLowerCase().endsWith(".m4a") || // Include .m4a files
                       file.name.toLowerCase().endsWith(".webm") // Include .webm files
                     );
                   });
@@ -272,6 +276,8 @@ export default class SummarPlugin extends Plugin {
               // Check MIME type or file extension
               return (
                 file.type.startsWith("audio/") ||
+                file.name.toLowerCase().endsWith(".mp3") || // Include .mp3 files
+                file.name.toLowerCase().endsWith(".wav") || // Include .wav files
                 file.name.toLowerCase().endsWith(".webm") // Include .webm files
               );
             });
@@ -433,12 +439,12 @@ export default class SummarPlugin extends Plugin {
 
   async loadSettingsFromFile(): Promise<PluginSettings> {
     if (await this.app.vault.adapter.exists(this.PLUGIN_SETTINGS)) {
-      console.log("Settings file exists:", this.PLUGIN_SETTINGS);
+      SummarDebug.log(1, "Settings file exists:", this.PLUGIN_SETTINGS);
     } else {
-      console.log("Settings file does not exist:", this.PLUGIN_SETTINGS);
+      SummarDebug.log(1, "Settings file does not exist:", this.PLUGIN_SETTINGS);
     }
     if (await this.app.vault.adapter.exists(this.PLUGIN_SETTINGS)) {
-      console.log("Reading settings from data.json");
+      SummarDebug.log(1, "Reading settings from data.json");
       try {
         const rawData = await this.app.vault.adapter.read(this.PLUGIN_SETTINGS);
         const settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(rawData)) as PluginSettings;
@@ -450,7 +456,7 @@ export default class SummarPlugin extends Plugin {
         }
         return settings;
       } catch (error) {
-        console.log("Error reading settings file:", error);
+        SummarDebug.log(1, "Error reading settings file:", error);
         return DEFAULT_SETTINGS;
       }
     }

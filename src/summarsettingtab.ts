@@ -25,6 +25,8 @@ export class SummarSettingsTab extends PluginSettingTab {
   }
 
   async display(): Promise<void> {
+
+    // SummarDebug.log(1, "SummarSettingsTab: Displaying settings tab");
     const { containerEl } = this;
 
     if (!containerEl || !this.plugin.settings) {
@@ -137,6 +139,8 @@ export class SummarSettingsTab extends PluginSettingTab {
           button.setIcon(tab.icon) // 적절한 아이콘 선택
             .setTooltip(tab.tooltip)
             .onClick(() => {
+              // SummarDebug.log(3, `savedTabId: ${this.savedTabId}, tab.id: ${tab.id}`);
+
               this.savedTabId = activeTab = tab.id;
 
               // Update active state
@@ -146,18 +150,21 @@ export class SummarSettingsTab extends PluginSettingTab {
 
               // ExtraButton의 내부 요소에 클래스 추가
               const buttonEl = setting.settingEl.querySelector('.clickable-icon');
-              if (buttonEl) buttonEl.addClass('active');
-
+              if (buttonEl) {
+                buttonEl.addClass('active');
+              }
               // Show active tab content
               tabContents.querySelectorAll('.settings-tab-content').forEach((content) => {
+                // SummarDebug.log(3, `content.id: ${content.id}, activeTab: ${activeTab}`);
                 content.toggleClass('hidden', content.id !== activeTab);
               });
             });
         });
 
         // ExtraButton의 요소 직접 가져와 활성화
+        const buttonEl = setting.settingEl.querySelector('.clickable-icon');
+        (buttonEl as HTMLElement).dataset.id = tab.id;
         if (tab.id === activeTab) {
-          const buttonEl = setting.settingEl.querySelector('.clickable-icon');
           if (buttonEl) buttonEl.addClass('active');
         }
 
@@ -203,6 +210,40 @@ export class SummarSettingsTab extends PluginSettingTab {
       }
     })();
   }
+
+async activateTab(tabId: string): Promise<void> {
+    const { containerEl } = this;
+
+    if (!containerEl) {
+        SummarDebug.error(1, "SummarSettingsTab: containerEl is not available");
+        return;
+    }
+
+    // 현재 탭 ID 저장
+    this.savedTabId = tabId;
+
+    // // 활성화할 탭 찾기
+    // const tabsContainer = containerEl.querySelector('.settings-tabs');
+    // const tabContents = containerEl.querySelector('.settings-tab-contents');
+
+    // if (!tabsContainer || !tabContents) {
+    //     SummarDebug.error(1, "SummarSettingsTab: tabsContainer or tabContents not found");
+    //     return;
+    // }
+
+    // // 모든 버튼에서 active 클래스 제거
+    // tabsContainer.querySelectorAll('.clickable-icon').forEach((btn) => {
+    //   SummarDebug.log(1, `btn id: ${(btn as HTMLElement).dataset.id}`);
+    //   if ((btn as HTMLElement).dataset.id === tabId) {
+    //     btn.addClass('active');
+    //   } else {
+    //     btn.removeClass('active');
+    //   }
+    // });
+
+    this.display();
+    // SummarDebug.log(1, `SummarSettingsTab: Activated tab '${tabId}'`);
+}
 
   async buildCommonSettings(containerEl: HTMLElement): Promise<void> {
     containerEl.createEl("h2", { text: "Common Settings" });

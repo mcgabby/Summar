@@ -50,14 +50,14 @@ export class CalendarHandler {
                 }, this.plugin.settings.calendar_polling_interval); // 10분 (600,000ms)
             }
         } catch (error) {
-            console.error("Error initializing CalendarHandler:", error);
+            SummarDebug.error(1, "Error initializing CalendarHandler:", error);
         }
     }
     
     // ✅ 클래스 종료 시 `setInterval` 해제
     public stop() {
         clearInterval(this.intervalId);
-        console.log("Stopped CalendarHandler updates.");
+        SummarDebug.log(1, "Stopped CalendarHandler updates.");
     }
 
     formatPrintf(template: string, ...args: any[]): string {
@@ -117,6 +117,7 @@ export class CalendarHandler {
     }
 
     async updateScheduledMeetings() {
+        SummarDebug.log(1, "🔄 Updating scheduled Zoom meetings...");
         try {
             const meetings = await this.fetchZoomMeetings(); // Swift 실행 결과를 JSON으로 받음
 
@@ -252,13 +253,13 @@ export class CalendarHandler {
     async launchZoomMeeting(url: string): Promise<void> {
         const execAsync = promisify(exec);
         try {
-            console.log(`Zoom 미팅 실행 중: ${url}`);
+            SummarDebug.log(1, `Zoom 미팅 실행 중: ${url}`);
             const { stdout, stderr } = await execAsync(`open "${url}"`);
             if (stderr && stderr.trim()) {
-                console.error("Zoom 미팅 실행 중 에러 발생:", stderr);
+                SummarDebug.error(1, "Zoom 미팅 실행 중 에러 발생:", stderr);
             }
         } catch (error) {
-            console.error("Zoom 미팅 실행 실패:", error);
+            SummarDebug.error(1, "Zoom 미팅 실행 실패:", error);
         }
     }
 }

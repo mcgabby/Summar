@@ -63,7 +63,12 @@ export class AudioHandler extends SummarViewContainer {
 		for (const [index, file] of sortedFiles.entries()) {
 			const filePath = (file as any).webkitRelativePath || file.name;
 			SummarDebug.log(1, `File ${index + 1}: ${filePath}`);
-			if (file.type.startsWith("audio/") || file.name.toLowerCase().endsWith(".webm")) {
+			if (file.type.startsWith("audio/") || 
+				file.name.toLowerCase().endsWith(".mp3") ||
+				file.name.toLowerCase().endsWith(".wav") ||
+				file.name.toLowerCase().endsWith(".ogg") ||
+				file.name.toLowerCase().endsWith(".m4a") ||
+			    file.name.toLowerCase().endsWith(".webm")) {
 				const audioFilePath = normalizePath(`${noteFilePath}/${file.name}`);
 				SummarDebug.log(1, `audioFilePath: ${audioFilePath}`);
 
@@ -95,7 +100,12 @@ export class AudioHandler extends SummarViewContainer {
 
 		// Process files in parallel
 		const transcriptionPromises = sortedFiles
-			.filter((file) => file.type.startsWith("audio/") || file.name.toLowerCase().endsWith(".webm"))
+			.filter((file) => file.type.startsWith("audio/") || 
+				file.name.toLowerCase().endsWith(".mp3") ||
+				file.name.toLowerCase().endsWith(".wav") ||
+				file.name.toLowerCase().endsWith(".ogg") ||
+				file.name.toLowerCase().endsWith(".m4a") ||
+				file.name.toLowerCase().endsWith(".webm"))
 			.map(async (file) => {
 				const fileName = file.name;
 				const blob = file.slice(0, file.size, file.type);
@@ -132,7 +142,7 @@ export class AudioHandler extends SummarViewContainer {
 						}
 					}
 
-					const match = fileName.match(/_(\d+)s\.webm$/); // `_숫자s.webm` 패턴 찾기
+					const match = fileName.match(/_(\d+)s\.(webm|wav|mp3|ogg|m4a)$/); // `_숫자s.webm` 패턴 찾기
 					const seconds = match ? parseInt(match[1], 10) : 0; // 숫자로 변환
 					// SRT 포맷 변환
 					const srtContent = data.segments

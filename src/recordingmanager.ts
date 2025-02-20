@@ -160,7 +160,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 		} catch (err) {
 			this.recordingTimer.stop();
 			SummarDebug.Notice(0, "Error starting recording: " + (err as Error).message);
-			console.error(err);
+			SummarDebug.error(1, err);
 		}
 	}
 
@@ -210,7 +210,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 			} catch (err) {
 				this.recordingTimer.stop();
 				SummarDebug.Notice(0, "Error stopping recording: " + (err as Error).message);
-				console.error(err);
+				SummarDebug.error(1, err);
 				reject(err);
 			}
 		});
