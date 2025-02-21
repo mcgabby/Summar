@@ -140,6 +140,12 @@ MarkDown에서 title, bold(**) 속성은 쓰지 않고 모두 bullet으로만 �
 변환 시 줄바꿈과 들여쓰기를 일관되게 유지하십시오. 추측하지 말고, 가능한 한 정확하게 내용을 인식하고 검토하여 결과를 출력하세요.`,
 
 //////
+webModel: 'o1-mini',
+// pdfModel: 'gpt-4o',
+transcriptModel: 'o3-mini',
+// customModel: 'o3-mini',
+/////
+
   selectedDeviceId: "",
   recordingDir: "",
   recordingUnit: 15,

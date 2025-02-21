@@ -6,7 +6,11 @@ export interface PluginSettings {
   systemPrompt: string;
   webPrompt: string;
   pdfPrompt: string;
-
+  /////
+  webModel: string;
+  // pdfModel: string;
+  transcriptModel: string;
+  // customModel: string;
   /////
   selectedDeviceId: string;
   recordingDir: string;

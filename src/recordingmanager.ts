@@ -43,12 +43,12 @@ export class AudioRecordingManager extends SummarViewContainer {
 
 		try {
 			const body_content = JSON.stringify({
-				model: "gpt-4o",
+				model: this.plugin.settings.transcriptModel,
 				messages: [
 					// { role: "system", content: systemPrompt },
 					{ role: "user", content: `${webPrompt}\n\n${transcripted}` },
 				],
-				max_tokens: 16384,
+				// max_tokens: 16384,
 			});
 			this.updateResultText("Summarizing...");
 			this.timer.start();

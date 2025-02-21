@@ -309,6 +309,7 @@ export default class SummarPlugin extends Plugin {
     for (let i = 1; i <= this.settings.cmd_count; i++) {
       const cmdId = `openai-command-${i}`;
       const cmdText = this.settings[`cmd_text_${i}`] as string;
+      const cmdModel = this.settings[`cmd_model_${i}`] as string;
       const cmdPrompt = this.settings[`cmd_prompt_${i}`] as string;
       const cmdHotkey = this.settings[`cmd_hotkey_${i}`] as string;
 
@@ -322,7 +323,7 @@ export default class SummarPlugin extends Plugin {
             const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
             if (editor) {
               if (!checking) {
-                this.commandHandler.executePrompt(editor.getSelection(), cmdPrompt);
+                this.commandHandler.executePrompt(editor.getSelection(), cmdModel, cmdPrompt);
               }
               return true;
             }
@@ -338,12 +339,13 @@ export default class SummarPlugin extends Plugin {
     this.customCommandMenu = this.app.workspace.on('editor-menu', (menu, editor) => {
       for (let i = 1; i <= this.settings.cmd_count; i++) {
         const cmdText = this.settings[`cmd_text_${i}`] as string;
+        const cmdModel = this.settings[`cmd_model_${i}`] as string;
         const cmdPrompt = this.settings[`cmd_prompt_${i}`] as string;
 
         if (cmdText && cmdText.length > 0) {
           menu.addItem((item) => {
             item.setTitle(cmdText)
-              .onClick(() => this.commandHandler.executePrompt(editor.getSelection(), cmdPrompt));
+              .onClick(() => this.commandHandler.executePrompt(editor.getSelection(), cmdModel, cmdPrompt));
           });
         }
       }

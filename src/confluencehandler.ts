@@ -79,7 +79,7 @@ export class ConfluenceHandler extends SummarViewContainer {
 			SummarDebug.log(2, "Fetched page content:", page_content);
 
 			const body_content = JSON.stringify({
-				model: "o1-mini",
+				model: this.plugin.settings.webModel,
 				messages: [
 					// { role: "system", content: systemPrompt },
 					{ role: "user", content: `${webPrompt}\n\n${page_content}` },

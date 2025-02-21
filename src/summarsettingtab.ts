@@ -394,15 +394,43 @@ async activateTab(tabId: string): Promise<void> {
     //   })
     //   ;
 
+    // new Setting(containerEl)
+    // .setName("OpenAI Model")
+    // .setDesc("Select the OpenAI model to use in the prompt.")
+    // .addDropdown(dropdown => 
+    //     dropdown
+    //         .addOptions({
+    //             "gpt-4o": "gpt-4o",
+    //             "o1-mini": "o1-mini",
+    //             "o3-mini": "o3-mini"
+    //         })
+    //         .setValue(this.plugin.settings.webModel)
+    //         .onChange(async (value) => {
+    //             this.plugin.settings.webModel = value;
+    //         })
+    // );
+
     new Setting(containerEl)
-      .setName("User Prompt (for Web page summary)")
+      .setName("Prompt (for Web page summary)")
       .setDesc("This prompt will guide the AI response.")
+      .addDropdown(dropdown => 
+        dropdown
+            .addOptions({
+                "gpt-4o": "gpt-4o",
+                "o1-mini": "o1-mini",
+                "o3-mini": "o3-mini"
+            })
+            .setValue(this.plugin.settings.webModel)
+            .onChange(async (value) => {
+                this.plugin.settings.webModel = value;
+            })
+    );
 
     new Setting(containerEl)
       .setHeading()
       .addTextArea((text) => {
         text
-          .setPlaceholder("Enter user prompt")
+          .setPlaceholder("Enter prompt")
           .setValue(this.plugin.settings.webPrompt || "")
           .onChange(async (value) => {
             this.plugin.settings.webPrompt = value;
@@ -420,13 +448,13 @@ async activateTab(tabId: string): Promise<void> {
     containerEl.createEl("h2", { text: "PDF Summary" });
 
     new Setting(containerEl)
-      .setName("System Prompt (for PDF to Markdown)")
+      .setName("Prompt (for PDF to Markdown)")
       .setDesc("This prompt will guide the AI response.")
     new Setting(containerEl)
       .setHeading()
       .addTextArea((text) => {
         text
-          .setPlaceholder("Enter user prompt")
+          .setPlaceholder("Enter prompt")
           .setValue(this.plugin.settings.pdfPrompt || "")
           .onChange(async (value) => {
             this.plugin.settings.pdfPrompt = value;
@@ -508,14 +536,42 @@ async activateTab(tabId: string): Promise<void> {
           });
       });
 
+      // new Setting(containerEl)
+      // .setName("OpenAI Model")
+      // .setDesc("Select the OpenAI model to use in the prompt.")
+      // .addDropdown(dropdown => 
+      //     dropdown
+      //         .addOptions({
+      //             "gpt-4o": "gpt-4o",
+      //             "o1-mini": "o1-mini",
+      //             "o3-mini": "o3-mini"
+      //         })
+      //         .setValue(this.plugin.settings.transcriptModel)
+      //         .onChange(async (value) => {
+      //             this.plugin.settings.transcriptModel = value;
+      //         })
+      // );
+  
     new Setting(containerEl)
-      .setName("System Prompt (for summarizing recorded content))")
+      .setName("Prompt (for summarizing recorded content))")
       .setDesc("This prompt will guide the AI response.")
+      .addDropdown(dropdown => 
+          dropdown
+              .addOptions({
+                  "gpt-4o": "gpt-4o",
+                  "o1-mini": "o1-mini",
+                  "o3-mini": "o3-mini"
+              })
+              .setValue(this.plugin.settings.transcriptModel)
+              .onChange(async (value) => {
+                  this.plugin.settings.transcriptModel = value;
+              })
+      );
     new Setting(containerEl)
       .setHeading()
       .addTextArea((text) => {
         text
-          .setPlaceholder("Enter system prompt")
+          .setPlaceholder("Enter prompt")
           .setValue(this.plugin.settings.recordingPrompt || "")
           .onChange(async (value) => {
             this.plugin.settings.recordingPrompt = value;
@@ -549,6 +605,7 @@ async activateTab(tabId: string): Promise<void> {
             this.plugin.settings[`cmd_text_${this.plugin.settings.cmd_count}`] = '';
             this.plugin.settings[`cmd_prompt_${this.plugin.settings.cmd_count}`] = '';
             this.plugin.settings[`cmd_hotkey_${this.plugin.settings.cmd_count}`] = '';
+            this.plugin.settings[`cmd_model_${this.plugin.settings.cmd_count}`] = 'gpt-4o';
             this.display();
           } else {
             SummarDebug.Notice(0, 'You can only add up to 5 commands.');
@@ -569,6 +626,20 @@ async activateTab(tabId: string): Promise<void> {
         const textEl = text.inputEl;
         textEl.style.width = "100%";
       })
+
+      .addDropdown(dropdown =>
+        dropdown
+          .addOptions({
+            "gpt-4o": "gpt-4o",
+            "o1-mini": "o1-mini",
+            "o3-mini": "o3-mini"
+          })
+          .setValue(this.plugin.settings[`cmd_model_${index}`] as string || "gpt-4o")
+          .onChange(async (value) => {
+            this.plugin.settings[`cmd_model_${index}`] = value;
+          })
+      )
+  
       .addText((hotkeyInput) => {
         hotkeyInput
           .setPlaceholder('Press a hotkey...')
@@ -610,15 +681,35 @@ async activateTab(tabId: string): Promise<void> {
             this.plugin.settings[`cmd_text_${i}`] = this.plugin.settings[`cmd_text_${i + 1}`];
             this.plugin.settings[`cmd_prompt_${i}`] = this.plugin.settings[`cmd_prompt_${i + 1}`];
             this.plugin.settings[`cmd_hotkey_${i}`] = this.plugin.settings[`cmd_hotkey_${i + 1}`];
+            this.plugin.settings[`cmd_model_${i}`] = this.plugin.settings[`cmd_model_${i + 1}`];
           }
           delete this.plugin.settings[`cmd_text_${this.plugin.settings.cmd_count}`];
           delete this.plugin.settings[`cmd_prompt_${this.plugin.settings.cmd_count}`];
           delete this.plugin.settings[`cmd_hotkey_${this.plugin.settings.cmd_count}`];
+          delete this.plugin.settings[`cmd_model_${this.plugin.settings.cmd_count}`];
           this.plugin.settings.cmd_count -= 1;
           this.display();
         }));
 
-    new Setting(containerEl)
+
+    // new Setting(containerEl)
+    // .setHeading()
+    // .setName("OpenAI Model")
+    //   .setDesc("Select the OpenAI model to use in the prompt.")
+    //   .addDropdown(dropdown =>
+    //     dropdown
+    //       .addOptions({
+    //         "gpt-4o": "gpt-4o",
+    //         "o1-mini": "o1-mini",
+    //         "o3-mini": "o3-mini"
+    //       })
+    //       .setValue(this.plugin.settings[`cmd_model_${index}`] as string)
+    //       .onChange(async (value) => {
+    //         this.plugin.settings[`cmd_model_${index}`] = value;
+    //       })
+    //   );
+
+      new Setting(containerEl)
       .setHeading()
       .addTextArea((textarea) => {
         textarea
