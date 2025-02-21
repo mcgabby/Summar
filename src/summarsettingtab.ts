@@ -665,12 +665,14 @@ async activateTab(tabId: string): Promise<void> {
           const key = event.key.length === 1 ? event.key.toUpperCase() : event.key;
           const hotkey = [...modifiers, key].join('+');
 
-          if (hotkey === 'Backspace' || hotkey === 'Delete' || hotkey === 'Escape' || hotkey === ' ') 
-            hotkeyEl.value = "";
-          else
-            hotkeyEl.value = hotkey;
-          this.plugin.settings[`cmd_hotkey_${index}`] = hotkeyEl.value;
-
+          SummarDebug.log(1, `Hotkey changed: ${hotkey}`);
+          if (hotkey !== 'Escape') {
+            if (hotkey === 'Backspace' || hotkey === 'Delete' || hotkey === ' ')
+              hotkeyEl.value = "";
+            else
+              hotkeyEl.value = hotkey;
+            this.plugin.settings[`cmd_hotkey_${index}`] = hotkeyEl.value;
+          }
         });
       })
       .addExtraButton(button => button
