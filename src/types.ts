@@ -21,6 +21,7 @@ export interface PluginSettings {
   testUrl: string;
   debugLevel: number;
   /////
+  cmd_max: number;
   cmd_count: number;
   [key: string]: string | number | boolean;  
   

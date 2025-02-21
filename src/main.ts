@@ -314,26 +314,47 @@ export default class SummarPlugin extends Plugin {
       const cmdHotkey = this.settings[`cmd_hotkey_${i}`] as string;
 
       const hotKey = parseHotkey(cmdHotkey);
-
-      if (cmdId && cmdId.length > 0) {
-        this.addCommand({
-          id: cmdId,
-          name: cmdText,
-          checkCallback: (checking: boolean) => {
-            const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
-            if (editor) {
-              if (!checking) {
-                this.commandHandler.executePrompt(editor.getSelection(), cmdModel, cmdPrompt);
+      if (hotKey) {
+        if (cmdId && cmdId.length > 0) {
+          this.addCommand({
+            id: cmdId,
+            name: cmdText,
+            checkCallback: (checking: boolean) => {
+              const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
+              if (editor) {
+                if (!checking) {
+                  this.commandHandler.executePrompt(editor.getSelection(), cmdModel, cmdPrompt);
+                }
+                return true;
               }
-              return true;
+              return false;
+            },
+            hotkeys: [hotKey]
+            // hotkeys: [{ modifiers: [], key: cmdHotkey }]
+          });
+          this.customCommandIds.push(cmdId);
+        }
+      } else {
+        if (cmdId && cmdId.length > 0) {
+          this.addCommand({
+            id: cmdId,
+            name: cmdText,
+            checkCallback: (checking: boolean) => {
+              const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
+              if (editor) {
+                if (!checking) {
+                  this.commandHandler.executePrompt(editor.getSelection(), cmdModel, cmdPrompt);
+                }
+                return true;
+              }
+              return false;
             }
-            return false;
-          },
-          hotkeys: [hotKey]
-          // hotkeys: [{ modifiers: [], key: cmdHotkey }]
-        });
-        this.customCommandIds.push(cmdId);
+            // hotkeys: [{ modifiers: [], key: cmdHotkey }]
+          });
+          this.customCommandIds.push(cmdId);
+        }      
       }
+      
     }
 
     this.customCommandMenu = this.app.workspace.on('editor-menu', (menu, editor) => {

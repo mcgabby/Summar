@@ -155,6 +155,7 @@ transcriptModel: 'o3-mini',
   testUrl: "",        // initial URL of the page to summarize
   debugLevel: 0,  // debug level
 
+  cmd_max: 10,
   cmd_count: 0,
   calendar_count: 0,
   calendar_fetchdays: 1,
@@ -353,7 +354,8 @@ export function containsDomain(text: string, domain: string): boolean {
   return domainPattern.test(text);
 }
 
-export function parseHotkey(hotkeyString: string): Hotkey {
+export function parseHotkey(hotkeyString: string): Hotkey | undefined{
+  if (!hotkeyString || hotkeyString.length===0) return undefined;
   const parts = hotkeyString.split('+').map(part => part.trim().toLowerCase());
   const key = parts.pop() || '';  // 마지막 부분은 실제 키
 

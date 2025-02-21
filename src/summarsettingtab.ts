@@ -600,7 +600,7 @@ async activateTab(tabId: string): Promise<void> {
       .addButton(button => button
         .setButtonText('Add Command')
         .onClick(async () => {
-          if (this.plugin.settings.cmd_count < 5) {
+          if (this.plugin.settings.cmd_count < this.plugin.settings.cmd_max) {  
             this.plugin.settings.cmd_count += 1;
             this.plugin.settings[`cmd_text_${this.plugin.settings.cmd_count}`] = '';
             this.plugin.settings[`cmd_prompt_${this.plugin.settings.cmd_count}`] = '';
@@ -608,7 +608,7 @@ async activateTab(tabId: string): Promise<void> {
             this.plugin.settings[`cmd_model_${this.plugin.settings.cmd_count}`] = 'gpt-4o';
             this.display();
           } else {
-            SummarDebug.Notice(0, 'You can only add up to 5 commands.');
+            SummarDebug.Notice(0, `You can only add up to ${this.plugin.settings.cmd_max} commands.`);
           }
         }));
   }
@@ -665,11 +665,11 @@ async activateTab(tabId: string): Promise<void> {
           const key = event.key.length === 1 ? event.key.toUpperCase() : event.key;
           const hotkey = [...modifiers, key].join('+');
 
-          if (hotkey === 'Backspace' || hotkey === 'Delete' || hotkey === ' ')
+          if (hotkey === 'Backspace' || hotkey === 'Delete' || hotkey === 'Escape' || hotkey === ' ') 
             hotkeyEl.value = "";
           else
             hotkeyEl.value = hotkey;
-          this.plugin.settings[`cmd_hotkey_${index}`] = hotkey;
+          this.plugin.settings[`cmd_hotkey_${index}`] = hotkeyEl.value;
 
         });
       })
