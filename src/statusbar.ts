@@ -1,5 +1,6 @@
 // import { Plugin } from "obsidian";
 
+import { setIcon } from "obsidian";
 import { SummarDebug } from "./globals";
 import SummarPlugin from "./main";
 import { SummarSettingsTab } from "./summarsettingtab";
@@ -12,6 +13,10 @@ export class StatusBar {
 		this.plugin = plugin;
 		this.statusBarItem = this.plugin.addStatusBarItem();
 		if (showSettings) {
+			const iconEl = document.createElement("div");
+			iconEl.classList.add("status-bar-icon-container");
+			this.statusBarItem.appendChild(iconEl);
+
 			this.statusBarItem.style.cursor = "pointer"; // 커서를 포인터로 변경
 			this.statusBarItem.addEventListener("click", () => {
 				// 클릭 이벤트 추가
@@ -24,6 +29,17 @@ export class StatusBar {
 		if (this.statusBarItem) {
 			this.statusBarItem.textContent = message;
 			this.statusBarItem.style.color = color;
+		}
+	}
+
+	setStatusbarIcon(icon: string, color: string) {
+		if (this.statusBarItem) {
+			const iconEl = this.statusBarItem.querySelector(".status-bar-icon-container");
+			if (iconEl) {
+				iconEl.innerHTML = ""; // 기존 아이콘 제거
+				setIcon(iconEl as HTMLElement, icon); // 새 아이콘 설정
+				this.statusBarItem.style.color = color;
+			}
 		}
 	}
 

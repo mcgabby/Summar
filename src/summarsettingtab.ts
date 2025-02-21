@@ -805,7 +805,12 @@ async activateTab(tabId: string): Promise<void> {
         toggle.setValue(this.plugin.settings.autoRecording).onChange(async (value) => {
           this.plugin.settings.autoRecording = value;
           await this.plugin.calendarHandler.displayEvents(value);
-          this.plugin.reservedStatus.update(value ? "⏰" : "", value ? "green" : "black");
+          // this.plugin.reservedStatus.update(value ? "⏰" : "", value ? "green" : "black");
+          if (value) {
+            this.plugin.reservedStatus.setStatusbarIcon("calendar-clock", "red");
+          } else {
+            this.plugin.reservedStatus.setStatusbarIcon("calendar-x", "black");
+          }
         }));
 
     // const eventContainer = containerEl.createDiv();

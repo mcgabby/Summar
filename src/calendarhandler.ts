@@ -42,7 +42,12 @@ export class CalendarHandler {
             if (Platform.isMacOS) {
                 // 초기 실행
                 await this.updateScheduledMeetings();
-                this.plugin.reservedStatus.update(this.plugin.settings.autoRecording ? "⏰" : "", this.plugin.settings.autoRecording ? "green" : "black");
+                if (this.plugin.settings.autoRecording) {
+                    this.plugin.reservedStatus.setStatusbarIcon("calendar-clock", "red");
+                } else {
+                    this.plugin.reservedStatus.setStatusbarIcon("calendar-x-", "black");
+                }
+                // this.plugin.reservedStatus.update(this.plugin.settings.autoRecording ? "⏰" : "", this.plugin.settings.autoRecording ? "green" : "black");
 
                 // 10분마다 업데이트 실행
                 this.intervalId = setInterval(() => {
