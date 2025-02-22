@@ -17,11 +17,28 @@ export class StatusBar {
 			iconEl.classList.add("status-bar-icon-container");
 			this.statusBarItem.appendChild(iconEl);
 
-			this.statusBarItem.style.cursor = "pointer"; // 커서를 포인터로 변경
-			this.statusBarItem.addEventListener("click", () => {
-				// 클릭 이벤트 추가
-				this.showScheduleSettings();
-			});		
+            // 🔥 마우스오버 효과 추가
+            this.statusBarItem.style.cursor = "pointer"; // 커서를 포인터로 변경
+            this.statusBarItem.style.transition = "all 0.2s ease"; // 부드러운 전환 효과
+            this.statusBarItem.style.padding = "2px 8px"; // 패딩 추가로 터치 영역 확대
+            this.statusBarItem.style.borderRadius = "5px"; // 둥근 모서리 효과
+
+            this.statusBarItem.addEventListener("mouseenter", () => {
+                this.statusBarItem!.style.backgroundColor = "rgba(192, 192, 192, 0.2)"; // 마우스 오버 시 배경색 변경
+                this.statusBarItem!.style.boxShadow = "0 0 5px rgba(192, 192, 192, 0.5)"; // 약간의 그림자 효과
+                this.statusBarItem!.style.transform = "scale(1.05)"; // 약간 확대 효과
+            });
+
+            this.statusBarItem.addEventListener("mouseleave", () => {
+                this.statusBarItem!.style.backgroundColor = "transparent"; // 마우스가 나가면 원래대로
+                this.statusBarItem!.style.boxShadow = "none"; // 그림자 효과 제거
+                this.statusBarItem!.style.transform = "scale(1)"; // 원래 크기로 복귀
+            });
+
+            // 클릭 이벤트 추가
+            this.statusBarItem.addEventListener("click", () => {
+                this.showScheduleSettings();
+            });			
 		}
 	}
 

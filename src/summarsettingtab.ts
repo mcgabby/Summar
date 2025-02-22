@@ -132,7 +132,7 @@ export class SummarSettingsTab extends PluginSettingTab {
 
     // Create tabs
     tabs.forEach((tab) => {
-      if (tab.id !== 'schedule-tab' || Platform.isMacOS) {
+      if ((tab.id !== 'pdf-tab' && tab.id !== 'schedule-tab') || (Platform.isMacOS && !Platform.isMobile)) {
         const setting = new Setting(tabsContainer);
 
         const tabButton = setting.addExtraButton((button) => {
@@ -192,7 +192,9 @@ export class SummarSettingsTab extends PluginSettingTab {
             await this.buildWebpageSettings(tabContent);
             break;
           case 'pdf-tab':
-            await this.buildPdfSettings(tabContent);
+            if (Platform.isMacOS) {
+              await this.buildPdfSettings(tabContent);
+            }
             break;
           case 'recording-tab':
             await this.buildRecordingSettings(tabContent);
