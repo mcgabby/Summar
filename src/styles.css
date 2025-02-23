@@ -7,6 +7,8 @@
     padding-bottom: 5px; /* 스크롤바와의 여백 */
     scrollbar-width: thin; /* 파이어폭스용 */
     scroll-behavior: smooth; /* 부드러운 스크롤 */
+
+    padding-top: 5px; /* 🔥 상단 여백 추가하여 버튼이 잘리지 않도록 설정 */
 }
 
 .settings-tabs::-webkit-scrollbar {
@@ -25,11 +27,29 @@
     border-radius: 4px;
     background-color: var(--background-primary);
     flex-shrink: 0; /* 크기 축소 방지 */
+
+    transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 .settings-tab-button.active {
     background-color: var(--interactive-accent);
     color: var(--text-on-accent);
+
+    border-radius: 5px;
+    transform: scale(1.05); /* 크기 살짝 확대 */
+    opacity: 1 !important; /* 🔥 안드로이드에서 흐려지는 문제 해결 */
+}
+
+
+/* 🔥 초기 활성화된 탭 버튼과 이후 선택된 탭 버튼을 완전히 동일하게 처리 */
+.settings-tab-button:focus,
+.settings-tab-button:focus-visible,
+.settings-tab-button.active:focus,
+.settings-tab-button.active:focus-visible,
+.clickable-icon.active:focus {
+    background-color: var(--interactive-accent) !important;
+    color: var(--text-on-accent) !important;
+    opacity: 1 !important;
 }
 
 .settings-tab-content {
@@ -74,10 +94,12 @@
 /* 활성화된 버튼 스타일 */
 .clickable-icon.active {
     background-color: var(--interactive-accent); /* Obsidian의 주요 색상 */
-    color: white;
+    /* color: white; */
     border-radius: 5px;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    /* box-shadow: 0 0 5px rgba(0, 0, 0, 0.2); */
     transform: scale(1.1);
+
+    color: var(--text-on-accent);
 }
 
 /* 아이콘 강조 효과 */
@@ -87,6 +109,7 @@
 }
 
 /* 활성화된 버튼 호버 효과 */
+.settings-tab-button.active:hover,
 .clickable-icon.active:hover {
     background-color: var(--interactive-accent-hover);
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
