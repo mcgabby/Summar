@@ -261,7 +261,7 @@ async activateTab(tabId: string): Promise<void> {
     forceUpdate.textContent = "here";
     forceUpdate.href = "#";
     forceUpdate.style.cursor = "pointer";
-    forceUpdate.style.color = "blue"; // 링크 색상 설정 (옵션)
+    forceUpdate.style.color = "var(--text-accent)"; // 링크 색상 설정 (옵션)
     // 클릭 이벤트 핸들러
     forceUpdate.addEventListener("click", (event) => {
       event.preventDefault(); // 기본 동작 방지
@@ -287,7 +287,7 @@ async activateTab(tabId: string): Promise<void> {
     forceReload.textContent = "here";
     forceReload.href = "#";
     forceReload.style.cursor = "pointer";
-    forceReload.style.color = "blue"; // 링크 색상 설정 (옵션)
+    forceReload.style.color = "var(--text-accent)"; // 링크 색상 설정 (옵션)
 
     // 클릭 이벤트 핸들러
     forceReload.addEventListener("click", (event) => {

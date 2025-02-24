@@ -38,7 +38,7 @@ export class PluginUpdater {
         link.textContent = "HERE";
         link.href = "#";
         link.style.cursor = "pointer";
-        link.style.color = "blue"; // 링크 색상 설정 (옵션)
+        link.style.color = "var(--text-accent)"; // 링크 색상 설정 (옵션)
 
         // 클릭 이벤트 핸들러
         link.addEventListener("click", (event) => {

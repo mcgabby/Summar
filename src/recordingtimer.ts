@@ -31,8 +31,8 @@ export class RecordingTimer {
   stop(): void {
     if (this.timerInterval !== undefined) {
       this.plugin.recordButton.textContent =`[●] record`;
-      this.plugin.recordButton.style.color = "black";
-      this.plugin.recordingStatus.update("", "black");
+      this.plugin.recordButton.style.color = "var(--text-normal)";
+      this.plugin.recordingStatus.update("", "var(--text-normal)");
       clearInterval(this.timerInterval); // 타이머 종료
     }
   }
