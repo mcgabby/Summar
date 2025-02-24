@@ -811,7 +811,7 @@ async activateTab(tabId: string): Promise<void> {
           if (value) {
             this.plugin.reservedStatus.setStatusbarIcon("calendar-clock", "red");
           } else {
-            this.plugin.reservedStatus.setStatusbarIcon("calendar-x", "black");
+            this.plugin.reservedStatus.setStatusbarIcon("calendar-x", "var(--text-muted)");
           }
         }));
 

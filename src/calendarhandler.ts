@@ -45,7 +45,7 @@ export class CalendarHandler {
                 if (this.plugin.settings.autoRecording) {
                     this.plugin.reservedStatus.setStatusbarIcon("calendar-clock", "red");
                 } else {
-                    this.plugin.reservedStatus.setStatusbarIcon("calendar-x", "black");
+                    this.plugin.reservedStatus.setStatusbarIcon("calendar-x", "var(--text-muted)");
                 }
                 // this.plugin.reservedStatus.update(this.plugin.settings.autoRecording ? "⏰" : "", this.plugin.settings.autoRecording ? "green" : "black");
 
