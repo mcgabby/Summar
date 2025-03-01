@@ -11,8 +11,9 @@ export class AudioHandler extends SummarViewContainer {
 		this.timer = new SummarTimer(plugin);
 	}
 
-	async sendAudioData(files: FileList | File[], givenFolderPath: string = ""): Promise<string> {
+	async sendAudioData(files: FileList | File[], givenFolderPath: string = ""): Promise<{ fullText: string, newFilePath: string }> {
 		this.updateResultText("convert audio to text");
+		this.enableNewNote(false);
 
 		let audioList = "";
 		let fullText = "";
@@ -22,7 +23,7 @@ export class AudioHandler extends SummarViewContainer {
 			SummarDebug.Notice(0,
 				"API key is missing. Please add your API key in the settings."
 			);
-			return "";
+			return { fullText: "", newFilePath: "" };
 		}
 
 		// Convert FileList to an array
@@ -202,7 +203,7 @@ export class AudioHandler extends SummarViewContainer {
 			true
 		);
 		this.timer.stop();
-		return fullText;
+		return {fullText,newFilePath};
 	}
 
 	// Helper function to calculate the common folder path

@@ -1,4 +1,4 @@
-import { View, WorkspaceLeaf, Platform } from "obsidian";
+import { View, WorkspaceLeaf, Platform, setIcon, normalizePath, MarkdownView } from "obsidian";
 
 import SummarPlugin  from "./main";
 import { SummarDebug } from "./globals";
@@ -103,7 +103,76 @@ export class SummarView extends View {
     recordButton.style.border = "1px solid #ccc";
     recordButton.style.borderRadius = "5px";
     recordButton.style.cursor = "pointer";
+
+    // 아이콘 버튼 컨테이너 생성
+    const newNoteButtonContainer = container.createEl("div", { cls: "setting-container" });
+
+    // 버튼 생성
+    const newNoteButton = newNoteButtonContainer.createEl("button", {
+      cls: "lucide-icon-button",
+    });
+
+    // 아이콘 추가 (초기값: resultNewNote 값에 따라 결정)
+    setIcon(newNoteButton, "file-plus-2");
+
+    // 설명 텍스트 생성
+    const newNoteLabel = newNoteButtonContainer.createEl("span", {
+      text: "Display results in a new note",
+    });
+
+    // 스타일 추가 (아이콘과 텍스트 사이 여백 설정)
+    newNoteLabel.style.marginLeft = "5px";
+    newNoteLabel.style.fontSize = "14px";
+    newNoteLabel.style.verticalAlign = "middle";
+
+    // 버튼 클릭 이벤트 리스너 추가
+    newNoteButton.addEventListener("click", async() => {
+      let newNoteName = this.plugin.newNoteName;
+      if (this.plugin.newNoteName.includes(".md")) {
+        newNoteName = newNoteName.replace(".md", " summary.md");
+      } else {
+        newNoteName = newNoteName + ".md";
+      }					
+
+      const filePath = normalizePath(newNoteName);
+      const existingFile = this.plugin.app.vault.getAbstractFileByPath(filePath);
   
+      if (existingFile) {
+        // 파일이 존재하는 경우
+        const leaves = this.plugin.app.workspace.getLeavesOfType("markdown");
+        
+        for (const leaf of leaves) {
+            const view = leaf.view;
+            // 🔥 view가 MarkdownView 인스턴스인지 확인
+            if (view instanceof MarkdownView && view.file && view.file.path === filePath) {
+              // 파일이 열려 있다면 해당 탭 활성화
+              this.plugin.app.workspace.setActiveLeaf(leaf);
+              return;
+          }
+      }
+
+        // 파일이 존재하지만 열려 있지 않다면 새로 열기
+        await this.plugin.app.workspace.openLinkText(filePath, "", true);
+      } else {
+          // 파일이 없으면 새로 생성 후 열기
+          await this.plugin.app.vault.create(filePath, this.plugin.resultContainer.value);
+          await this.plugin.app.workspace.openLinkText(filePath, "", true);
+      }
+    });
+
+
+    this.plugin.newNoteButton = newNoteButton;
+    this.plugin.newNoteLabel = newNoteLabel;
+
+    if (this.plugin.newNoteButton) {
+      this.plugin.newNoteButton.disabled = true;
+      this.plugin.newNoteButton.classList.toggle("disabled", true);
+    }
+
+    if (this.plugin.newNoteLabel) {
+      this.plugin.newNoteLabel.classList.toggle("disabled", true);
+    }
+    
     // Result Container
     const resultContainer: HTMLTextAreaElement = container.createEl("textarea", {
       cls: "result-content",

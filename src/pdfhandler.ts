@@ -25,6 +25,7 @@ export class PdfHandler extends SummarViewContainer {
 		if (!openaiApiKey) {
 			SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
 			this.updateResultText( "Please configure OpenAI API key in the plugin settings.");
+			this.enableNewNote(false);
 			return;
 		}
 
@@ -33,6 +34,7 @@ export class PdfHandler extends SummarViewContainer {
 			if (!(await pdftopng.isPopplerInstalled())) {
 				SummarDebug.Notice(0, "Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
 				this.updateResultText("Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
+				this.enableNewNote(false);
 				throw new Error("Poppler is not installed. Please install Poppler using the following command in your shell: \n% brew install poppler.");
 			}
 
@@ -100,6 +102,7 @@ export class PdfHandler extends SummarViewContainer {
 					SummarDebug.log(2, body_content);
 
 					this.updateResultText("Converting PDF to markdown. This may take a while...");
+					this.enableNewNote(false);
 
 					this.timer.start();
 					const aiResponse = await fetchOpenai(openaiApiKey, body_content);
@@ -109,6 +112,7 @@ export class PdfHandler extends SummarViewContainer {
 						const errorText = await aiResponse.text();
 						SummarDebug.error(1, "OpenAI API Error:", errorText);
 						this.updateResultText(`Error: ${aiResponse.status} - ${errorText}`);
+						this.enableNewNote(false);
 						return;
 					}
 
@@ -119,11 +123,14 @@ export class PdfHandler extends SummarViewContainer {
 						const markdownContent = this.extractMarkdownContent(summary);
 						if (markdownContent) {
 							this.updateResultText(markdownContent);
+							this.enableNewNote(true);
 						} else {
 							this.updateResultText(JSON.stringify(aiData, null, 2));
+							this.enableNewNote(false);
 						}
 					} else {
 						this.updateResultText("No valid response from OpenAI API.");
+						this.enableNewNote(false);
 					}
 
 					SummarDebug.log(1, "PDF conversion to images complete.");
@@ -135,6 +142,7 @@ export class PdfHandler extends SummarViewContainer {
 
 			SummarDebug.error(1, "Error during PDF to PNG conversion:", error);
 			this.updateResultText(`Error during PDF to PNG conversion: ${error}`);
+			this.enableNewNote(false);
 			SummarDebug.Notice(0, "Failed to convert PDF to PNG. Check console for details.");
 		}
 	}

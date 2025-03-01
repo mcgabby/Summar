@@ -151,7 +151,8 @@ transcriptModel: 'o3-mini',
   recordingUnit: 15,
   recordingLanguage: "ko",
   recordingPrompt: "# 명령\n아래는 회의록에 대하여 STT 로 입력받은 내용이야. 좀 정리가 안되어 있고 여러사람이 말하는 것이 섞여 있어. 본 회의에 대하여 요약해 주고 중요한 의사결정사항이 무엇인지  Action Item 이 무엇인지 정리해줘.\n\n# 제약사항\n* 제일 먼저 다음에 제공될 단어리스트를 읽고 Transcription에서 잘못 기입되었을 것으로 판단되는 텍스트는 보정해 주세요.\n* 제공한 정보만 포함해서 문서를 작성하세요. 추측이나 가정은 피해주세요.\n* 출력되는 결과는 한국어로 작성하고 markdown 이외의 다른 결과는 출력하지 마세요.\n* 입력되는 정보를 기반으로 완결된 문서 형식으로 작성되어야 합니다.\n* 구조의 순서는 입력되는 정보가 잘 전달될 수 있도록 재배열할 수 있습니다.\n* 고려해야 함' -> '고려 필요', 개발할 계획임' -> '개발할 계획', 요구하고 있음' -> '요구 중' 과 같이주어진 문장에서 불필요한 어미나 조사를 제거하고 간결한 형태로 변환하세요.\n* markdown에서 bold 표현은 사용하지 마세요.\n* 입력된 내용 중에 누락이 발생하지 않도록 해주세요.\n* 논의 내용은 요약하지 말고 최대한 원문 그대로를 담아줘.\n\n\n# 단어 리스트\n* LY, LY Corp, CTO Scrum, Maintenance\n* 구L, 구Y\n* 의빈님, 순호님, 진수님, 종범님, 민철님, 유진님, 세현님\n\n# 출력포맷\n```\n## 배경\n- 내용\n...\n\n## Executive Summary\n- 내용\n- 내용\n...\n\n## 논의 내용\n1. 그룹화된 제목\n\t- 내용\n\t\t- 상세내용\n\t\t- 상세내용\n\t- 내용\n\t\t- 상세내용\n\t\t- 상세내용\n2. 그룹화된 제목\n\t- 내용\n\t\t- 상세내용\n\t\t- 상세내용\n\t- 내용\n\t\t- 상세내용\n\t\t- 상세내용\n....\n\n## Action Item\n- 내용1\n- 내용1\n\n## Confluence 문서 제목\n- EN: 영어 Confluence 문서 제목\n- KO: 한국어 Confluence 문서 제목\n- JA: 일본어 Confluence 문서 제목\n```\n\n#  검수\n* 회의록을 작성한 뒤 입력한 원문과 비교해서 누락이 있는지 확인하는 절차를 가지세요.\n* 정보가 부족한 부분이 있다면 회의록에 내용을 더 추가해주세요.\n* 추가한 이후에는 다시 검수하는 절차를 다시 수행해주세요.\n\n# STT로 입력받은 내용은 아래와 같습니다.\n----\n",
-//////
+  recordingResultNewNote: true,
+  //////
   testUrl: "",        // initial URL of the page to summarize
   debugLevel: 0,  // debug level
 
@@ -183,6 +184,28 @@ export class SummarViewContainer {
   appendResultText(message: string): void {
       this.plugin.resultContainer.value += message;
   }
+
+  enableNewNote(enabled: boolean, newNotePath?: string) {
+    if (this.plugin.newNoteButton) {
+      this.plugin.newNoteButton.disabled = !enabled;
+      this.plugin.newNoteButton.classList.toggle("disabled", !enabled);
+    }
+
+    if (this.plugin.newNoteLabel) {
+      this.plugin.newNoteLabel.classList.toggle("disabled", !enabled);
+    }
+
+    if (enabled) {
+      const now = new Date();
+      const formattedDate = now.getFullYear().toString().slice(2) +
+        String(now.getMonth() + 1).padStart(2, "0") +
+        now.getDate().toString().padStart(2, "0") + "-" +
+        now.getHours().toString().padStart(2, "0") +
+        now.getMinutes().toString().padStart(2, "0");
+
+      this.plugin.newNoteName = newNotePath ? newNotePath : formattedDate;
+    }
+} 
 }
 
 export async function fetchOpenai(openaiApiKey: string, bodyContent: string): Promise<any> {

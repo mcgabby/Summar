@@ -19,6 +19,7 @@ export class SummarTimer extends SummarViewContainer {
     this.timerInterval = window.setInterval(() => {
       // 텍스트에 점(.) 추가
       this.appendResultText(".");
+      this.enableNewNote(false);
       this.dotCount++;
     }, 500); // 500ms마다 실행
   }

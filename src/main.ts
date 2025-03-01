@@ -16,6 +16,8 @@ import { StatusBar } from "./statusbar";
 export default class SummarPlugin extends Plugin {
   settings: PluginSettings;
   resultContainer: HTMLTextAreaElement;
+  newNoteButton: HTMLButtonElement;
+  newNoteLabel: HTMLSpanElement;
   inputField: HTMLInputElement;
   recordButton: HTMLButtonElement;
 
@@ -33,11 +35,14 @@ export default class SummarPlugin extends Plugin {
   customCommandIds: string[] = [];
   customCommandMenu: any;
 
+  newNoteName: string = "";
+  
   OBSIDIAN_PLUGIN_DIR: string = "";
   PLUGIN_ID: string = ""; // 플러그인 아이디
   PLUGIN_DIR: string = ""; // 플러그인 디렉토리
   PLUGIN_MANIFEST: string = ""; // 플러그인 디렉토리의 manifest.json
   PLUGIN_SETTINGS: string = "";  // 플러그인 디렉토리의 data.json
+
 
   async onload() {
     this.OBSIDIAN_PLUGIN_DIR = normalizePath("/.obsidian/plugins");
@@ -135,9 +140,9 @@ export default class SummarPlugin extends Plugin {
                     SummarDebug.log(1, `File selected: ${file.path}`);
                     if (files && files.length > 0) {
                       this.activateView();
-                      const text = await this.audioHandler.sendAudioData(files);
-                      SummarDebug.log(3, `transcripted text: ${text}`);
-                      this.recordingManager.summarize(text);
+                      const { fullText, newFilePath } = await this.audioHandler.sendAudioData(files);
+                      SummarDebug.log(3, `transcripted text: ${fullText}`);
+                      this.recordingManager.summarize(fullText, newFilePath);
                     }
                   } catch (error) {
                     SummarDebug.error(1, "Error handling file:", error);
@@ -178,9 +183,9 @@ export default class SummarPlugin extends Plugin {
 
                   // Send all selected files to sendAudioData
                   this.activateView();
-                  const text = await this.audioHandler.sendAudioData(files, file.path);
-                  SummarDebug.log(3, `transcripted text: ${text}`);
-                  this.recordingManager.summarize(text);
+                  const { fullText, newFilePath } = await this.audioHandler.sendAudioData(files, file.path);
+                  SummarDebug.log(3, `transcripted text: ${fullText}`);
+                  this.recordingManager.summarize(fullText, newFilePath);
                 }
               });
           });
@@ -245,9 +250,9 @@ export default class SummarPlugin extends Plugin {
           const files = (event.target as HTMLInputElement).files;
           if (files && files.length > 0) {
             // Send all selected files to sendAudioData
-            const text = await this.audioHandler.sendAudioData(files);
-            SummarDebug.log(3, `transcripted text: ${text}`);
-            this.recordingManager.summarize(text);
+            const { fullText, newFilePath } = await this.audioHandler.sendAudioData(files);
+            SummarDebug.log(3, `transcripted text: ${fullText}`);
+            this.recordingManager.summarize(fullText, newFilePath);
           }
         };
 
@@ -288,9 +293,9 @@ export default class SummarPlugin extends Plugin {
             }
 
             // Send all selected files to sendAudioData
-            const text = await this.audioHandler.sendAudioData(files);
-            SummarDebug.log(3, `transcripted text: ${text}`);
-            this.recordingManager.summarize(text);
+            const { fullText, newFilePath } = await this.audioHandler.sendAudioData(files);
+            SummarDebug.log(3, `transcripted text: ${fullText}`);
+            this.recordingManager.summarize(fullText, newFilePath);
           }
         };
 
@@ -309,7 +314,7 @@ export default class SummarPlugin extends Plugin {
     for (let i = 1; i <= this.settings.cmd_count; i++) {
       const cmdId = `openai-command-${i}`;
       const cmdText = this.settings[`cmd_text_${i}`] as string;
-      const cmdModel = this.settings[`cmd_model_${i}`] as string;
+      const cmdModel = this.settings[`cmd_model_${i}`] as string || 'gpt-4o';
       const cmdPrompt = this.settings[`cmd_prompt_${i}`] as string;
       const cmdHotkey = this.settings[`cmd_hotkey_${i}`] as string;
 
@@ -360,7 +365,7 @@ export default class SummarPlugin extends Plugin {
     this.customCommandMenu = this.app.workspace.on('editor-menu', (menu, editor) => {
       for (let i = 1; i <= this.settings.cmd_count; i++) {
         const cmdText = this.settings[`cmd_text_${i}`] as string;
-        const cmdModel = this.settings[`cmd_model_${i}`] as string;
+        const cmdModel = this.settings[`cmd_model_${i}`] as string || 'gpt-4o';
         const cmdPrompt = this.settings[`cmd_prompt_${i}`] as string;
 
         if (cmdText && cmdText.length > 0) {
@@ -422,10 +427,10 @@ export default class SummarPlugin extends Plugin {
           })
         );
         // sendAudioData에 오디오 파일 경로 전달
-        const text = await this.audioHandler.sendAudioData(files, recordingPath);
+        const { fullText, newFilePath } = await this.audioHandler.sendAudioData(files, recordingPath);
         SummarDebug.Notice(1, `Uploaded ${audioFiles.length} audio files successfully.`);
-        SummarDebug.log(3, `transcripted text: ${text}`);
-        this.recordingManager.summarize(text);
+        SummarDebug.log(3, `transcripted text: ${fullText}`);
+        this.recordingManager.summarize(fullText, newFilePath);
       } catch (error) {
         SummarDebug.error(0, "Error reading directory:", error);
         SummarDebug.Notice(1, "Failed to access the specified directory.");

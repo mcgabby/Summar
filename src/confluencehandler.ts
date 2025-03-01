@@ -24,6 +24,7 @@ export class ConfluenceHandler extends SummarViewContainer {
 		if (!openaiApiKey) {
 			SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
 			this.updateResultText("Please configure OpenAI API key in the plugin settings.");
+			this.enableNewNote(false);
 			return;
 		}
 
@@ -32,6 +33,7 @@ export class ConfluenceHandler extends SummarViewContainer {
 		}
 
 		this.updateResultText("Fetching and summarizing...");
+		this.enableNewNote(false);
 
 		try {
 			this.timer.start();
@@ -75,6 +77,7 @@ export class ConfluenceHandler extends SummarViewContainer {
 				page_content = await response.text();
 			}
 			this.updateResultText("Fedtched page content");
+			this.enableNewNote(false);
 
 			SummarDebug.log(2, "Fetched page content:", page_content);
 
@@ -88,6 +91,7 @@ export class ConfluenceHandler extends SummarViewContainer {
 			});
 
 			this.updateResultText( "Summarizing...");
+			this.enableNewNote(false);
 
 			const aiResponse = await fetchOpenai(openaiApiKey, body_content);
 			this.timer.stop();
@@ -96,6 +100,7 @@ export class ConfluenceHandler extends SummarViewContainer {
 				const errorText = await aiResponse.text();
 				SummarDebug.error(1, "OpenAI API Error:", errorText);
 				this.updateResultText(`Error: ${aiResponse.status} - ${errorText}`);
+				this.enableNewNote(false);
 
 				return;
 			}
@@ -105,14 +110,17 @@ export class ConfluenceHandler extends SummarViewContainer {
 			if (aiData.choices && aiData.choices.length > 0) {
 				const summary = aiData.choices[0].message.content || "No summary generated.";
 				this.updateResultText(summary);
+				this.enableNewNote(true);
 			} else {
 				this.updateResultText("No valid response from OpenAI API.");
+				this.enableNewNote(false);
 			}
 
 		} catch (error) {
 			this.timer.stop();
 			SummarDebug.error(1, "Error:", error);
 			this.updateResultText("An error occurred while processing the request.");
+			this.enableNewNote(false);
 		}
 	}
 

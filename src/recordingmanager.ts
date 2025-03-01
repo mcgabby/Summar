@@ -34,9 +34,11 @@ export class AudioRecordingManager extends SummarViewContainer {
 		});
 	}
 
-	async summarize(transcripted: string) {
+	async summarize(transcripted: string, newFilePath: string): Promise<void> {
 		this.updateResultText("Summarizing from transcripted text");
+		this.enableNewNote(false);
 		// SummarDebug.log(2, "Fetched page content:", page_content);
+		SummarDebug.log(1, `newFilePath: ${newFilePath}`);
 
 		const webPrompt = this.plugin.settings.recordingPrompt;
 		const openaiApiKey = this.plugin.settings.openaiApiKey;
@@ -51,6 +53,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 				// max_tokens: 16384,
 			});
 			this.updateResultText("Summarizing...");
+			this.enableNewNote(false);
 			this.timer.start();
 			const aiResponse = await fetchOpenai(openaiApiKey, body_content);
 
@@ -58,6 +61,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 				const errorText = await aiResponse.text();
 				SummarDebug.error(1, "OpenAI API Error:", errorText);
 				this.updateResultText(`Error: ${aiResponse.status} - ${errorText}`);
+				this.enableNewNote(false);
 
 				this.timer.stop();
 				return;
@@ -68,14 +72,30 @@ export class AudioRecordingManager extends SummarViewContainer {
 			if (aiData.choices && aiData.choices.length > 0) {
 				const summary = aiData.choices[0].message.content || "No summary generated.";
 				this.updateResultText(summary);
+				this.enableNewNote(true, newFilePath);
+				if (this.plugin.settings.recordingResultNewNote) {
+					if (newFilePath.includes(".md")) {
+						newFilePath = newFilePath.replace(".md", " summary.md");
+					} else {
+						newFilePath = newFilePath + " summary.md";
+					}					
+					await this.plugin.app.vault.create(newFilePath, summary);
+					await this.plugin.app.workspace.openLinkText(
+						normalizePath(newFilePath),
+						"",
+						true
+					);
+				}
 			} else {
 				this.updateResultText("No valid response from OpenAI API.");
+				this.enableNewNote(false);
 			}
 			this.timer.stop();
 		} catch (error) {
 			this.timer.stop();
 			SummarDebug.error(1, "Error:", error);
 			this.updateResultText("An error occurred while processing the request.");
+			this.enableNewNote(false);
 		}
 
 

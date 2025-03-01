@@ -524,6 +524,14 @@ async activateTab(tabId: string): Promise<void> {
         textAreaEl.style.width = "100%";
       });
 
+      new Setting(containerEl)
+      .setName("Save to a New Note")
+      .setDesc("Enable this toggle button to save the summary results to a new note.")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.recordingResultNewNote).onChange(async (value) => {
+          this.plugin.settings.recordingResultNewNote = value;
+        }));
+
     // Recording Unit
     new Setting(containerEl)
       .setName("Recording Unit")
@@ -616,6 +624,11 @@ async activateTab(tabId: string): Promise<void> {
   }
 
   createCustomCommandSetting(containerEl: HTMLElement, index: number): void {
+    if (!this.plugin.settings[`cmd_model_${index}`]||
+        this.plugin.settings[`cmd_model_${index}`].toString.length === 0) {
+      this.plugin.settings[`cmd_model_${index}`] = 'gpt-4o';
+    }
+
     new Setting(containerEl)
       .setHeading()
       .addText((text) => {
@@ -636,7 +649,7 @@ async activateTab(tabId: string): Promise<void> {
             "o1-mini": "o1-mini",
             "o3-mini": "o3-mini"
           })
-          .setValue(this.plugin.settings[`cmd_model_${index}`] as string || "gpt-4o")
+          .setValue(this.plugin.settings[`cmd_model_${index}`] as string)
           .onChange(async (value) => {
             this.plugin.settings[`cmd_model_${index}`] = value;
           })

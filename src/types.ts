@@ -17,6 +17,7 @@ export interface PluginSettings {
   recordingUnit: number;
   recordingLanguage: string;
   recordingPrompt: string;
+  recordingResultNewNote: boolean;
   /////
   testUrl: string;
   debugLevel: number;

@@ -23,10 +23,12 @@ export class CustomCommandHandler extends SummarViewContainer {
 		if (!openaiApiKey) {
 			SummarDebug.Notice(0, "Please configure OpenAI API key in the plugin settings.", 0);
 			this.updateResultText("Please configure OpenAI API key in the plugin settings.");
+			this.enableNewNote(false);
 			return;
 		}
 
 		this.updateResultText("execute prompt with selected text...");
+		this.enableNewNote(false);
 
 		try {
 			this.timer.start();
@@ -49,6 +51,7 @@ export class CustomCommandHandler extends SummarViewContainer {
 				const errorText = await aiResponse.text();
 				SummarDebug.error(1, "OpenAI API Error:", errorText);
 				this.updateResultText(`Error: ${aiResponse.status} - ${errorText}`);
+				this.enableNewNote(false);
 
 				return;
 			}
@@ -58,14 +61,17 @@ export class CustomCommandHandler extends SummarViewContainer {
 			if (aiData.choices && aiData.choices.length > 0) {
 				const responseText = aiData.choices[0].message.content || "No result generated.";
 				this.updateResultText(responseText);
+				this.enableNewNote(true);
 			} else {
 				this.updateResultText("No valid response from OpenAI API.");
+				this.enableNewNote(false);
 			}
 
 		} catch (error) {
 			this.timer.stop();
 			SummarDebug.error(1, "Error:", error);
 			this.updateResultText("An error occurred while processing the request.");
+			this.enableNewNote(false);
 		}
 	}
 

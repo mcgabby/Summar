@@ -114,3 +114,33 @@
     background-color: var(--interactive-accent-hover);
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
 }
+
+.lucide-icon-button {
+    border: 1px solid var(--color-border);
+    background: var(--background-primary);
+    cursor: pointer;
+    padding: 5px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+/* 마우스 오버 효과 */
+.lucide-icon-button:hover {
+    background: var(--interactive-hover);
+}
+
+/* 클릭 시 효과 */
+.lucide-icon-button:active {
+    transform: scale(0.95);
+}
+
+.disabled {
+    opacity: 0.3;
+    pointer-events: none;
+    cursor: not-allowed;
+}
