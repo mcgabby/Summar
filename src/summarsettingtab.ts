@@ -624,9 +624,13 @@ async activateTab(tabId: string): Promise<void> {
   }
 
   createCustomCommandSetting(containerEl: HTMLElement, index: number): void {
-    if (!this.plugin.settings[`cmd_model_${index}`]||
-        this.plugin.settings[`cmd_model_${index}`].toString.length === 0) {
+    if (this.plugin.settings[`cmd_model_${index}`] === undefined ||
+        (this.plugin.settings[`cmd_model_${index}`] as string).length === 0) {
       this.plugin.settings[`cmd_model_${index}`] = 'gpt-4o';
+      SummarDebug.log(1,`[set gpt-4o] cmd_model_${index}: ` + this.plugin.settings[`cmd_model_${index}`]);
+    }
+    else {
+      SummarDebug.log(1,`cmd_model_${index}: ` + this.plugin.settings[`cmd_model_${index}`]);
     }
 
     new Setting(containerEl)
