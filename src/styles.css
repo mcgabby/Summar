@@ -144,3 +144,36 @@
     pointer-events: none;
     cursor: not-allowed;
 }
+
+/* 🔹 SummarView의 inputField, fetchButton, pdfButton, recordButton, resultContainer 스타일 개선 */
+.summarview-input,
+.summarview-button,
+.summarview-result {
+    border: 1px solid var(--color-border); /* Obsidian 기본 테두리 색상 */
+    background: var(--background-primary);
+    color: var(--text-normal);
+    border-radius: 6px; /* 둥근 모서리 적용 */
+    padding: 8px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+/* 🔹 다크 테마에서 자연스러운 테두리 색상 적용 */
+.theme-dark .summarview-input,
+.theme-dark .summarview-button,
+.theme-dark .summarview-result {
+    border-color: var(--color-border-muted); /* 기존보다 부드러운 테두리 색상 */
+    opacity: 0.3; /* 너무 진한 색상을 완화 */
+}
+
+/* 🔹 버튼 hover 효과 */
+.summarview-button:hover {
+    background: var(--interactive-hover);
+    border-color: var(--interactive-accent);
+}
+
+/* 🔹 비활성화된 요소 스타일 */
+.summarview-button:disabled,
+.summarview-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

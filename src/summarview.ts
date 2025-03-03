@@ -50,6 +50,7 @@ export class SummarView extends View {
     const inputField: HTMLInputElement = inputContainer.createEl("input", {
       type: "text",
       placeholder: "Enter Web page URL",
+      cls: "summarview-input",
     });
     inputField.style.flexGrow = "1";
     inputField.style.padding = "8px";
@@ -64,6 +65,7 @@ export class SummarView extends View {
   
     const fetchButton: HTMLButtonElement = inputContainer.createEl("button", {
       text: "GO",
+      cls: "summarview-button",
     });
     fetchButton.style.padding = "8px 12px";
     fetchButton.style.border = "1px solid #ccc";
@@ -84,6 +86,7 @@ export class SummarView extends View {
   
     const pdfButton: HTMLButtonElement = buttonContainer.createEl("button", {
       text: "PDF",
+      cls: "summarview-button",
     });
     pdfButton.style.width = "30%";
     pdfButton.style.marginBottom = "1px"; // 간격 조정
@@ -96,6 +99,7 @@ export class SummarView extends View {
   
     const recordButton: HTMLButtonElement = buttonContainer.createEl("button", {
       text: "[●] record",
+      cls: "summarview-button",
     });
     recordButton.style.width = "70%";
     recordButton.style.marginBottom = "1px"; // 간격 조정
@@ -175,7 +179,7 @@ export class SummarView extends View {
     
     // Result Container
     const resultContainer: HTMLTextAreaElement = container.createEl("textarea", {
-      cls: "result-content",
+      cls: "summarview-result",
     });
     resultContainer.style.width = "100%";
     resultContainer.style.height = "calc(100% - 80px)"; // 높이 재조정
