@@ -158,9 +158,16 @@ export class SummarView extends View {
         // 파일이 존재하지만 열려 있지 않다면 새로 열기
         await this.plugin.app.workspace.openLinkText(filePath, "", true);
       } else {
-          // 파일이 없으면 새로 생성 후 열기
-          await this.plugin.app.vault.create(filePath, this.plugin.resultContainer.value);
-          await this.plugin.app.workspace.openLinkText(filePath, "", true);
+        SummarDebug.log(1, `file is not exist: ${filePath}`);
+
+        // 파일이 없으면 새로 생성 후 열기
+        const folderPath = filePath.substring(0, filePath.lastIndexOf("/"));
+        const folderExists = await this.plugin.app.vault.adapter.exists(folderPath);
+        if (!folderExists) {
+          await this.plugin.app.vault.adapter.mkdir(folderPath);
+        }
+        await this.plugin.app.vault.create(filePath, this.plugin.resultContainer.value);
+        await this.plugin.app.workspace.openLinkText(filePath, "", true);
       }
     });
 
