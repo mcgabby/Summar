@@ -12,7 +12,7 @@ export class AudioHandler extends SummarViewContainer {
 	}
 
 	async sendAudioData(files: FileList | File[], givenFolderPath: string = ""): Promise<{ fullText: string, newFilePath: string }> {
-		this.updateResultText("convert audio to text");
+		this.updateResultText("convert audio to text using [" + this.plugin.settings.transcriptEndpoint + "]");
 		this.enableNewNote(false);
 
 		let audioList = "";
@@ -116,9 +116,20 @@ export class AudioHandler extends SummarViewContainer {
 
 				const formData = new FormData();
 				formData.append("file", blob, fileName);
-				formData.append("model", "whisper-1");
-				formData.append("language", this.plugin.settings.recordingLanguage || "en");
-				formData.append("response_format", "verbose_json");
+				formData.append("model", this.plugin.settings.transcriptEndpoint || "whisper-1");
+				if (this.plugin.settings.recordingLanguage && this.plugin.settings.recordingLanguage.length > 0) {
+					formData.append("language", this.plugin.settings.recordingLanguage);
+				}
+
+				if (this.plugin.settings.transcriptEndpoint === "whisper-1") {
+					formData.append("response_format", "verbose_json");
+				} else {
+					formData.append("response_format", "json");
+					if (this.plugin.settings.transcribingPrompt && this.plugin.settings.transcribingPrompt.length > 0) {
+						formData.append("prompt", this.plugin.settings.transcribingPrompt);
+					}
+				}
+
 
 				try {
 					// Whisper API 호출 (fetch 사용)
@@ -131,6 +142,10 @@ export class AudioHandler extends SummarViewContainer {
 					});
 		
 					const data = await response.json();
+					
+					// response.text().then((text) => {
+					// 	SummarDebug.log(3, `Response sendAudioData: ${text}`);
+					// });
 
 					// 응답 확인
 					if (!data.segments || data.segments.length === 0) {

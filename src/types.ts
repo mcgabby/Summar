@@ -9,6 +9,8 @@ export interface PluginSettings {
   /////
   webModel: string;
   // pdfModel: string;
+  transcriptEndpoint: string;
+  transcribingPrompt: string;
   transcriptModel: string;
   // customModel: string;
   /////

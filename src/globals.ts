@@ -142,6 +142,8 @@ MarkDown에서 title, bold(**) 속성은 쓰지 않고 모두 bullet으로만 �
 //////
 webModel: 'o1-mini',
 // pdfModel: 'gpt-4o',
+transcriptEndpoint: "whisper-1",
+transcribingPrompt: "",
 transcriptModel: 'o3-mini',
 // customModel: 'o3-mini',
 /////

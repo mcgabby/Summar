@@ -561,7 +561,68 @@ async activateTab(tabId: string): Promise<void> {
       //             this.plugin.settings.transcriptModel = value;
       //         })
       // );
-  
+    new Setting(containerEl)
+      .setName("Transcription Language")
+      .setDesc("Please select the language of the recorded meeting transcript.")
+      .addDropdown(dropdown => 
+        dropdown
+          .addOptions({
+            "": "Auto Detect",
+            "ko": "Korean (ko)",
+            "ja": "Japanese (ja)",
+            "en": "English (en)",
+            "tw": "Chinese (tw)",
+            "th": "ภาษาไทย (th)",
+            "vn": "Tiếng Việt (vn)"
+          })
+          .setValue(this.plugin.settings.recordingLanguage || "")
+          .onChange(async (value) => {
+            this.plugin.settings.recordingLanguage = value;
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Transcription Endpoint")
+      .setDesc("Select the OpenAI model to transcribe the audio")
+      .addDropdown(dropdown => 
+          dropdown
+              .addOptions({
+                  "whisper-1": "whisper-1",
+                  "gpt-4o-mini-transcribe": "gpt-4o-mini-transcribe",
+                  "gpt-4o-transcribe": "gpt-4o-transcribe"
+              })
+              .setValue(this.plugin.settings.transcriptEndpoint)
+              .onChange(async (value) => {
+                  this.plugin.settings.transcriptEndpoint = value;
+                  const promptTextArea = containerEl.querySelector(".transcription-prompt-textarea") as HTMLTextAreaElement;
+                  if (promptTextArea) {
+                    promptTextArea.parentElement?.toggleClass("hidden", value === "whisper-1");
+                  }
+              })
+      );
+      new Setting(containerEl)
+      .setHeading()
+      .addTextArea((text) => {
+        text
+          .setPlaceholder("Enter prompt for transcribing")
+          .setValue(this.plugin.settings.transcribingPrompt || "")
+          .onChange(async (value) => {
+            this.plugin.settings.transcribingPrompt = value;
+          });
+
+        const textAreaEl = text.inputEl;
+        textAreaEl.classList.add("transcription-prompt-textarea");
+        textAreaEl.style.width = "100%";
+        textAreaEl.style.height = "150px";
+        textAreaEl.style.resize = "none";
+
+        // 초기 숨김 여부 설정
+        if (this.plugin.settings.transcriptEndpoint === "whisper-1") {
+          textAreaEl.parentElement?.classList.add("hidden");
+        }
+      })
+      ;
+      
     new Setting(containerEl)
       .setName("Prompt (for summarizing recorded content))")
       .setDesc("This prompt will guide the AI response.")
