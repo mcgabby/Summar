@@ -119,9 +119,9 @@
     border: 1px solid var(--color-border);
     background: var(--background-primary);
     cursor: pointer;
-    padding: 5px;
-    width: 32px;
-    height: 32px;
+    padding: 4px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -207,4 +207,11 @@
     pointer-events: none;
     margin-bottom: 4px;
     box-shadow: var(--shadow-tooltip);
+}
+
+/* 버튼 구분선 스타일 */
+.button-separator {
+    color: var(--text-muted);
+    margin: 0 5px;
+    user-select: none;
 }

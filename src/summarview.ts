@@ -86,11 +86,23 @@ export class SummarView extends View {
     buttonContainer.style.marginBottom = "1px";
     buttonContainer.style.marginTop = "1px";
   
+    // newNoteButton을 buttonContainer의 첫 번째 요소로 추가
+    const newNoteButton = buttonContainer.createEl("button", {
+      cls: "lucide-icon-button",
+    });
+    newNoteButton.setAttribute("aria-label", "Create new note with results");
+    setIcon(newNoteButton, "file-output");
+  
+    // 구분선(|) 추가
+    const separator = buttonContainer.createEl("span", {
+      text: "|",
+      cls: "button-separator"
+    });
+  
     const pdfButton: HTMLButtonElement = buttonContainer.createEl("button", {
       text: "PDF",
       cls: "summarview-button",
     });
-    // pdfButton.setAttribute("data-tooltip", "Convert PDF to Markdown");
     pdfButton.setAttribute("aria-label", "Convert PDF to Markdown");
     pdfButton.style.width = "30%";
     pdfButton.style.marginBottom = "1px"; // 간격 조정
@@ -105,7 +117,6 @@ export class SummarView extends View {
       text: "[●] record",
       cls: "summarview-button",
     });
-    // recordButton.setAttribute("data-tooltip", "Record audio and summarize");
     recordButton.setAttribute("aria-label", "Record audio and summarize");
     recordButton.style.width = "70%";
     recordButton.style.marginBottom = "1px"; // 간격 조정
@@ -114,84 +125,6 @@ export class SummarView extends View {
     recordButton.style.borderRadius = "5px";
     recordButton.style.cursor = "pointer";
 
-    // 아이콘 버튼 컨테이너 생성
-    const newNoteButtonContainer = container.createEl("div", { cls: "setting-container" });
-
-    // 버튼 생성
-    const newNoteButton = newNoteButtonContainer.createEl("button", {
-      cls: "lucide-icon-button",
-    });
-    // newNoteButton.setAttribute("data-tooltip", "Create new note with results");
-    newNoteButton.setAttribute("aria-label", "Create new note with results");
-
-    // 아이콘 추가 (초기값: resultNewNote 값에 따라 결정)
-    setIcon(newNoteButton, "file-output");
-
-    // 설명 텍스트 생성
-    const newNoteLabel = newNoteButtonContainer.createEl("span", {
-      text: "Display results in a new note",
-    });
-
-    // 스타일 추가 (아이콘과 텍스트 사이 여백 설정)
-    newNoteLabel.style.marginLeft = "5px";
-    newNoteLabel.style.fontSize = "14px";
-    newNoteLabel.style.verticalAlign = "middle";
-
-    // 버튼 클릭 이벤트 리스너 추가
-    newNoteButton.addEventListener("click", async() => {
-      let newNoteName = this.plugin.newNoteName;
-      if (this.plugin.newNoteName.includes(".md")) {
-        newNoteName = newNoteName.replace(".md", " summary.md");
-      } else {
-        newNoteName = newNoteName + ".md";
-      }					
-
-      const filePath = normalizePath(newNoteName);
-      const existingFile = this.plugin.app.vault.getAbstractFileByPath(filePath);
-  
-      if (existingFile) {
-        // 파일이 존재하는 경우
-        const leaves = this.plugin.app.workspace.getLeavesOfType("markdown");
-        
-        for (const leaf of leaves) {
-            const view = leaf.view;
-            // 🔥 view가 MarkdownView 인스턴스인지 확인
-            if (view instanceof MarkdownView && view.file && view.file.path === filePath) {
-              // 파일이 열려 있다면 해당 탭 활성화
-              this.plugin.app.workspace.setActiveLeaf(leaf);
-              return;
-          }
-      }
-
-        // 파일이 존재하지만 열려 있지 않다면 새로 열기
-        await this.plugin.app.workspace.openLinkText(filePath, "", true);
-      } else {
-        SummarDebug.log(1, `file is not exist: ${filePath}`);
-
-        // 파일이 없으면 새로 생성 후 열기
-        const folderPath = filePath.substring(0, filePath.lastIndexOf("/"));
-        const folderExists = await this.plugin.app.vault.adapter.exists(folderPath);
-        if (!folderExists) {
-          await this.plugin.app.vault.adapter.mkdir(folderPath);
-        }
-        await this.plugin.app.vault.create(filePath, this.plugin.resultContainer.value);
-        await this.plugin.app.workspace.openLinkText(filePath, "", true);
-      }
-    });
-
-
-    this.plugin.newNoteButton = newNoteButton;
-    this.plugin.newNoteLabel = newNoteLabel;
-
-    if (this.plugin.newNoteButton) {
-      this.plugin.newNoteButton.disabled = true;
-      this.plugin.newNoteButton.classList.toggle("disabled", true);
-    }
-
-    if (this.plugin.newNoteLabel) {
-      this.plugin.newNoteLabel.classList.toggle("disabled", true);
-    }
-    
     // Result Container
     const resultContainer: HTMLTextAreaElement = container.createEl("textarea", {
       cls: "summarview-result",
@@ -232,6 +165,73 @@ export class SummarView extends View {
 
     recordButton.onclick = async () => {
       await this.plugin.toggleRecording();
+    }
+
+    // newNoteButton 클릭 이벤트 리스너
+    newNoteButton.addEventListener("click", async() => {
+      let newNoteName = this.plugin.newNoteName;
+      
+      // resultContainer의 내용을 확인하여 Confluence 문서 제목이 있는지 검사
+      const resultText = this.plugin.resultContainer.value;
+      if (resultText.includes("## Confluence 문서 제목")) {
+        // 정규식을 사용하여 "EN:" 다음의 텍스트 한 줄을 찾습니다
+        const match = resultText.match(/EN:(.*?)(?:\r?\n|$)/);
+        if (match && match[1]) {
+          // 찾은 텍스트에서 앞뒤 공백을 제거하고 파일명으로 사용
+          const confluenceTitle = match[1].trim();
+          if (this.plugin.newNoteName.includes(".md")) {
+            newNoteName = newNoteName.replace(".md", ` ${confluenceTitle}.md`);
+          } else {
+            newNoteName = newNoteName + ` ${confluenceTitle}.md`;
+          }
+        } else {
+          // "EN:" 텍스트를 찾지 못한 경우 기본 " summary.md" 사용
+          if (this.plugin.newNoteName.includes(".md")) {
+            newNoteName = newNoteName.replace(".md", " summary.md");
+          } else {
+            newNoteName = newNoteName + ".md";
+          }
+        }
+      } else {
+        // Confluence 문서 제목이 없는 경우 기본 " summary.md" 사용
+        if (this.plugin.newNoteName.includes(".md")) {
+          newNoteName = newNoteName.replace(".md", " summary.md");
+        } else {
+          newNoteName = newNoteName + ".md";
+        }
+      }
+
+      const filePath = normalizePath(newNoteName);
+      const existingFile = this.plugin.app.vault.getAbstractFileByPath(filePath);
+
+      if (existingFile) {
+        const leaves = this.plugin.app.workspace.getLeavesOfType("markdown");
+        
+        for (const leaf of leaves) {
+          const view = leaf.view;
+          if (view instanceof MarkdownView && view.file && view.file.path === filePath) {
+            this.plugin.app.workspace.setActiveLeaf(leaf);
+            return;
+          }
+        }
+        await this.plugin.app.workspace.openLinkText(filePath, "", true);
+      } else {
+        SummarDebug.log(1, `file is not exist: ${filePath}`);
+        const folderPath = filePath.substring(0, filePath.lastIndexOf("/"));
+        const folderExists = await this.plugin.app.vault.adapter.exists(folderPath);
+        if (!folderExists) {
+          await this.plugin.app.vault.adapter.mkdir(folderPath);
+        }
+        await this.plugin.app.vault.create(filePath, this.plugin.resultContainer.value);
+        await this.plugin.app.workspace.openLinkText(filePath, "", true);
+      }
+    });
+
+    this.plugin.newNoteButton = newNoteButton;
+
+    if (this.plugin.newNoteButton) {
+      this.plugin.newNoteButton.disabled = true;
+      this.plugin.newNoteButton.classList.toggle("disabled", true);
     }
   }
 }
