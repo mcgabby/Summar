@@ -16,7 +16,7 @@ import { StatusBar } from "./statusbar";
 export default class SummarPlugin extends Plugin {
   settings: PluginSettings;
   resultContainer: HTMLTextAreaElement;
-  uploadNoteToWikiButton: HTMLButtonElement;
+  // uploadNoteToWikiButton: HTMLButtonElement;
   newNoteButton: HTMLButtonElement;
   newNoteLabel: HTMLSpanElement;
   inputField: HTMLInputElement;
