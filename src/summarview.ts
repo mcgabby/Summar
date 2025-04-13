@@ -66,8 +66,9 @@ export class SummarView extends View {
     const fetchButton: HTMLButtonElement = inputContainer.createEl("button", {
       text: "GO",
       cls: "summarview-button",
-      title: "Fetch and summarize the web page",
     });
+    // fetchButton.setAttribute("data-tooltip", "Fetch and summarize the web page");
+    fetchButton.setAttribute("aria-label", "Fetch and summarize the web page");
     fetchButton.style.padding = "8px 12px";
     fetchButton.style.border = "1px solid #ccc";
     fetchButton.style.borderRadius = "5px";
@@ -88,8 +89,9 @@ export class SummarView extends View {
     const pdfButton: HTMLButtonElement = buttonContainer.createEl("button", {
       text: "PDF",
       cls: "summarview-button",
-      title: "Convert PDF to Markdown",
     });
+    // pdfButton.setAttribute("data-tooltip", "Convert PDF to Markdown");
+    pdfButton.setAttribute("aria-label", "Convert PDF to Markdown");
     pdfButton.style.width = "30%";
     pdfButton.style.marginBottom = "1px"; // 간격 조정
     pdfButton.style.padding = "8px 12px";
@@ -102,8 +104,9 @@ export class SummarView extends View {
     const recordButton: HTMLButtonElement = buttonContainer.createEl("button", {
       text: "[●] record",
       cls: "summarview-button",
-      title: "Record audio and summarize",
     });
+    // recordButton.setAttribute("data-tooltip", "Record audio and summarize");
+    recordButton.setAttribute("aria-label", "Record audio and summarize");
     recordButton.style.width = "70%";
     recordButton.style.marginBottom = "1px"; // 간격 조정
     recordButton.style.padding = "8px 12px";
@@ -117,8 +120,9 @@ export class SummarView extends View {
     // 버튼 생성
     const newNoteButton = newNoteButtonContainer.createEl("button", {
       cls: "lucide-icon-button",
-      title: "Create new note with results",
     });
+    // newNoteButton.setAttribute("data-tooltip", "Create new note with results");
+    newNoteButton.setAttribute("aria-label", "Create new note with results");
 
     // 아이콘 추가 (초기값: resultNewNote 값에 따라 결정)
     setIcon(newNoteButton, "file-output");
