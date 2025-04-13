@@ -66,6 +66,7 @@ export class SummarView extends View {
     const fetchButton: HTMLButtonElement = inputContainer.createEl("button", {
       text: "GO",
       cls: "summarview-button",
+      title: "Fetch and summarize the web page",
     });
     fetchButton.style.padding = "8px 12px";
     fetchButton.style.border = "1px solid #ccc";
@@ -87,6 +88,7 @@ export class SummarView extends View {
     const pdfButton: HTMLButtonElement = buttonContainer.createEl("button", {
       text: "PDF",
       cls: "summarview-button",
+      title: "Convert PDF to Markdown",
     });
     pdfButton.style.width = "30%";
     pdfButton.style.marginBottom = "1px"; // 간격 조정
@@ -100,6 +102,7 @@ export class SummarView extends View {
     const recordButton: HTMLButtonElement = buttonContainer.createEl("button", {
       text: "[●] record",
       cls: "summarview-button",
+      title: "Record audio and summarize",
     });
     recordButton.style.width = "70%";
     recordButton.style.marginBottom = "1px"; // 간격 조정
@@ -114,10 +117,11 @@ export class SummarView extends View {
     // 버튼 생성
     const newNoteButton = newNoteButtonContainer.createEl("button", {
       cls: "lucide-icon-button",
+      title: "Create new note with results",
     });
 
     // 아이콘 추가 (초기값: resultNewNote 값에 따라 결정)
-    setIcon(newNoteButton, "file-plus-2");
+    setIcon(newNoteButton, "file-output");
 
     // 설명 텍스트 생성
     const newNoteLabel = newNoteButtonContainer.createEl("span", {
