@@ -86,13 +86,110 @@ export class SummarView extends View {
     buttonContainer.style.marginBottom = "1px";
     buttonContainer.style.marginTop = "1px";
   
-    // newNoteButton을 buttonContainer의 첫 번째 요소로 추가
+    // uploadNoteToWikiButton 추가
+    const uploadNoteToWikiButton = buttonContainer.createEl("button", {
+      cls: "lucide-icon-button",
+    });
+    uploadNoteToWikiButton.setAttribute("aria-label", "Upload Note to Confluence");
+    setIcon(uploadNoteToWikiButton, "upload");
+
+    // uploadNoteToWikiButton 클릭 이벤트 리스너
+    uploadNoteToWikiButton.addEventListener("click", async() => {
+      const viewType = await this.getCurrentMainPaneTabType();
+      if (viewType === "markdown") {
+        SummarDebug.Notice(1, "uploadNoteToWiki");
+      }
+      else {
+        const frag = document.createDocumentFragment();
+
+        const title = document.createElement("div");
+        title.textContent = "⚠️ Wiki Upload Failed";
+        title.style.fontWeight = "bold";
+        title.style.marginBottom = "4px";
+        
+        const message = document.createElement("div");
+        message.textContent = "No active editor was found.";
+        
+        frag.appendChild(title);
+        frag.appendChild(message);
+        
+        SummarDebug.Notice(0, frag);
+      } 
+    });
+    
     const newNoteButton = buttonContainer.createEl("button", {
       cls: "lucide-icon-button",
     });
     newNoteButton.setAttribute("aria-label", "Create new note with results");
     setIcon(newNoteButton, "file-output");
-  
+
+    // newNoteButton 클릭 이벤트 리스너
+    newNoteButton.addEventListener("click", async() => {
+      let newNoteName = this.plugin.newNoteName;
+      
+      // resultContainer의 내용을 확인하여 Confluence 문서 제목이 있는지 검사
+      const resultText = this.plugin.resultContainer.value;
+      if (resultText.includes("## Confluence 문서 제목")) {
+        // 정규식을 사용하여 "EN:" 다음의 텍스트 한 줄을 찾습니다
+        const match = resultText.match(/EN:(.*?)(?:\r?\n|$)/);
+        if (match && match[1]) {
+          // 찾은 텍스트에서 앞뒤 공백을 제거하고 파일명으로 사용
+          const confluenceTitle = match[1].trim();
+          if (this.plugin.newNoteName.includes(".md")) {
+            newNoteName = newNoteName.replace(".md", ` ${confluenceTitle}.md`);
+          } else {
+            newNoteName = newNoteName + ` ${confluenceTitle}.md`;
+          }
+        } else {
+          // "EN:" 텍스트를 찾지 못한 경우 기본 " summary.md" 사용
+          if (this.plugin.newNoteName.includes(".md")) {
+            newNoteName = newNoteName.replace(".md", " summary.md");
+          } else {
+            newNoteName = newNoteName + ".md";
+          }
+        }
+      } else {
+        // Confluence 문서 제목이 없는 경우 기본 " summary.md" 사용
+        if (this.plugin.newNoteName.includes(".md")) {
+          newNoteName = newNoteName.replace(".md", " summary.md");
+        } else {
+          newNoteName = newNoteName + ".md";
+        }
+      }
+
+      const filePath = normalizePath(newNoteName);
+      const existingFile = this.plugin.app.vault.getAbstractFileByPath(filePath);
+
+      if (existingFile) {
+        const leaves = this.plugin.app.workspace.getLeavesOfType("markdown");
+        
+        for (const leaf of leaves) {
+          const view = leaf.view;
+          if (view instanceof MarkdownView && view.file && view.file.path === filePath) {
+            this.plugin.app.workspace.setActiveLeaf(leaf);
+            return;
+          }
+        }
+        await this.plugin.app.workspace.openLinkText(filePath, "", true);
+      } else {
+        SummarDebug.log(1, `file is not exist: ${filePath}`);
+        const folderPath = filePath.substring(0, filePath.lastIndexOf("/"));
+        const folderExists = await this.plugin.app.vault.adapter.exists(folderPath);
+        if (!folderExists) {
+          await this.plugin.app.vault.adapter.mkdir(folderPath);
+        }
+        await this.plugin.app.vault.create(filePath, this.plugin.resultContainer.value);
+        await this.plugin.app.workspace.openLinkText(filePath, "", true);
+      }
+    });
+
+    this.plugin.newNoteButton = newNoteButton;
+
+    if (this.plugin.newNoteButton) {
+      this.plugin.newNoteButton.disabled = true;
+      this.plugin.newNoteButton.classList.toggle("disabled", true);
+    }
+    
     // 구분선(|) 추가
     const separator = buttonContainer.createEl("span", {
       text: "|",
@@ -167,71 +264,13 @@ export class SummarView extends View {
       await this.plugin.toggleRecording();
     }
 
-    // newNoteButton 클릭 이벤트 리스너
-    newNoteButton.addEventListener("click", async() => {
-      let newNoteName = this.plugin.newNoteName;
-      
-      // resultContainer의 내용을 확인하여 Confluence 문서 제목이 있는지 검사
-      const resultText = this.plugin.resultContainer.value;
-      if (resultText.includes("## Confluence 문서 제목")) {
-        // 정규식을 사용하여 "EN:" 다음의 텍스트 한 줄을 찾습니다
-        const match = resultText.match(/EN:(.*?)(?:\r?\n|$)/);
-        if (match && match[1]) {
-          // 찾은 텍스트에서 앞뒤 공백을 제거하고 파일명으로 사용
-          const confluenceTitle = match[1].trim();
-          if (this.plugin.newNoteName.includes(".md")) {
-            newNoteName = newNoteName.replace(".md", ` ${confluenceTitle}.md`);
-          } else {
-            newNoteName = newNoteName + ` ${confluenceTitle}.md`;
-          }
-        } else {
-          // "EN:" 텍스트를 찾지 못한 경우 기본 " summary.md" 사용
-          if (this.plugin.newNoteName.includes(".md")) {
-            newNoteName = newNoteName.replace(".md", " summary.md");
-          } else {
-            newNoteName = newNoteName + ".md";
-          }
-        }
-      } else {
-        // Confluence 문서 제목이 없는 경우 기본 " summary.md" 사용
-        if (this.plugin.newNoteName.includes(".md")) {
-          newNoteName = newNoteName.replace(".md", " summary.md");
-        } else {
-          newNoteName = newNoteName + ".md";
-        }
-      }
 
-      const filePath = normalizePath(newNoteName);
-      const existingFile = this.plugin.app.vault.getAbstractFileByPath(filePath);
 
-      if (existingFile) {
-        const leaves = this.plugin.app.workspace.getLeavesOfType("markdown");
-        
-        for (const leaf of leaves) {
-          const view = leaf.view;
-          if (view instanceof MarkdownView && view.file && view.file.path === filePath) {
-            this.plugin.app.workspace.setActiveLeaf(leaf);
-            return;
-          }
-        }
-        await this.plugin.app.workspace.openLinkText(filePath, "", true);
-      } else {
-        SummarDebug.log(1, `file is not exist: ${filePath}`);
-        const folderPath = filePath.substring(0, filePath.lastIndexOf("/"));
-        const folderExists = await this.plugin.app.vault.adapter.exists(folderPath);
-        if (!folderExists) {
-          await this.plugin.app.vault.adapter.mkdir(folderPath);
-        }
-        await this.plugin.app.vault.create(filePath, this.plugin.resultContainer.value);
-        await this.plugin.app.workspace.openLinkText(filePath, "", true);
-      }
-    });
+  }
 
-    this.plugin.newNoteButton = newNoteButton;
-
-    if (this.plugin.newNoteButton) {
-      this.plugin.newNoteButton.disabled = true;
-      this.plugin.newNoteButton.classList.toggle("disabled", true);
-    }
+  getCurrentMainPaneTabType(): string {
+    const existingLeaf = this.app.workspace.getMostRecentLeaf();
+    if (!existingLeaf) return ""; 
+    return existingLeaf.view.getViewType();
   }
 }
