@@ -1,7 +1,11 @@
 export interface PluginSettings {
   openaiApiKey: string;
+
   confluenceApiToken: string;
-  useConfluenceAPI:boolean;
+  confluenceSpaceKey: string;
+  confluenceParentPageId: string;
+  useConfluenceAPI: boolean;
+
   confluenceDomain: string;
   systemPrompt: string;
   webPrompt: string;

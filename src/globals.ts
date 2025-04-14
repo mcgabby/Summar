@@ -115,6 +115,9 @@ RunLoop.main.run()
 export const DEFAULT_SETTINGS: PluginSettings = {
   openaiApiKey: "",
   confluenceApiToken: "",
+  confluenceSpaceKey: "~mcgabby",
+  confluenceParentPageId: "2219954476",
+
   useConfluenceAPI: true,
   confluenceDomain: "https://wiki.workers-hub.com",
   systemPrompt: `너는 LY의 CTO Office 직원이야.

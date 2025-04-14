@@ -162,4 +162,68 @@ export class ConfluenceAPI {
     }
   }
 
+  async createPage(title: string, content: string): Promise<void> {
+    const { confluenceApiToken, confluenceDomain, confluenceSpaceKey, confluenceParentPageId } = this.plugin.settings;
+    // const headers = {
+    //   Authorization: `Bearer ${confluenceApiToken}`,
+    //   "Content-Type": "application/json",
+    // };
+    SummarDebug.log(1, `createPage - 1`);
+    const apiUrl = `https://${confluenceDomain}/rest/api/content`;
+    SummarDebug.log(1, `createPage - 2`);
+    const requestBody = {
+      type: "page",
+      title: title,
+      space: {
+        key: confluenceSpaceKey,
+      },
+      // parent: { 
+      //   id: this.plugin.settings.confluenceParentPageId,
+      // },
+      body: {
+        storage: {
+          // value: content,
+          value: "test",
+          representation: "storage",
+        },
+      },
+    };
+    SummarDebug.log(1, `API URL: ${apiUrl}`);
+    SummarDebug.log(1, `confluenceSpaceKey: ${confluenceSpaceKey}`);
+    SummarDebug.log(1, `confluenceParentPageId: ${confluenceParentPageId}`);
+    SummarDebug.log(1, `Request Headers: ${confluenceApiToken}`); // 토큰 직접 로깅은 피하세요
+    SummarDebug.log(1, `Request Body: ${JSON.stringify(requestBody)}`);
+    SummarDebug.log(1, `createPage - 3`);
+    // if (confluenceParentPageId && confluenceParentPageId.length > 0) {
+    //   SummarDebug.log(1, `createPage - 3.1`);
+      
+    //   Object.assign(requestBody, {
+    //     ancestors: {
+    //       id: confluenceParentPageId,
+    //     },
+    //   });
+    // }
+    SummarDebug.log(1, `createPage - 4`);
+    try {
+      const response = await fetchLikeRequestUrl(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${confluenceApiToken}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+      SummarDebug.log(1, `createPage - 5`);
+      if (response.ok) {
+        SummarDebug.Notice(0, "Confluence page created successfully.",0);
+      } else {
+        SummarDebug.Notice(0, `Failed to create Confluence page: ${response.statusText}`,0);
+        throw new Error(`Failed to create Confluence page, status code: ${response.status}`);
+      }
+    } catch (error) { 
+      SummarDebug.log(1, `createPage - 6`);
+      SummarDebug.Notice(0, `Error while creating Confluence page: ${error}`,0);
+      throw error;
+    }
+  }
 }

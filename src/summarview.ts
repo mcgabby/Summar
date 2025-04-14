@@ -2,6 +2,7 @@ import { View, WorkspaceLeaf, Platform, setIcon, normalizePath, MarkdownView } f
 
 import SummarPlugin  from "./main";
 import { SummarDebug } from "./globals";
+import { ConfluenceAPI } from "./confluenceapi";
 
 export class SummarView extends View {
   static VIEW_TYPE = "summar-view";
@@ -98,6 +99,18 @@ export class SummarView extends View {
       const viewType = await this.getCurrentMainPaneTabType();
       if (viewType === "markdown") {
         SummarDebug.Notice(1, "uploadNoteToWiki");
+        const file = this.plugin.app.workspace.getActiveFile();
+        if (file) {
+          const title = file.basename;
+          const content = await this.plugin.app.vault.read(file);
+          SummarDebug.log(1, `title: ${title}`);
+          SummarDebug.log(3, `content: ${content}`);
+          const confluenceApi = new ConfluenceAPI(this.plugin);
+          await confluenceApi.createPage(title, content);
+          // this.plugin.confluenceHandler.uploadNoteToWiki(title, content);
+        } else {
+          SummarDebug.Notice(0, "No active editor was found.");
+        }
       }
       else {
         const frag = document.createDocumentFragment();
