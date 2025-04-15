@@ -336,6 +336,27 @@ export async function fetchLikeRequestUrl(
     headers = { ...headers, "Content-Type": "application/octet-stream" };
   }
 
+  let curlDebug = `curl -X ${method} "${url}" \\`;
+  for (const [key, value] of Object.entries(headers)) {
+    curlDebug += `\n-H "${key}: ${value}" \\`;
+  }
+  if (body) {
+    if (typeof body === "string") {
+      curlDebug += `\n-d '${body}' \\`;
+    } else if (body instanceof ArrayBuffer) {
+      const byteArray = new Uint8Array(body);
+      const base64String = btoa(String.fromCharCode(...byteArray));
+      curlDebug += `\n--data-binary '${base64String}' \\`;
+    } else if (body instanceof Uint8Array) {
+      const base64String = btoa(String.fromCharCode(...body));
+      curlDebug += `\n--data-binary '${base64String}' \\`;
+    }
+  }
+  curlDebug += `\n--write-out "\\n\\n[HTTP Response Code]: %{http_code}\\n" \\`;
+  curlDebug += `\n--silent \\`;
+  curlDebug += `\n--show-error`;
+  SummarDebug.log(3, curlDebug);
+
   const maxRedirects = 5; // 최대 리다이렉트 횟수
   let redirectCount = 0;
 
