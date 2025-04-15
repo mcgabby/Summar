@@ -168,6 +168,27 @@ export class ConfluenceAPI {
     //   Authorization: `Bearer ${confluenceApiToken}`,
     //   "Content-Type": "application/json",
     // };
+/*
+curl -X POST "https://wiki.workers-hub.com/rest/api/content" \
+  -H "Authorization: Bearer <PAT>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "page",
+    "title": "Test Page from curl",
+    "space": { "key": "~mcgabby" },
+    "body": {
+      "storage": {
+        "value": "<p>This is a <strong>test page</strong> created via curl.</p>",
+        "representation": "storage"
+      }
+    }
+  }'\
+  --write-out "\n\n[HTTP Response Code]: %{http_code}\n" \
+  --silent \
+  --show-error
+
+*/
+    
     SummarDebug.log(1, `createPage - 1`);
     const apiUrl = `https://${confluenceDomain}/rest/api/content`;
     SummarDebug.log(1, `createPage - 2`);
