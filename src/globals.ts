@@ -213,12 +213,12 @@ export class SummarViewContainer {
 } 
 }
 
-export async function fetchOpenai(openaiApiKey: string, bodyContent: string): Promise<any> {
+export async function fetchOpenai(plugin: SummarPlugin, openaiApiKey: string, bodyContent: string): Promise<any> {
   try {
     SummarDebug.log(1, `openaiApiKey: ${openaiApiKey}`);
     SummarDebug.log(2, `bodyContent: ${bodyContent}`);
 
-    const response = await fetchLikeRequestUrl("https://api.openai.com/v1/chat/completions", {
+    const response = await fetchLikeRequestUrl(plugin, "https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -316,8 +316,9 @@ export class FetchLikeResponse {
 }
 
 export async function fetchLikeRequestUrl(
+  plugin: SummarPlugin,
   input: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<FetchLikeResponse> {
   let url = input;
   let method = init?.method ?? "GET";
@@ -335,6 +336,8 @@ export async function fetchLikeRequestUrl(
     // Binary 데이터를 전송할 경우
     headers = { ...headers, "Content-Type": "application/octet-stream" };
   }
+
+  headers = { ...headers, "user-agent": `Obsidian-Summar/${plugin.manifest.version}` };
 
   let curlDebug = `curl -X ${method} "${url}" \\`;
   for (const [key, value] of Object.entries(headers)) {

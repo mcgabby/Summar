@@ -101,7 +101,7 @@ export class ConfluenceAPI {
     SummarDebug.log(1, "Fetching Confluence page content...");
 
     try {
-      const response = await fetchLikeRequestUrl(apiUrl, { headers });
+      const response = await fetchLikeRequestUrl(this.plugin, apiUrl, { headers });
 
       if (response.ok) {
         const data = await (response.json()) as ConfluencePageContentResponse;
@@ -138,7 +138,7 @@ export class ConfluenceAPI {
     SummarDebug.log(1, "searchUrl: " + searchUrl);
 
     try {
-      const response = await fetchLikeRequestUrl(searchUrl, { headers });
+      const response = await fetchLikeRequestUrl(this.plugin, searchUrl, { headers });
 
       if (response.ok) {
         // 명시적으로 JSON 데이터를 ConfluenceResponse 타입으로 파싱
@@ -168,26 +168,6 @@ export class ConfluenceAPI {
     //   Authorization: `Bearer ${confluenceApiToken}`,
     //   "Content-Type": "application/json",
     // };
-/*
-curl -X POST "https://wiki.workers-hub.com/rest/api/content" \
-  -H "Authorization: Bearer <PAT>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "page",
-    "title": "Test Page from curl",
-    "space": { "key": "~mcgabby" },
-    "body": {
-      "storage": {
-        "value": "<p>This is a <strong>test page</strong> created via curl.</p>",
-        "representation": "storage"
-      }
-    }
-  }'\
-  --write-out "\n\n[HTTP Response Code]: %{http_code}\n" \
-  --silent \
-  --show-error
-
-*/
     
     SummarDebug.log(1, `createPage - 1`);
     const apiUrl = `https://${confluenceDomain}/rest/api/content`;
@@ -203,17 +183,17 @@ curl -X POST "https://wiki.workers-hub.com/rest/api/content" \
       // },
       body: {
         storage: {
-          // value: content,
-          value: "test",
+          value: content,
+          // value: "test",
           representation: "storage",
         },
       },
     };
-    SummarDebug.log(1, `API URL: ${apiUrl}`);
-    SummarDebug.log(1, `confluenceSpaceKey: ${confluenceSpaceKey}`);
-    SummarDebug.log(1, `confluenceParentPageId: ${confluenceParentPageId}`);
-    SummarDebug.log(1, `Request Headers: ${confluenceApiToken}`); // 토큰 직접 로깅은 피하세요
-    SummarDebug.log(1, `Request Body: ${JSON.stringify(requestBody)}`);
+    // SummarDebug.log(1, `API URL: ${apiUrl}`);
+    // SummarDebug.log(1, `confluenceSpaceKey: ${confluenceSpaceKey}`);
+    // SummarDebug.log(1, `confluenceParentPageId: ${confluenceParentPageId}`);
+    // SummarDebug.log(1, `Request Headers: ${confluenceApiToken}`); // 토큰 직접 로깅은 피하세요
+    // SummarDebug.log(1, `Request Body: ${JSON.stringify(requestBody)}`);
     SummarDebug.log(1, `createPage - 3`);
     // if (confluenceParentPageId && confluenceParentPageId.length > 0) {
     //   SummarDebug.log(1, `createPage - 3.1`);
@@ -224,9 +204,10 @@ curl -X POST "https://wiki.workers-hub.com/rest/api/content" \
     //     },
     //   });
     // }
+
     SummarDebug.log(1, `createPage - 4`);
     try {
-      const response = await fetchLikeRequestUrl(apiUrl, {
+      const response = await fetchLikeRequestUrl(this.plugin, apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -236,8 +217,10 @@ curl -X POST "https://wiki.workers-hub.com/rest/api/content" \
       });
       SummarDebug.log(1, `createPage - 5`);
       if (response.ok) {
+        SummarDebug.log(1, `createPage - 5.1`);
         SummarDebug.Notice(0, "Confluence page created successfully.",0);
       } else {
+        SummarDebug.log(1, `createPage - 5.2`);
         SummarDebug.Notice(0, `Failed to create Confluence page: ${response.statusText}`,0);
         throw new Error(`Failed to create Confluence page, status code: ${response.status}`);
       }

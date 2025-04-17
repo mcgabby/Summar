@@ -44,7 +44,7 @@ export class CustomCommandHandler extends SummarViewContainer {
 
 			// this.updateResultText( "Summarizing...");
 
-			const aiResponse = await fetchOpenai(openaiApiKey, body_content);
+			const aiResponse = await fetchOpenai(this.plugin, openaiApiKey, body_content);
 			this.timer.stop();
 
 			if (!aiResponse.ok) {

@@ -105,7 +105,7 @@ export class PdfHandler extends SummarViewContainer {
 					this.enableNewNote(false);
 
 					this.timer.start();
-					const aiResponse = await fetchOpenai(openaiApiKey, body_content);
+					const aiResponse = await fetchOpenai(this.plugin, openaiApiKey, body_content);
 					this.timer.stop();
 
 					if (!aiResponse.ok) {

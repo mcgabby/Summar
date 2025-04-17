@@ -61,7 +61,7 @@ export class ConfluenceHandler extends SummarViewContainer {
 						page_content = await content;
 						SummarDebug.log(2, `Fetched Confluence page content:\n ${content}`);
 					} else {
-						const response = await fetchLikeRequestUrl(url, {
+						const response = await fetchLikeRequestUrl(this.plugin, url, {
 							headers: {
 								Authorization: `Bearer ${confluenceApiToken}`,
 							},
@@ -72,7 +72,7 @@ export class ConfluenceHandler extends SummarViewContainer {
 					SummarDebug.error(1, "Failed to fetch page content:", error);
 				}
 			} else {
-				const response = await fetchLikeRequestUrl(url);
+				const response = await fetchLikeRequestUrl(this.plugin, url);
 
 				page_content = await response.text();
 			}
@@ -93,7 +93,7 @@ export class ConfluenceHandler extends SummarViewContainer {
 			this.updateResultText( "Summarizing...");
 			this.enableNewNote(false);
 
-			const aiResponse = await fetchOpenai(openaiApiKey, body_content);
+			const aiResponse = await fetchOpenai(this.plugin, openaiApiKey, body_content);
 			this.timer.stop();
 
 			if (!aiResponse.ok) {

@@ -55,7 +55,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 			this.updateResultText("Summarizing...");
 			this.enableNewNote(false);
 			this.timer.start();
-			const aiResponse = await fetchOpenai(openaiApiKey, body_content);
+			const aiResponse = await fetchOpenai(this.plugin, openaiApiKey, body_content);
 
 			if (!aiResponse.ok) {
 				const errorText = await aiResponse.text();

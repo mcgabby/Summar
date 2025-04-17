@@ -3,6 +3,7 @@ import { View, WorkspaceLeaf, Platform, setIcon, normalizePath, MarkdownView } f
 import SummarPlugin  from "./main";
 import { SummarDebug } from "./globals";
 import { ConfluenceAPI } from "./confluenceapi";
+import MarkdownIt from "markdown-it";
 
 export class SummarView extends View {
   static VIEW_TYPE = "summar-view";
@@ -101,13 +102,21 @@ export class SummarView extends View {
         SummarDebug.Notice(1, "uploadNoteToWiki");
         const file = this.plugin.app.workspace.getActiveFile();
         if (file) {
-          const title = file.basename;
+          let title = file.basename;
           const content = await this.plugin.app.vault.read(file);
           SummarDebug.log(1, `title: ${title}`);
           SummarDebug.log(3, `content: ${content}`);
+          if (!title.includes("summary") && content.includes("## Confluence 문서 제목")) {
+            const match = content.match(/EN:(.*?)(?:\r?\n|$)/);
+            if (match && match[1]) {
+              const entitle = match[1].trim();
+              title = `${title} - ${entitle}`;
+            }
+          }
+          const md = new MarkdownIt();
+          const html = md.render(content);
           const confluenceApi = new ConfluenceAPI(this.plugin);
-          await confluenceApi.createPage(title, content);
-          // this.plugin.confluenceHandler.uploadNoteToWiki(title, content);
+          await confluenceApi.createPage(title, html);
         } else {
           SummarDebug.Notice(0, "No active editor was found.");
         }
@@ -141,34 +150,34 @@ export class SummarView extends View {
       let newNoteName = this.plugin.newNoteName;
       
       // resultContainer의 내용을 확인하여 Confluence 문서 제목이 있는지 검사
-      const resultText = this.plugin.resultContainer.value;
-      if (resultText.includes("## Confluence 문서 제목")) {
-        // 정규식을 사용하여 "EN:" 다음의 텍스트 한 줄을 찾습니다
-        const match = resultText.match(/EN:(.*?)(?:\r?\n|$)/);
-        if (match && match[1]) {
-          // 찾은 텍스트에서 앞뒤 공백을 제거하고 파일명으로 사용
-          const confluenceTitle = match[1].trim();
-          if (this.plugin.newNoteName.includes(".md")) {
-            newNoteName = newNoteName.replace(".md", ` ${confluenceTitle}.md`);
-          } else {
-            newNoteName = newNoteName + ` ${confluenceTitle}.md`;
-          }
-        } else {
-          // "EN:" 텍스트를 찾지 못한 경우 기본 " summary.md" 사용
-          if (this.plugin.newNoteName.includes(".md")) {
-            newNoteName = newNoteName.replace(".md", " summary.md");
-          } else {
-            newNoteName = newNoteName + ".md";
-          }
-        }
-      } else {
+      // const resultText = this.plugin.resultContainer.value;
+      // if (resultText.includes("## Confluence 문서 제목")) {
+      //   // 정규식을 사용하여 "EN:" 다음의 텍스트 한 줄을 찾습니다
+      //   const match = resultText.match(/EN:(.*?)(?:\r?\n|$)/);
+      //   if (match && match[1]) {
+      //     // 찾은 텍스트에서 앞뒤 공백을 제거하고 파일명으로 사용
+      //     const confluenceTitle = match[1].trim();
+      //     if (this.plugin.newNoteName.includes(".md")) {
+      //       newNoteName = newNoteName.replace(".md", ` ${confluenceTitle}.md`);
+      //     } else {
+      //       newNoteName = newNoteName + ` ${confluenceTitle}.md`;
+      //     }
+      //   } else {
+      //     // "EN:" 텍스트를 찾지 못한 경우 기본 " summary.md" 사용
+      //     if (this.plugin.newNoteName.includes(".md")) {
+      //       newNoteName = newNoteName.replace(".md", " summary.md");
+      //     } else {
+      //       newNoteName = newNoteName + ".md";
+      //     }
+      //   }
+      // } else {
         // Confluence 문서 제목이 없는 경우 기본 " summary.md" 사용
         if (this.plugin.newNoteName.includes(".md")) {
           newNoteName = newNoteName.replace(".md", " summary.md");
         } else {
           newNoteName = newNoteName + ".md";
         }
-      }
+      // }
 
       const filePath = normalizePath(newNoteName);
       const existingFile = this.plugin.app.vault.getAbstractFileByPath(filePath);
@@ -286,4 +295,5 @@ export class SummarView extends View {
     if (!existingLeaf) return ""; 
     return existingLeaf.view.getViewType();
   }
+
 }

@@ -111,7 +111,7 @@ export class PluginUpdater {
 
     try {
       SummarDebug.log(1, `Fetching manifest from URL: ${url}`);
-      const response = await fetchLikeRequestUrl(url);
+      const response = await fetchLikeRequestUrl(this.plugin, url);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch remote manifest. Status code: ${response.status}`);
@@ -129,7 +129,7 @@ export class PluginUpdater {
     try {
       SummarDebug.log(1, `Fetching plugin from URL: ${url}`);
 
-      const result = await fetchLikeRequestUrl(url,
+      const result = await fetchLikeRequestUrl(this.plugin, url,
         {
           method: "GET",
           headers: {
