@@ -21,3 +21,4 @@ npm run build
 - **2025-01-27**: Added transcription and summarization features
 - **2025-02-01**: Added custom command to run OpenAI API with selected text.
 - **2025-02-16**: Fetch the calendar schedule and apply auto recording.
+- **2025-04-17**: Added feature to upload notes to Confluence  

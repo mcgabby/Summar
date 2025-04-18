@@ -93,7 +93,7 @@ export class SummarView extends View {
       cls: "lucide-icon-button",
     });
     uploadNoteToWikiButton.setAttribute("aria-label", "Upload Note to Confluence");
-    setIcon(uploadNoteToWikiButton, "upload");
+    setIcon(uploadNoteToWikiButton, "file-up");
 
     // uploadNoteToWikiButton 클릭 이벤트 리스너
     uploadNoteToWikiButton.addEventListener("click", async() => {
@@ -106,9 +106,12 @@ export class SummarView extends View {
           const content = await this.plugin.app.vault.read(file);
           SummarDebug.log(1, `title: ${title}`);
           SummarDebug.log(3, `content: ${content}`);
-          if (!title.includes("summary") && content.includes("## Confluence 문서 제목")) {
+          if (content.includes("## Confluence 문서 제목")) {
             const match = content.match(/EN:(.*?)(?:\r?\n|$)/);
             if (match && match[1]) {
+              if (title.includes("summary")) {
+                title = title.replace("summary", "");
+              }  
               const entitle = match[1].trim();
               title = `${title} - ${entitle}`;
             }
