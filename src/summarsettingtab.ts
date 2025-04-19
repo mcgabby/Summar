@@ -1,8 +1,9 @@
-import { PluginSettingTab, Setting, Platform } from "obsidian";
+import { PluginSettingTab, Setting, Platform, ButtonComponent } from "obsidian";
 
 import { SummarDebug, getDeviceId, sanitizeLabel } from "./globals";
 import { PluginUpdater } from "./pluginupdater";
 import SummarPlugin from "./main";
+import { ConfluenceAPI } from "./confluenceapi";
 
 export class SummarSettingsTab extends PluginSettingTab {
   plugin: SummarPlugin;
@@ -301,6 +302,8 @@ async activateTab(tabId: string): Promise<void> {
     message3.textContent = " to reload Obsidian.";
     containerEl.appendChild(message3);
 
+    containerEl.createEl("p"); 
+
     new Setting(containerEl)
       .setName("OpenAI API Key")
       .setDesc("Enter your OpenAI API key.")
@@ -315,6 +318,8 @@ async activateTab(tabId: string): Promise<void> {
         const textAreaEl = text.inputEl;
         textAreaEl.style.width = "100%";
       });
+
+    containerEl.createEl("p"); 
 
     new Setting(containerEl)
       .setName("Confluence API Token")
@@ -363,6 +368,115 @@ async activateTab(tabId: string): Promise<void> {
       })
       .setName("Confluence Domain")
       .setDesc("If you want to use the Confluence Open API, toggle it on; if not, toggle it off.");
+      
+      let checkButton: ButtonComponent; // ButtonComponent 객체를 저장
+
+
+      const urlContainer = new Setting(containerEl)
+      .setName("Confluence Parent Page URL")
+      .setDesc(
+        "To post content to a Confluence page, you need the space key and the ID of the parent page where the content will be stored. " +
+        "Enter the Confluence page URL here so you can get the required space key and parent page ID.")
+      .addText((text) => {
+        text
+          .setPlaceholder("Enter Confluence page URL")
+          .setValue(this.plugin.settings.confluenceParentPageUrl || "")
+          .onChange(async (value) => {
+             // URL이 변경될 때마다 저장
+            checkButton.setDisabled(!value.trim()); // ButtonComponent의 메서드로 상태 변경 
+          });
+          const textEl = text.inputEl;
+          // textEl.style.width = "calc(100% - 40px)"; // 체크 버튼을 위한 공간 확보
+          // 📏 입력창 크기 크게 조정
+          textEl.style.width = "100%";
+          // textEl.style.height = "3em";
+          textEl.style.fontSize = "1em";
+          textEl.style.padding = "8px";
+
+          // 🔠 긴 URL도 잘 보이도록
+          textEl.style.whiteSpace = "normal";
+          textEl.style.overflowWrap = "break-word";          
+      })
+      .addButton((button) => {
+        checkButton = button; // ButtonComponent 객체 저장
+        button
+          .setButtonText("✓")
+          .setClass("check-button")
+          .setDisabled(true)
+          .onClick(async () => {
+
+            const urlInput = urlContainer.controlEl.querySelector("input") as HTMLInputElement;
+            const url = urlInput.value.trim();
+            spaceKeyInput.setValue("");
+            pageIdInput.setValue("");
+
+            if (url) {
+              try {
+                const conflueceapi = new ConfluenceAPI(this.plugin);
+                const result = await conflueceapi.getPageId(url);
+                
+                // if (result.spaceKey) {
+                //   spaceKeyInput.setValue(result.spaceKey);
+                //   this.plugin.settings.confluenceParentPageSpaceKey = result.spaceKey;
+                // }
+                
+                if (result.pageId) {
+                  pageIdInput.setValue(result.pageId);
+                  this.plugin.settings.confluenceParentPageId = result.pageId;
+                  const spaceKey = await conflueceapi.getSpaceKey(result.pageId);
+                  if (spaceKey) {
+                    spaceKeyInput.setValue(spaceKey);
+                    this.plugin.settings.confluenceParentPageSpaceKey = spaceKey;
+                    this.plugin.settings.confluenceParentPageUrl = url;
+                  }
+                }
+
+                // 설정 저장
+                await this.plugin.saveData(this.plugin.settings);
+              } catch (error) {
+                console.error("Error fetching page info:", error);
+              }
+            }
+          });
+        button.buttonEl.style.marginLeft = "4px";
+        // checkButtonEl = button.buttonEl;
+        return button;
+      });
+
+      // Space Key 입력 필드 (읽기 전용)
+    let spaceKeyInput: any;
+    new Setting(containerEl)
+      .setName("Space Key")
+      .setDesc("Space Key will be automatically filled when checking the URL")
+      .addText((text) => {
+        spaceKeyInput = text;
+        text
+          .setPlaceholder("Space Key")
+          .setValue(this.plugin.settings.confluenceParentPageSpaceKey || "")
+          .setDisabled(true);
+        const textEl = text.inputEl;
+        textEl.style.width = "100%";
+      });
+
+
+    // 🎨 Desc 스타일 좁게 조정 (너비 제한)
+    const descEl = urlContainer.descEl;
+    descEl.style.maxWidth = "450px"; // 필요시 400~600px 사이로 조정 가능
+
+    // Parent Page ID 입력 필드 (읽기 전용)
+    let pageIdInput: any;
+    new Setting(containerEl)
+      .setName("Parent Page ID")
+      .setDesc("Parent Page ID will be automatically filled when checking the URL")
+      .addText((text) => {
+        pageIdInput = text;
+        text
+          .setPlaceholder("Parent Page ID")
+          .setValue(this.plugin.settings.confluenceParentPageId || "")
+          .setDisabled(true);
+        const textEl = text.inputEl;
+        textEl.style.width = "100%";
+      });      
   }
 
   async buildWebpageSettings(containerEl: HTMLElement): Promise<void> {

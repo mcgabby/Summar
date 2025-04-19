@@ -119,7 +119,29 @@ export class SummarView extends View {
           const md = new MarkdownIt();
           const html = md.render(content);
           const confluenceApi = new ConfluenceAPI(this.plugin);
-          await confluenceApi.createPage(title, html);
+          const { statusCode, message } = await confluenceApi.createPage(title, html);
+          if (statusCode === 200) {
+            // HTML 형식의 성공 메시지 생성
+            const messageFragment = document.createDocumentFragment();
+              
+            const successText = document.createElement("div");
+            successText.textContent = "Page has been created successfully.";
+            messageFragment.appendChild(successText);
+
+            const lineBreak = document.createElement("br");
+            messageFragment.appendChild(lineBreak);
+
+            const link = document.createElement("a");
+            link.href = message;
+            link.textContent = message;
+            link.style.color = "var(--link-color)"; // Obsidian의 링크 색상 사용
+            link.style.textDecoration = "underline";
+            messageFragment.appendChild(link);
+
+            SummarDebug.Notice(0, messageFragment, 0);
+          } else {
+            SummarDebug.Notice(0, message, 0);
+          }
         } else {
           SummarDebug.Notice(0, "No active editor was found.");
         }

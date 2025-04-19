@@ -115,8 +115,10 @@ RunLoop.main.run()
 export const DEFAULT_SETTINGS: PluginSettings = {
   openaiApiKey: "",
   confluenceApiToken: "",
-  confluenceSpaceKey: "~mcgabby",
-  confluenceParentPageId: "2219954476",
+
+  confluenceParentPageUrl: "",
+  confluenceParentPageSpaceKey: "",
+  confluenceParentPageId: "",
 
   useConfluenceAPI: true,
   confluenceDomain: "https://wiki.workers-hub.com",

@@ -2,7 +2,8 @@ export interface PluginSettings {
   openaiApiKey: string;
 
   confluenceApiToken: string;
-  confluenceSpaceKey: string;
+  confluenceParentPageUrl: string;
+  confluenceParentPageSpaceKey: string;
   confluenceParentPageId: string;
   useConfluenceAPI: boolean;
 

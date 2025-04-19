@@ -38,7 +38,7 @@ export class ConfluenceAPI {
     const { confluenceApiToken, confluenceDomain } = this.plugin.settings;
 
     if (!confluenceApiToken || !confluenceDomain) {
-      SummarDebug.Notice(0, "Please configure confluence API keys in the plugin settings.", 0);
+      SummarDebug.log(0, "Please configure confluence API keys in the plugin settings.", 0);
       return { pageId, spaceKey, title };
     } else {
       SummarDebug.log(1, `confluenceApiToken: ${confluenceApiToken}`);
@@ -162,13 +162,36 @@ export class ConfluenceAPI {
     }
   }
 
-  async createPage(title: string, content: string): Promise<void> {
-    const { confluenceApiToken, confluenceDomain, confluenceSpaceKey, confluenceParentPageId } = this.plugin.settings;
-    // const headers = {
-    //   Authorization: `Bearer ${confluenceApiToken}`,
-    //   "Content-Type": "application/json",
-    // };
-    
+  async getSpaceKey(pageId: string): Promise<string> {
+    const { confluenceApiToken, confluenceDomain } = this.plugin.settings;
+    const headers = {
+      Authorization: `Bearer ${confluenceApiToken}`,
+      "Content-Type": "application/json",
+      };
+
+    const apiUrl = `https://${confluenceDomain}/rest/api/content/${pageId}`;
+
+    try {
+      const response = await fetchLikeRequestUrl(this.plugin, apiUrl, { headers });
+
+      if (response.ok) {
+        const json = await response.json() as {
+          space?: { key?: string };
+        };
+        return json.space?.key ?? "";
+      } else {
+        throw new Error(`Failed to fetch space key, status code: ${response.status}`);
+      }
+    } catch (error) {
+      SummarDebug.error(1, "Error while fetching space key:", error);
+      throw error;
+    }
+  }
+
+  // 페이지 생성
+  async createPage(title: string, content: string): Promise<{ statusCode: number; message: string }> {
+    const { confluenceApiToken, confluenceDomain, confluenceParentPageSpaceKey, confluenceParentPageId } = this.plugin.settings;
+
     SummarDebug.log(1, `createPage - 1`);
     const apiUrl = `https://${confluenceDomain}/rest/api/content`;
     SummarDebug.log(1, `createPage - 2`);
@@ -176,34 +199,18 @@ export class ConfluenceAPI {
       type: "page",
       title: title,
       space: {
-        key: confluenceSpaceKey,
+        key: confluenceParentPageSpaceKey,
       },
-      // parent: { 
-      //   id: this.plugin.settings.confluenceParentPageId,
-      // },
+      ancestors: [
+        { id: confluenceParentPageId }
+      ],      
       body: {
         storage: {
           value: content,
-          // value: "test",
           representation: "storage",
         },
       },
     };
-    // SummarDebug.log(1, `API URL: ${apiUrl}`);
-    // SummarDebug.log(1, `confluenceSpaceKey: ${confluenceSpaceKey}`);
-    // SummarDebug.log(1, `confluenceParentPageId: ${confluenceParentPageId}`);
-    // SummarDebug.log(1, `Request Headers: ${confluenceApiToken}`); // 토큰 직접 로깅은 피하세요
-    // SummarDebug.log(1, `Request Body: ${JSON.stringify(requestBody)}`);
-    SummarDebug.log(1, `createPage - 3`);
-    // if (confluenceParentPageId && confluenceParentPageId.length > 0) {
-    //   SummarDebug.log(1, `createPage - 3.1`);
-      
-    //   Object.assign(requestBody, {
-    //     ancestors: {
-    //       id: confluenceParentPageId,
-    //     },
-    //   });
-    // }
 
     SummarDebug.log(1, `createPage - 4`);
     try {
@@ -218,11 +225,44 @@ export class ConfluenceAPI {
       SummarDebug.log(1, `createPage - 5`);
       if (response.ok) {
         SummarDebug.log(1, `createPage - 5.1`);
-        SummarDebug.Notice(0, "Confluence page created successfully.",0);
+        // SummarDebug.Notice(0, "Confluence page created successfully.",0);
+
+        // SummarDebug.log(1, `${response.text()}`);
+
+        const responseData = await response.json() as {
+          id: string;
+          type: string;
+          title: string;
+          _links: {
+            webui: string;
+            tinyui: string;
+          };
+        };
+        // 생성된 페이지의 URL 생성
+        const pageUrl = `https://${confluenceDomain}${responseData._links.webui}`;
+        SummarDebug.log(1, `Confluence page created successfully: ${pageUrl}`);
+        
+        return {
+          statusCode: 200,
+          message: pageUrl
+        };
       } else {
         SummarDebug.log(1, `createPage - 5.2`);
-        SummarDebug.Notice(0, `Failed to create Confluence page: ${response.statusText}`,0);
-        throw new Error(`Failed to create Confluence page, status code: ${response.status}`);
+
+        const errorData = await response.json() as {
+          statusCode: number;
+          data: {
+            authorized: boolean;
+            valid: boolean;
+            allowedInReadOnlyMode: boolean;
+            errors: any[];
+            successful: boolean;
+          };
+          message: string;
+          reason: string;
+        }
+        SummarDebug.Notice(0, `Failed to create Confluence page: ${errorData.message}`,0);
+        return { statusCode: errorData.statusCode, message: errorData.message };
       }
     } catch (error) { 
       SummarDebug.log(1, `createPage - 6`);
