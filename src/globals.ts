@@ -366,30 +366,48 @@ export async function fetchLikeRequestUrl(
   let redirectCount = 0;
 
   while (redirectCount < maxRedirects) {
-    const response = await requestUrl({
-      url,
-      method,
-      headers: headers as Record<string, string>,
-      body: typeof body === "string" || body instanceof Uint8Array ? body : undefined,
-    });
+    try {
+      const response = await requestUrl({
+        url,
+        method,
+        headers: headers as Record<string, string>,
+        body: typeof body === "string" || body instanceof Uint8Array ? body : undefined,
+      });
 
-    SummarDebug.log(1, `response.status: ${response.status}`);
+      SummarDebug.log(1, `response.status: ${response.status}`);
 
-    // Redirect 처리 (30x 상태코드)
-    if (response.status >= 300 && response.status < 400 && response.headers["location"]) {
-      url = response.headers["location"];
-      redirectCount++;
-      continue;
+      // Redirect 처리 (30x 상태코드)
+      if (response.status >= 300 && response.status < 400 && response.headers["location"]) {
+        url = response.headers["location"];
+        redirectCount++;
+        continue;
+      }
+
+      return new FetchLikeResponse(
+        response.status >= 200 && response.status < 300,
+        response.status,
+        (response.status==200) ? "" : response.text,
+        response.headers,
+        response.arrayBuffer,
+        response.text
+      );
+    } catch (error:any) {
+      SummarDebug.error(1, "Error fetching data from URL:", error);
+
+      const res = error?.response;
+      const status = res?.status || 0;
+      const text = res?.body || (await res?.text?.()) || error?.message || "Unknown error";
+  
+      return new FetchLikeResponse(
+        false,
+        status,
+        text,
+        res?.headers || {},
+        new ArrayBuffer(0), // 에러 시 빈 buffer
+        text
+      );
+  
     }
-
-    return new FetchLikeResponse(
-      response.status >= 200 && response.status < 300,
-      response.status,
-      (response.status==200) ? "" : response.text,
-      response.headers,
-      response.arrayBuffer,
-      response.text
-    );
   }
 
   throw new Error(`Too many redirects: exceeded ${maxRedirects} attempts`);

@@ -28,6 +28,8 @@
 		"@types/node": "^22.12.0",
 		"jszip": "^3.10.1",
 		"markdown-it": "^14.1.0",
+		"node": "^23.11.0",
+		"node-fetch": "^3.3.2",
 		"semver": "^7.6.3"
 	}
 }

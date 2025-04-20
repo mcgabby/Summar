@@ -124,7 +124,7 @@ export class SummarView extends View {
             // SummarDebug.Notice(0, "Please set Confluence Parent Page URL, Space Key, and ID in the settings.",0);
             return;
         }
-        SummarDebug.Notice(1, "uploadNoteToWiki");
+        // SummarDebug.Notice(1, "uploadNoteToWiki");
         const file = this.plugin.app.workspace.getActiveFile();
         if (file) {
           let title = file.basename;
@@ -144,7 +144,7 @@ export class SummarView extends View {
           const md = new MarkdownIt();
           const html = md.render(content);
           const confluenceApi = new ConfluenceAPI(this.plugin);
-          const { statusCode, message } = await confluenceApi.createPage(title, html);
+          const { statusCode, message, reason } = await confluenceApi.createPage(title, html);
           if (statusCode === 200) {
             // HTML 형식의 성공 메시지 생성
             const messageFragment = document.createDocumentFragment();
@@ -165,7 +165,19 @@ export class SummarView extends View {
 
             SummarDebug.Notice(0, messageFragment, 0);
           } else {
-            SummarDebug.Notice(0, message, 0);
+            const frag = document.createDocumentFragment();
+            const title = document.createElement("div");
+            title.textContent = "⚠️" + reason;
+            title.style.fontWeight = "bold";
+            title.style.marginBottom = "4px";
+
+            const messageNoti = document.createElement("div");
+            messageNoti.textContent = message as string;
+            
+            frag.appendChild(title);
+            frag.appendChild(messageNoti);
+
+            SummarDebug.Notice(0, frag, 0);
           }
         } else {
           SummarDebug.Notice(0, "No active editor was found.");

@@ -1,5 +1,6 @@
-import { SummarDebug, fetchLikeRequestUrl } from "./globals";
+import { SummarDebug, fetchLikeRequestUrl, FetchLikeResponse } from "./globals";
 import SummarPlugin from "./main";
+import fetch from "node-fetch";
 
 interface ConfluencePage {
   id: string;
@@ -17,6 +18,18 @@ interface ConfluencePageContentResponse {
       value: string;
     };
   };
+}
+
+export interface SafeRequestResult {
+  ok: boolean;
+  status: number;
+  statusText?: string;
+  body?: string;
+  json?: any;
+  reason?: string;
+  message?: string;
+  headers?: Record<string, string>;
+  error?: any;
 }
 
 export class ConfluenceAPI {
@@ -189,7 +202,7 @@ export class ConfluenceAPI {
   }
 
   // 페이지 생성
-  async createPage(title: string, content: string): Promise<{ statusCode: number; message: string }> {
+  async createPage(title: string, content: string): Promise<{ statusCode: number; message: string, reason?: string }> {
     const { confluenceApiToken, confluenceDomain, confluenceParentPageSpaceKey, confluenceParentPageId } = this.plugin.settings;
 
     SummarDebug.log(1, `createPage - 1`);
@@ -214,11 +227,13 @@ export class ConfluenceAPI {
 
     SummarDebug.log(1, `createPage - 4`);
     try {
-      const response = await fetchLikeRequestUrl(this.plugin, apiUrl, {
-        method: "POST",
+      const response = await fetch(apiUrl, {
+        // const response: FetchLikeResponse = await fetchLikeRequestUrl(this.plugin, apiUrl, {
+          method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${confluenceApiToken}`,
+          "user-agent": `Obsidian-Summar/${this.plugin.manifest.version}`,
         },
         body: JSON.stringify(requestBody),
       });
@@ -249,7 +264,15 @@ export class ConfluenceAPI {
       } else {
         SummarDebug.log(1, `createPage - 5.2`);
 
-        const errorData = await response.json() as {
+        let errorData: {
+          statusCode: number;
+          message: string;
+          reason: string;
+        };
+
+        SummarDebug.log(1, `createPage - 5.3`);
+
+        errorData = await response.json() as {
           statusCode: number;
           data: {
             authorized: boolean;
@@ -261,12 +284,23 @@ export class ConfluenceAPI {
           message: string;
           reason: string;
         }
-        SummarDebug.Notice(0, `Failed to create Confluence page: ${errorData.message}`,0);
-        return { statusCode: errorData.statusCode, message: errorData.message };
+        SummarDebug.log(1, `createPage - 5.4`);
+        SummarDebug.log(1, `statusCode: ${errorData.statusCode}`);
+        SummarDebug.log(1, `message: ${errorData.message}`);
+        SummarDebug.log(1, `reason: ${errorData.reason}`);
+
+        // SummarDebug.Notice(0, `Failed to create Confluence page: ${errorData.message}`,0);
+        return { statusCode: errorData.statusCode, message: errorData.message, reason: errorData.reason };
       }
-    } catch (error) { 
+    } catch (error: any) { 
       SummarDebug.log(1, `createPage - 6`);
-      SummarDebug.Notice(0, `Error while creating Confluence page: ${error}`,0);
+
+      if (error?.response) {
+        SummarDebug.log(1, `createPage - 6.1`);
+      } else {
+        SummarDebug.log(1, `createPage - 6.2`);
+      }
+      // SummarDebug.Notice(0, `Error while creating Confluence page: ${error}`,0);
       throw error;
     }
   }
