@@ -1,6 +1,6 @@
 import { SummarDebug, fetchLikeRequestUrl, FetchLikeResponse } from "./globals";
 import SummarPlugin from "./main";
-import fetch from "node-fetch";
+// import fetch from "node-fetch";
 
 interface ConfluencePage {
   id: string;
@@ -235,7 +235,7 @@ export class ConfluenceAPI {
 
     SummarDebug.log(1, `createPage - 4`);
     try {
-      const response = await fetch(apiUrl, {
+      const response = await this.fetchInNode(apiUrl, {
         // const response: FetchLikeResponse = await fetchLikeRequestUrl(this.plugin, apiUrl, {
           method: "POST",
         headers: {
@@ -319,7 +319,7 @@ export class ConfluenceAPI {
   
     const searchUrl = `https://${confluenceDomain}/rest/api/content?title=${encodeURIComponent(title)}&spaceKey=${confluenceParentPageSpaceKey}&expand=ancestors`;
   
-    const response = await fetch(searchUrl, {
+    const response = await this.fetchInNode(searchUrl, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${confluenceApiToken}`,
@@ -352,7 +352,7 @@ export class ConfluenceAPI {
     const { confluenceApiToken, confluenceDomain } = this.plugin.settings;
   
     // 현재 버전 조회
-    const pageInfoRes = await fetch(`https://${confluenceDomain}/rest/api/content/${pageId}?expand=version`, {
+    const pageInfoRes = await this.fetchInNode(`https://${confluenceDomain}/rest/api/content/${pageId}?expand=version`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${confluenceApiToken}`,
@@ -391,8 +391,8 @@ export class ConfluenceAPI {
         },
       },
     };
-  
-    const updateRes = await fetch(`https://${confluenceDomain}/rest/api/content/${pageId}`, {
+
+    const updateRes = await this.fetchInNode(`https://${confluenceDomain}/rest/api/content/${pageId}`, {
       method: "PUT",
       headers: {
         "Authorization": `Bearer ${confluenceApiToken}`,
@@ -421,6 +421,15 @@ export class ConfluenceAPI {
         message: error.message || "Failed to update page.",
         reason: error.reason,
       };
+    }
+  }
+
+  async fetchInNode(url: string, options?: any) {
+    if (typeof process !== "undefined" && process.versions?.node) {
+      const fetch = (await import("node-fetch")).default;
+      return fetch(url, options);
+    } else {
+      throw new Error("node-fetch cannot be used in this environment.");
     }
   }
 }

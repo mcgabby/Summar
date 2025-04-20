@@ -204,7 +204,14 @@ export class SummarView extends View {
         SummarDebug.Notice(0, frag);
       } 
     });
-    
+
+    if (!Platform.isMacOS) {
+      // 버튼을 안보이게 하고 비활성화
+      uploadNoteToWikiButton.style.display = "none"; // 안보이게 하기
+      uploadNoteToWikiButton.disabled = true;        // 비활성화
+      uploadNoteToWikiButton.style.width = "100%";
+    }
+
     const newNoteButton = buttonContainer.createEl("button", {
       cls: "lucide-icon-button",
     });
