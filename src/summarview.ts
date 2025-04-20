@@ -1,7 +1,7 @@
 import { View, WorkspaceLeaf, Platform, setIcon, normalizePath, MarkdownView } from "obsidian";
 
 import SummarPlugin  from "./main";
-import { SummarDebug } from "./globals";
+import { SummarDebug, showSettingsTab } from "./globals";
 import { ConfluenceAPI } from "./confluenceapi";
 import MarkdownIt from "markdown-it";
 
@@ -99,6 +99,31 @@ export class SummarView extends View {
     uploadNoteToWikiButton.addEventListener("click", async() => {
       const viewType = await this.getCurrentMainPaneTabType();
       if (viewType === "markdown") {
+        if (this.plugin.settings.confluenceParentPageUrl.length == 0 || 
+          this.plugin.settings.confluenceParentPageSpaceKey.length == 0 || 
+          this.plugin.settings.confluenceParentPageId.length == 0 ) {
+            const fragment = document.createDocumentFragment();
+            const message1 = document.createElement("span");
+            message1.textContent = "To publish your notes to Confluence, " +
+              "please specify the Parent Page where the content will be saved. \n";
+            fragment.appendChild(message1);
+
+            // 링크 생성 및 스타일링
+            const link = document.createElement("a");
+            link.textContent = "Set the Confluence Parent Page URL in the settings to configure the Space Key and Page ID";
+            link.href = "#";
+            link.style.cursor = "pointer";
+            link.style.color = "var(--text-accent)"; // 링크 색상 설정 (옵션)
+            link.addEventListener("click", (event) => {
+              event.preventDefault(); // 기본 동작 방지
+              showSettingsTab(this.plugin, 'common-tab');
+            });
+            fragment.appendChild(link);
+            SummarDebug.Notice(0, fragment, 0);
+            
+            // SummarDebug.Notice(0, "Please set Confluence Parent Page URL, Space Key, and ID in the settings.",0);
+            return;
+        }
         SummarDebug.Notice(1, "uploadNoteToWiki");
         const file = this.plugin.app.workspace.getActiveFile();
         if (file) {
@@ -174,35 +199,12 @@ export class SummarView extends View {
     newNoteButton.addEventListener("click", async() => {
       let newNoteName = this.plugin.newNoteName;
       
-      // resultContainer의 내용을 확인하여 Confluence 문서 제목이 있는지 검사
-      // const resultText = this.plugin.resultContainer.value;
-      // if (resultText.includes("## Confluence 문서 제목")) {
-      //   // 정규식을 사용하여 "EN:" 다음의 텍스트 한 줄을 찾습니다
-      //   const match = resultText.match(/EN:(.*?)(?:\r?\n|$)/);
-      //   if (match && match[1]) {
-      //     // 찾은 텍스트에서 앞뒤 공백을 제거하고 파일명으로 사용
-      //     const confluenceTitle = match[1].trim();
-      //     if (this.plugin.newNoteName.includes(".md")) {
-      //       newNoteName = newNoteName.replace(".md", ` ${confluenceTitle}.md`);
-      //     } else {
-      //       newNoteName = newNoteName + ` ${confluenceTitle}.md`;
-      //     }
-      //   } else {
-      //     // "EN:" 텍스트를 찾지 못한 경우 기본 " summary.md" 사용
-      //     if (this.plugin.newNoteName.includes(".md")) {
-      //       newNoteName = newNoteName.replace(".md", " summary.md");
-      //     } else {
-      //       newNoteName = newNoteName + ".md";
-      //     }
-      //   }
-      // } else {
-        // Confluence 문서 제목이 없는 경우 기본 " summary.md" 사용
-        if (this.plugin.newNoteName.includes(".md")) {
-          newNoteName = newNoteName.replace(".md", " summary.md");
-        } else {
-          newNoteName = newNoteName + ".md";
-        }
-      // }
+      if (this.plugin.newNoteName.includes(".md")) {
+        newNoteName = newNoteName.replace(".md", " summary.md");
+      } else {
+        newNoteName = newNoteName + ".md";
+      }
+    
 
       const filePath = normalizePath(newNoteName);
       const existingFile = this.plugin.app.vault.getAbstractFileByPath(filePath);
