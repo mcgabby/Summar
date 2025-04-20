@@ -144,13 +144,17 @@ export class SummarView extends View {
           const md = new MarkdownIt();
           const html = md.render(content);
           const confluenceApi = new ConfluenceAPI(this.plugin);
-          const { statusCode, message, reason } = await confluenceApi.createPage(title, html);
+          const { updated, statusCode, message, reason } = await confluenceApi.createPage(title, html);
           if (statusCode === 200) {
             // HTML 형식의 성공 메시지 생성
             const messageFragment = document.createDocumentFragment();
               
             const successText = document.createElement("div");
-            successText.textContent = "Page has been created successfully.";
+            if (updated) {
+              successText.textContent = "Page has been updated successfully.";
+            } else {
+              successText.textContent = "Page has been created successfully.";
+            }
             messageFragment.appendChild(successText);
 
             const lineBreak = document.createElement("br");

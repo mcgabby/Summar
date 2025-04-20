@@ -202,8 +202,16 @@ export class ConfluenceAPI {
   }
 
   // 페이지 생성
-  async createPage(title: string, content: string): Promise<{ statusCode: number; message: string, reason?: string }> {
+  async createPage(title: string, content: string): Promise<{ updated: boolean, statusCode: number; message: string, reason?: string }> {
     const { confluenceApiToken, confluenceDomain, confluenceParentPageSpaceKey, confluenceParentPageId } = this.plugin.settings;
+
+    const existingPageId = await this.findExistingPage(title);
+    if (existingPageId) {
+      // SummarDebug.log(1, `${existingPageId} already exists. Skipping creation.`);
+      return await this.updatePage(existingPageId, title, content);
+    } else {
+      SummarDebug.log(1, `Page not found. Creating new page.`);
+    }
 
     SummarDebug.log(1, `createPage - 1`);
     const apiUrl = `https://${confluenceDomain}/rest/api/content`;
@@ -258,6 +266,7 @@ export class ConfluenceAPI {
         SummarDebug.log(1, `Confluence page created successfully: ${pageUrl}`);
         
         return {
+          updated: false,
           statusCode: 200,
           message: pageUrl
         };
@@ -290,7 +299,7 @@ export class ConfluenceAPI {
         SummarDebug.log(1, `reason: ${errorData.reason}`);
 
         // SummarDebug.Notice(0, `Failed to create Confluence page: ${errorData.message}`,0);
-        return { statusCode: errorData.statusCode, message: errorData.message, reason: errorData.reason };
+        return { updated: false, statusCode: errorData.statusCode, message: errorData.message, reason: errorData.reason };
       }
     } catch (error: any) { 
       SummarDebug.log(1, `createPage - 6`);
@@ -302,6 +311,116 @@ export class ConfluenceAPI {
       }
       // SummarDebug.Notice(0, `Error while creating Confluence page: ${error}`,0);
       throw error;
+    }
+  }
+
+  async findExistingPage(title: string): Promise<string | null> {
+    const { confluenceApiToken, confluenceDomain, confluenceParentPageSpaceKey, confluenceParentPageId } = this.plugin.settings;
+  
+    const searchUrl = `https://${confluenceDomain}/rest/api/content?title=${encodeURIComponent(title)}&spaceKey=${confluenceParentPageSpaceKey}&expand=ancestors`;
+  
+    const response = await fetch(searchUrl, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${confluenceApiToken}`,
+        "Content-Type": "application/json",
+        "user-agent": `Obsidian-Summar/${this.plugin.manifest.version}`,
+      },
+    });
+  
+    if (!response.ok) return null;
+  
+    const data = await response.json() as {
+      results: {
+        id: string;
+        ancestors: { id: string }[];
+      }[];
+    };
+    const pages = data.results as any[];
+  
+    for (const page of pages) {
+      const ancestors = page.ancestors || [];
+      if (ancestors.some((a: any) => a.id === confluenceParentPageId)) {
+        return page.id; // 이미 존재하는 페이지 ID 반환
+      }
+    }
+  
+    return null;
+  }
+
+  async updatePage(pageId: string, title: string, content: string): Promise<{ updated: boolean, statusCode: number; message: string; reason?: string }> {
+    const { confluenceApiToken, confluenceDomain } = this.plugin.settings;
+  
+    // 현재 버전 조회
+    const pageInfoRes = await fetch(`https://${confluenceDomain}/rest/api/content/${pageId}?expand=version`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${confluenceApiToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+  
+    if (!pageInfoRes.ok) {
+      const error = await pageInfoRes.json() as {
+        statusCode: number;
+        message: string;
+        reason: string;
+      };
+      return {
+        updated: false,
+        statusCode: pageInfoRes.status,
+        message: error.message || "Failed to fetch current page version.",
+        reason: error.reason,
+      };
+    }
+  
+    const pageInfo = await pageInfoRes.json() as {
+      version: { number: number };
+    };
+    const currentVersion = pageInfo.version.number;
+  
+    const updateBody = {
+      id: pageId,
+      type: "page",
+      title,
+      version: { number: currentVersion + 1 },
+      body: {
+        storage: {
+          value: content,
+          representation: "storage",
+        },
+      },
+    };
+  
+    const updateRes = await fetch(`https://${confluenceDomain}/rest/api/content/${pageId}`, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${confluenceApiToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updateBody),
+    });
+  
+    if (updateRes.ok) {
+      const updated = await updateRes.json() as {
+        _links: {
+          webui: string;
+        };
+      };
+      const updatedUrl = `https://${confluenceDomain}${updated._links.webui}`;
+      return { updated: true, statusCode: 200, message: updatedUrl };
+    } else {
+      const error = await updateRes.json() as {
+        statusCode: number;
+        message: string;
+        reason: string;
+      };
+      return {
+        updated: false,
+        statusCode: updateRes.status,
+        message: error.message || "Failed to update page.",
+        reason: error.reason,
+      };
     }
   }
 }
