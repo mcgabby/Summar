@@ -39,7 +39,7 @@ export class CalendarHandler {
 
     private async init() {
         try {
-            if (Platform.isMacOS) {
+            if (Platform.isMacOS && Platform.isDesktopApp) {
                 // 초기 실행
                 await this.updateScheduledMeetings();
                 if (this.plugin.settings.autoRecording) {

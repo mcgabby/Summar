@@ -98,7 +98,7 @@ export default class SummarPlugin extends Plugin {
       } else if (Platform.isLinux) {
         SummarDebug.log(1, "Running on Linux Desktop");
       }
-    } else if (Platform.isMobile) {
+    } else if (Platform.isMobileApp) {
       if (Platform.isIosApp) {
         SummarDebug.log(1, "Running on iOS");
       } else if (Platform.isAndroidApp) {

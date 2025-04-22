@@ -205,7 +205,7 @@ export class SummarView extends View {
       } 
     });
 
-    if (!Platform.isMacOS) {
+    if (!(Platform.isMacOS && Platform.isDesktopApp)) {
       // 버튼을 안보이게 하고 비활성화
       uploadNoteToWikiButton.style.display = "none"; // 안보이게 하기
       uploadNoteToWikiButton.disabled = true;        // 비활성화
@@ -311,7 +311,7 @@ export class SummarView extends View {
     this.plugin.resultContainer = resultContainer;
     this.plugin.recordButton = recordButton;
 
-    if (!Platform.isMacOS) {
+    if (!(Platform.isMacOS && Platform.isDesktopApp)) {
       // 버튼을 안보이게 하고 비활성화
       pdfButton.style.display = "none"; // 안보이게 하기
       pdfButton.disabled = true;        // 비활성화
