@@ -1,5 +1,7 @@
-import { SummarDebug, fetchLikeRequestUrl, FetchLikeResponse } from "./globals";
+import { SummarDebug, fetchLikeRequestUrl, FetchLikeResponse, SummarRequestUrl } from "./globals";
 import SummarPlugin from "./main";
+import { RequestUrlResponse } from "obsidian";
+
 // import fetch from "node-fetch";
 
 interface ConfluencePage {
@@ -114,18 +116,24 @@ export class ConfluenceAPI {
     SummarDebug.log(1, "Fetching Confluence page content...");
 
     try {
-      const response = await fetchLikeRequestUrl(this.plugin, apiUrl, { headers });
+      const response = await SummarRequestUrl(this.plugin, {
+        url: apiUrl,
+        method: "GET",
+        headers: headers,
+        throw: false,
+      });
 
-      if (response.ok) {
-        const data = await (response.json()) as ConfluencePageContentResponse;
-        const content = data.body.storage.value;
-        const title = data.title; // 타이틀 가져오기
+      if (response.status === 200) {
+        // const data = await (response.json()) as ConfluencePageContentResponse;
+        // const content = data.body.storage.value;
+        // const title = data.title; // 타이틀 가져오기
         SummarDebug.log(1, "Fetch complete!");
 
-        return { title, content }; // 타이틀과 콘텐츠 반환
+        return { title: response.json.title, content: response.json.body.storage.value }; // 타이틀과 콘텐츠 반환
       } else {
-        SummarDebug.error(1, `Error: ${response.status} - ${response.statusText}`);
-        throw new Error(`Failed to fetch Confluence page, status code: ${response.status}`);
+        SummarDebug.error(1, `Error: ${response.status}`);
+        // throw new Error(`Failed to fetch Confluence page, status code: ${response.status}`);
+        return { title: response.json.reason, content: response.json };
       }
     } catch (error) {
       SummarDebug.error(1, "Error while fetching Confluence page content:", error);
@@ -235,34 +243,24 @@ export class ConfluenceAPI {
 
     SummarDebug.log(1, `createPage - 4`);
     try {
-      const response = await this.fetchInNode(apiUrl, {
-        // const response: FetchLikeResponse = await fetchLikeRequestUrl(this.plugin, apiUrl, {
-          method: "POST",
+      const response: RequestUrlResponse = await SummarRequestUrl(this.plugin, {
+        url: apiUrl,
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${confluenceApiToken}`,
           "user-agent": `Obsidian-Summar/${this.plugin.manifest.version}`,
         },
         body: JSON.stringify(requestBody),
+        throw: false,
       });
       SummarDebug.log(1, `createPage - 5`);
-      if (response.ok) {
+
+      if (response.status === 200) {
         SummarDebug.log(1, `createPage - 5.1`);
-        // SummarDebug.Notice(0, "Confluence page created successfully.",0);
 
-        // SummarDebug.log(1, `${response.text()}`);
-
-        const responseData = await response.json() as {
-          id: string;
-          type: string;
-          title: string;
-          _links: {
-            webui: string;
-            tinyui: string;
-          };
-        };
         // 생성된 페이지의 URL 생성
-        const pageUrl = `https://${confluenceDomain}${responseData._links.webui}`;
+        const pageUrl = `https://${confluenceDomain}${response.json._links.webui}`;
         SummarDebug.log(1, `Confluence page created successfully: ${pageUrl}`);
         
         return {
@@ -272,34 +270,11 @@ export class ConfluenceAPI {
         };
       } else {
         SummarDebug.log(1, `createPage - 5.2`);
+        SummarDebug.log(1, `statusCode: ${response.json.statusCode}`);
+        SummarDebug.log(1, `message: ${response.json.message}`);
+        SummarDebug.log(1, `reason: ${response.json.reason}`);
 
-        let errorData: {
-          statusCode: number;
-          message: string;
-          reason: string;
-        };
-
-        SummarDebug.log(1, `createPage - 5.3`);
-
-        errorData = await response.json() as {
-          statusCode: number;
-          data: {
-            authorized: boolean;
-            valid: boolean;
-            allowedInReadOnlyMode: boolean;
-            errors: any[];
-            successful: boolean;
-          };
-          message: string;
-          reason: string;
-        }
-        SummarDebug.log(1, `createPage - 5.4`);
-        SummarDebug.log(1, `statusCode: ${errorData.statusCode}`);
-        SummarDebug.log(1, `message: ${errorData.message}`);
-        SummarDebug.log(1, `reason: ${errorData.reason}`);
-
-        // SummarDebug.Notice(0, `Failed to create Confluence page: ${errorData.message}`,0);
-        return { updated: false, statusCode: errorData.statusCode, message: errorData.message, reason: errorData.reason };
+        return { updated: false, statusCode: response.json.statusCode, message: response.json.message, reason: response.json.reason };
       }
     } catch (error: any) { 
       SummarDebug.log(1, `createPage - 6`);
@@ -319,7 +294,8 @@ export class ConfluenceAPI {
   
     const searchUrl = `https://${confluenceDomain}/rest/api/content?title=${encodeURIComponent(title)}&spaceKey=${confluenceParentPageSpaceKey}&expand=ancestors`;
   
-    const response = await this.fetchInNode(searchUrl, {
+    const response: RequestUrlResponse = await SummarRequestUrl(this.plugin, {
+      url: searchUrl,
       method: "GET",
       headers: {
         "Authorization": `Bearer ${confluenceApiToken}`,
@@ -328,15 +304,8 @@ export class ConfluenceAPI {
       },
     });
   
-    if (!response.ok) return null;
-  
-    const data = await response.json() as {
-      results: {
-        id: string;
-        ancestors: { id: string }[];
-      }[];
-    };
-    const pages = data.results as any[];
+    if (response.status !== 200) return null;
+    const pages = response.json.results as any[];
   
     for (const page of pages) {
       const ancestors = page.ancestors || [];
@@ -352,7 +321,8 @@ export class ConfluenceAPI {
     const { confluenceApiToken, confluenceDomain } = this.plugin.settings;
   
     // 현재 버전 조회
-    const pageInfoRes = await this.fetchInNode(`https://${confluenceDomain}/rest/api/content/${pageId}?expand=version`, {
+    const pageInfoRes: RequestUrlResponse = await SummarRequestUrl(this.plugin, {
+      url: `https://${confluenceDomain}/rest/api/content/${pageId}?expand=version`,
       method: "GET",
       headers: {
         "Authorization": `Bearer ${confluenceApiToken}`,
@@ -360,30 +330,20 @@ export class ConfluenceAPI {
       },
     });
   
-    if (!pageInfoRes.ok) {
-      const error = await pageInfoRes.json() as {
-        statusCode: number;
-        message: string;
-        reason: string;
-      };
+    if (pageInfoRes.status !== 200) {
       return {
         updated: false,
         statusCode: pageInfoRes.status,
-        message: error.message || "Failed to fetch current page version.",
-        reason: error.reason,
+        message: pageInfoRes.json.message || "Failed to fetch current page version.",
+        reason: pageInfoRes.json.reason,
       };
     }
-  
-    const pageInfo = await pageInfoRes.json() as {
-      version: { number: number };
-    };
-    const currentVersion = pageInfo.version.number;
-  
+    
     const updateBody = {
       id: pageId,
       type: "page",
       title,
-      version: { number: currentVersion + 1 },
+      version: { number: pageInfoRes.json.version.number + 1 },
       body: {
         storage: {
           value: content,
@@ -392,7 +352,8 @@ export class ConfluenceAPI {
       },
     };
 
-    const updateRes = await this.fetchInNode(`https://${confluenceDomain}/rest/api/content/${pageId}`, {
+    const updateRes: RequestUrlResponse = await SummarRequestUrl(this.plugin, {
+      url: `https://${confluenceDomain}/rest/api/content/${pageId}`,
       method: "PUT",
       headers: {
         "Authorization": `Bearer ${confluenceApiToken}`,
@@ -401,35 +362,16 @@ export class ConfluenceAPI {
       body: JSON.stringify(updateBody),
     });
   
-    if (updateRes.ok) {
-      const updated = await updateRes.json() as {
-        _links: {
-          webui: string;
-        };
-      };
-      const updatedUrl = `https://${confluenceDomain}${updated._links.webui}`;
-      return { updated: true, statusCode: 200, message: updatedUrl };
+    if (updateRes.status === 200) {
+      return { updated: true, statusCode: 200, message: `https://${confluenceDomain}${updateRes.json._links.webui}` };
     } else {
-      const error = await updateRes.json() as {
-        statusCode: number;
-        message: string;
-        reason: string;
-      };
       return {
         updated: false,
         statusCode: updateRes.status,
-        message: error.message || "Failed to update page.",
-        reason: error.reason,
+        message: updateRes.json.message || "Failed to update page.",
+        reason: updateRes.json.reason,
       };
     }
   }
 
-  async fetchInNode(url: string, options?: any) {
-    if (typeof process !== "undefined" && process.versions?.node) {
-      const fetch = (await import("node-fetch")).default;
-      return fetch(url, options);
-    } else {
-      throw new Error("node-fetch cannot be used in this environment.");
-    }
-  }
 }
