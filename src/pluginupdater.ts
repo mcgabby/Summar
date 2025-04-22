@@ -2,7 +2,7 @@ import JSZip from 'jszip';
 import semver from "semver";
 
 import SummarPlugin from "./main";
-import { SummarDebug, fetchLikeRequestUrl } from "./globals";
+import { SummarDebug, SummarRequestUrl } from "./globals";
 import { normalizePath } from "obsidian";
 
 export class PluginUpdater {
@@ -111,14 +111,16 @@ export class PluginUpdater {
 
     try {
       SummarDebug.log(1, `Fetching manifest from URL: ${url}`);
-      const response = await fetchLikeRequestUrl(this.plugin, url);
 
-      if (!response.ok) {
+      const response = await SummarRequestUrl(this.plugin, url);
+
+      SummarDebug.log(1, `response: response.status: ${response.status}, response.text: ${response.text}`);
+      if (response.status !== 200) {
         throw new Error(`Failed to fetch remote manifest. Status code: ${response.status}`);
       }
-
-      const data = (await response.json()) as Manifest;
+      const data = (await response.json) as Manifest;
       return data.version || null;
+
     } catch (error) {
       SummarDebug.error(1, `Error fetching remote manifest: ${(error as Error).message}`);
       throw error;
@@ -129,16 +131,19 @@ export class PluginUpdater {
     try {
       SummarDebug.log(1, `Fetching plugin from URL: ${url}`);
 
-      const result = await fetchLikeRequestUrl(this.plugin, url,
-        {
-          method: "GET",
-          headers: {
-            "Accept": "application/octet-stream",
-          },
+      const result = await SummarRequestUrl(this.plugin, {
+        url: url,        
+        method: "GET",
+        headers: {
+          "Accept": "application/octet-stream",
         },
-      );
-      if (result.ok) {
-        await this.writeFile(outputPath, new Uint8Array(await result.arrayBuffer()));
+      }); 
+    
+      if (result.status === 200) { // 상태 코드를 확인 (ok 대신)
+        await this.writeFile(outputPath, new Uint8Array(await result.arrayBuffer)); // arrayBuffer 직접 사용
+      } else {
+        // 상태 코드가 200이 아닐 경우 에러 처리
+        throw new Error(`Failed to download plugin. Status code: ${result.status}`);
       }
 
       SummarDebug.log(1, `Plugin successfully downloaded to: ${outputPath}`);
