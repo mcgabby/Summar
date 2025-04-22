@@ -1,4 +1,4 @@
-import { Notice, requestUrl, Hotkey, Modifier, RequestUrlParam, RequestUrlResponsePromise } from "obsidian";
+import { Notice, requestUrl, Hotkey, Modifier } from "obsidian";
 import * as os from 'os';
 import { Device } from '@capacitor/device';
 
@@ -261,47 +261,6 @@ export class SummarDebug {
   }
 }
 
-export function SummarRequestUrl(plugin: SummarPlugin, request: RequestUrlParam | string): RequestUrlResponsePromise {
-  let requestParam: RequestUrlParam;
-  
-  if (typeof request === 'string') {
-    // request가 문자열이면 객체로 변환
-    requestParam = { url: request, headers: {}, method: "GET", body: "", throw: true }; 
-  } else {
-    // request가 객체이면 그대로 사용
-    requestParam = request;
-    // 기존 헤더가 없으면 빈 객체로 초기화
-    if (!requestParam.headers) {
-      requestParam.headers = {};
-    }
-  }
-
-  // User-Agent 헤더 추가
-  requestParam.headers = { ...requestParam.headers, "user-agent": `Obsidian-Summar/${plugin.manifest.version}` };
-
-
-  
-  // curl 디버깅 로그 출력
-  let curlDebug = `curl -X ${requestParam.method} "${requestParam.url}" \\`;
-  for (const [key, value] of Object.entries(requestParam.headers)) {
-    curlDebug += `\n-H "${key}: ${value}" \\`;
-  }
-  if (requestParam.body) {
-    if (typeof requestParam.body === "string") {
-      curlDebug += `\n-d '${requestParam.body}' \\`;
-    } else if (requestParam.body instanceof ArrayBuffer) {
-      const byteArray = new Uint8Array(requestParam.body);
-      const base64String = btoa(String.fromCharCode(...byteArray));
-      curlDebug += `\n--data-binary '${base64String}' \\`;
-    }
-  }
-  curlDebug += `\n--write-out "\\n\\n[HTTP Response Code]: %{http_code}\\n" \\`;
-  curlDebug += `\n--silent \\`;
-  curlDebug += `\n--show-error`;
-  SummarDebug.log(3, curlDebug);
-
-  return requestUrl(requestParam); // 수정된 객체로 requestUrl 호출
-}
 
 export class FetchLikeResponse {
   ok: boolean;
