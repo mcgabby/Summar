@@ -1,26 +1,6 @@
-import { SummarDebug, fetchLikeRequestUrl, FetchLikeResponse, SummarRequestUrl } from "./globals";
+import { SummarDebug, SummarRequestUrl } from "./globals";
 import SummarPlugin from "./main";
-import { RequestUrlResponse } from "obsidian";
-
-// import fetch from "node-fetch";
-
-interface ConfluencePage {
-  id: string;
-  title: string;
-}
-
-interface ConfluenceResponse {
-  results: ConfluencePage[];
-}
-
-interface ConfluencePageContentResponse {
-  title: string;
-  body: {
-    storage: {
-      value: string;
-    };
-  };
-}
+import { RequestUrlResponse, RequestUrlResponsePromise } from "obsidian";
 
 export interface SafeRequestResult {
   ok: boolean;
@@ -124,16 +104,12 @@ export class ConfluenceAPI {
       });
 
       if (response.status === 200) {
-        // const data = await (response.json()) as ConfluencePageContentResponse;
-        // const content = data.body.storage.value;
-        // const title = data.title; // 타이틀 가져오기
         SummarDebug.log(1, "Fetch complete!");
 
         return { title: response.json.title, content: response.json.body.storage.value }; // 타이틀과 콘텐츠 반환
       } else {
         SummarDebug.error(1, `Error: ${response.status}`);
-        // throw new Error(`Failed to fetch Confluence page, status code: ${response.status}`);
-        return { title: response.json.reason, content: response.json };
+        return { title: response.json.reason, content: response.json.message };
       }
     } catch (error) {
       SummarDebug.error(1, "Error while fetching Confluence page content:", error);
@@ -159,11 +135,16 @@ export class ConfluenceAPI {
     SummarDebug.log(1, "searchUrl: " + searchUrl);
 
     try {
-      const response = await fetchLikeRequestUrl(this.plugin, searchUrl, { headers });
+      const response: RequestUrlResponse = await SummarRequestUrl(this.plugin, {
+        url: searchUrl,
+        method: "GET",
+        headers: headers,
+        throw: false,
+      });
 
-      if (response.ok) {
+      if (response.status === 200) {
         // 명시적으로 JSON 데이터를 ConfluenceResponse 타입으로 파싱
-        const data = (await response.json()) as ConfluenceResponse;
+        const data = response.json;
 
         if (data.results && data.results.length > 0) {
           return data.results[0].id;
@@ -173,7 +154,7 @@ export class ConfluenceAPI {
         }
       } else {
         SummarDebug.error(1,
-          `Error: ${response.status} - ${response.statusText}`
+          `Error: ${response.status} - ${response.json.message}`
         );
         throw new Error(`Failed to fetch Confluence page ID, status code: ${response.status}`);
       }
@@ -193,10 +174,15 @@ export class ConfluenceAPI {
     const apiUrl = `https://${confluenceDomain}/rest/api/content/${pageId}`;
 
     try {
-      const response = await fetchLikeRequestUrl(this.plugin, apiUrl, { headers });
+      const response = await SummarRequestUrl(this.plugin, {
+        url: apiUrl,
+        method: "GET",
+        headers: headers,
+        throw: false,
+      });
 
-      if (response.ok) {
-        const json = await response.json() as {
+      if (response.status === 200) {
+        const json = await response.json as {
           space?: { key?: string };
         };
         return json.space?.key ?? "";

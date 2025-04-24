@@ -1,6 +1,6 @@
 import { TFile, TFolder, normalizePath } from "obsidian";
 import SummarPlugin from "./main";
-import { SummarDebug, SummarViewContainer } from "./globals";
+import { SummarDebug, SummarRequestUrl, SummarViewContainer } from "./globals";
 import { SummarTimer } from "./summartimer";
 
 export class AudioHandler extends SummarViewContainer {
@@ -133,16 +133,19 @@ export class AudioHandler extends SummarViewContainer {
 
 				try {
 					// Whisper API 호출 (fetch 사용)
-					const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+					// const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+					const response = await SummarRequestUrl(this.plugin, {
+						url: "https://api.openai.com/v1/audio/transcriptions",
 						method: "POST",
 						headers: {
 							Authorization: `Bearer ${this.plugin.settings.openaiApiKey}`,
 						},
-						body: formData,
+						// body: formData,
+						body: JSON.stringify(formData),
 					});
 		
-					const data = await response.json();
-					
+					// const data = await response.json();
+					const data = response.json;
 					// response.text().then((text) => {
 					// 	SummarDebug.log(3, `Response sendAudioData: ${text}`);
 					// });

@@ -1,6 +1,6 @@
 import SummarPlugin from "./main";
 import { OpenAIResponse } from "./types";
-import { SummarViewContainer, SummarDebug, fetchOpenai, fetchLikeRequestUrl, containsDomain } from "./globals";
+import { SummarViewContainer, SummarDebug, fetchOpenai, containsDomain, SummarRequestUrl } from "./globals";
 import { SummarTimer } from "./summartimer";
 import { ConfluenceAPI } from "./confluenceapi";
 
@@ -61,20 +61,24 @@ export class ConfluenceHandler extends SummarViewContainer {
 						page_content = await content;
 						SummarDebug.log(2, `Fetched Confluence page content:\n ${content}`);
 					} else {
-						const response = await fetchLikeRequestUrl(this.plugin, url, {
+						const response = await SummarRequestUrl(this.plugin, {
+							url: url,
+							method: "GET",
 							headers: {
 								Authorization: `Bearer ${confluenceApiToken}`,
 							},
 						});
-						page_content = await response.text();
+						page_content = response.text;
 					}
 				} catch (error) {
 					SummarDebug.error(1, "Failed to fetch page content:", error);
 				}
 			} else {
-				const response = await fetchLikeRequestUrl(this.plugin, url);
-
-				page_content = await response.text();
+				const response = await SummarRequestUrl(this.plugin, {
+					url: url,
+					method: "GET",
+				});
+				page_content = response.text;
 			}
 			this.updateResultText("Fedtched page content");
 			this.enableNewNote(false);
@@ -96,8 +100,8 @@ export class ConfluenceHandler extends SummarViewContainer {
 			const aiResponse = await fetchOpenai(this.plugin, openaiApiKey, body_content);
 			this.timer.stop();
 
-			if (!aiResponse.ok) {
-				const errorText = await aiResponse.text();
+			if (aiResponse.status !== 200) {
+				const errorText = aiResponse.text;
 				SummarDebug.error(1, "OpenAI API Error:", errorText);
 				this.updateResultText(`Error: ${aiResponse.status} - ${errorText}`);
 				this.enableNewNote(false);
@@ -105,8 +109,7 @@ export class ConfluenceHandler extends SummarViewContainer {
 				return;
 			}
 
-			const aiData = (await aiResponse.json()) as OpenAIResponse;
-
+			const aiData = aiResponse.json;
 			if (aiData.choices && aiData.choices.length > 0) {
 				const summary = aiData.choices[0].message.content || "No summary generated.";
 				this.updateResultText(summary);

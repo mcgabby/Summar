@@ -57,8 +57,8 @@ export class AudioRecordingManager extends SummarViewContainer {
 			this.timer.start();
 			const aiResponse = await fetchOpenai(this.plugin, openaiApiKey, body_content);
 
-			if (!aiResponse.ok) {
-				const errorText = await aiResponse.text();
+			if (aiResponse.status !== 200) {
+				const errorText = aiResponse.text;
 				SummarDebug.error(1, "OpenAI API Error:", errorText);
 				this.updateResultText(`Error: ${aiResponse.status} - ${errorText}`);
 				this.enableNewNote(false);
@@ -67,8 +67,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 				return;
 			}
 
-			const aiData = (await aiResponse.json()) as OpenAIResponse;
-
+			const aiData = aiResponse.json;
 			if (aiData.choices && aiData.choices.length > 0) {
 				const summary = aiData.choices[0].message.content || "No summary generated.";
 				this.updateResultText(summary);
