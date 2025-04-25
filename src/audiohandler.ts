@@ -128,24 +128,21 @@ export class AudioHandler extends SummarViewContainer {
 					if (this.plugin.settings.transcribingPrompt && this.plugin.settings.transcribingPrompt.length > 0) {
 						formData.append("prompt", this.plugin.settings.transcribingPrompt);
 					}
-				}
+				}				
 
 
 				try {
 					// Whisper API 호출 (fetch 사용)
-					// const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-					const response = await SummarRequestUrl(this.plugin, {
-						url: "https://api.openai.com/v1/audio/transcriptions",
+					const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
 						method: "POST",
 						headers: {
 							Authorization: `Bearer ${this.plugin.settings.openaiApiKey}`,
 						},
-						// body: formData,
-						body: JSON.stringify(formData),
+						body: formData,
 					});
 		
-					// const data = await response.json();
-					const data = response.json;
+					const data = await response.json();
+					
 					// response.text().then((text) => {
 					// 	SummarDebug.log(3, `Response sendAudioData: ${text}`);
 					// });
