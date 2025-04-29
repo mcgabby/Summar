@@ -59,7 +59,7 @@ export class SummarView extends View {
     inputField.style.border = "1px solid #ccc";
     inputField.style.borderRadius = "5px";
     inputField.style.boxSizing = "border-box";
-    inputField.style.marginBottom = "1px";
+    inputField.style.margin = "5px";
     inputField.value = this.plugin.settings.testUrl || "";
   
     // Store input field for later use
@@ -76,8 +76,7 @@ export class SummarView extends View {
     fetchButton.style.borderRadius = "5px";
     fetchButton.style.cursor = "pointer";
     fetchButton.style.flexShrink = "0";
-    fetchButton.style.marginBottom = "1px";
-  
+    fetchButton.style.margin = "5px";
     // Button Container
     const buttonContainer: HTMLDivElement = container.createEl("div", {
       cls: "button-container",
@@ -86,7 +85,7 @@ export class SummarView extends View {
     buttonContainer.style.alignItems = "center";
     buttonContainer.style.gap = "5px"; // 간격 조정
     buttonContainer.style.marginBottom = "1px";
-    buttonContainer.style.marginTop = "1px";
+    buttonContainer.style.margin = "5px";
   
     // uploadNoteToWikiButton 추가
     const uploadNoteToWikiButton = buttonContainer.createEl("button", {
@@ -298,11 +297,11 @@ export class SummarView extends View {
     const resultContainer: HTMLTextAreaElement = container.createEl("textarea", {
       cls: "summarview-result",
     });
-    resultContainer.style.width = "100%";
+    resultContainer.style.width = "calc(100% - 10px)";
     resultContainer.style.height = "calc(100% - 80px)"; // 높이 재조정
     resultContainer.style.border = "1px solid #ccc";
     resultContainer.style.padding = "10px";
-    resultContainer.style.marginTop = "1px"; // 위로 붙임
+    resultContainer.style.margin = "5px"; // 위로 붙임
     resultContainer.style.whiteSpace = "pre-wrap";
     resultContainer.style.overflowY = "auto";
     resultContainer.style.resize = "none";
