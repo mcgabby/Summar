@@ -162,7 +162,6 @@
 .theme-dark .summarview-button,
 .theme-dark .summarview-result {
     border-color: var(--color-border-muted); /* 기존보다 부드러운 테두리 색상 */
-    opacity: 0.3; /* 너무 진한 색상을 완화 */
 }
 
 /* 🔹 버튼 hover 효과 */

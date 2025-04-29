@@ -39,7 +39,7 @@ export class SummarView extends View {
   private async renderView(): Promise<void> {
     const container: HTMLElement = this.containerEl;
     container.empty();
-  
+
     // Input Container
     const inputContainer: HTMLDivElement = container.createEl("div", {
       cls: "input-container",
@@ -56,7 +56,7 @@ export class SummarView extends View {
     });
     inputField.style.flexGrow = "1";
     inputField.style.padding = "8px";
-    inputField.style.border = "1px solid #ccc";
+    inputField.style.border = "1px solid var(--background-modifier-border)";
     inputField.style.borderRadius = "5px";
     inputField.style.boxSizing = "border-box";
     inputField.style.margin = "5px";
@@ -72,7 +72,7 @@ export class SummarView extends View {
     // fetchButton.setAttribute("data-tooltip", "Fetch and summarize the web page");
     fetchButton.setAttribute("aria-label", "Fetch and summarize the web page");
     fetchButton.style.padding = "8px 12px";
-    fetchButton.style.border = "1px solid #ccc";
+    fetchButton.style.border = "1px solid var(--background-modifier-border)";
     fetchButton.style.borderRadius = "5px";
     fetchButton.style.cursor = "pointer";
     fetchButton.style.flexShrink = "0";
@@ -275,7 +275,7 @@ export class SummarView extends View {
     pdfButton.style.width = "30%";
     pdfButton.style.marginBottom = "1px"; // 간격 조정
     pdfButton.style.padding = "8px 12px";
-    pdfButton.style.border = "1px solid #ccc";
+    pdfButton.style.border = "1px solid var(--background-modifier-border)";
     pdfButton.style.borderRadius = "5px";
     pdfButton.style.cursor = "pointer";
     pdfButton.style.marginBottom = "1px";
@@ -289,7 +289,7 @@ export class SummarView extends View {
     recordButton.style.width = "70%";
     recordButton.style.marginBottom = "1px"; // 간격 조정
     recordButton.style.padding = "8px 12px";
-    recordButton.style.border = "1px solid #ccc";
+    recordButton.style.border = "1px solid var(--background-modifier-border)";
     recordButton.style.borderRadius = "5px";
     recordButton.style.cursor = "pointer";
 
@@ -299,13 +299,14 @@ export class SummarView extends View {
     });
     resultContainer.style.width = "calc(100% - 10px)";
     resultContainer.style.height = "calc(100% - 80px)"; // 높이 재조정
-    resultContainer.style.border = "1px solid #ccc";
+    resultContainer.style.border = "1px solid var(--background-modifier-border)";
     resultContainer.style.padding = "10px";
     resultContainer.style.margin = "5px"; // 위로 붙임
     resultContainer.style.whiteSpace = "pre-wrap";
     resultContainer.style.overflowY = "auto";
     resultContainer.style.resize = "none";
     resultContainer.readOnly = true;
+    resultContainer.style.color = "var(--text-normal)"; // Obsidian의 기본 텍스트 색상 변수 사용
   
     this.plugin.resultContainer = resultContainer;
     this.plugin.recordButton = recordButton;
