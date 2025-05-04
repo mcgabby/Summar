@@ -683,12 +683,12 @@ async activateTab(tabId: string): Promise<void> {
         dropdown
           .addOptions({
             "": "Auto Detect",
-            "ko": "Korean (ko)",
-            "ja": "Japanese (ja)",
-            "en": "English (en)",
-            "tw": "Chinese (tw)",
-            "th": "ภาษาไทย (th)",
-            "vn": "Tiếng Việt (vn)"
+            "ko-KR": "Korean (ko)",
+            "ja-JP": "Japanese (ja)",
+            "en-US": "English (en)",
+            "zh-TW": "Chinese (zh)",
+            "th-TH": "ภาษาไทย (th)",
+            "vi-VN": "Tiếng Việt (vi)"
           })
           .setValue(this.plugin.settings.recordingLanguage || "")
           .onChange(async (value) => {

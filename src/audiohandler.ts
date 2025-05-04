@@ -1,4 +1,4 @@
-import { TFile, TFolder, normalizePath } from "obsidian";
+import { TFile, TFolder, normalizePath, requestUrl, RequestUrlParam } from "obsidian";
 import SummarPlugin from "./main";
 import { SummarDebug, SummarRequestUrl, SummarViewContainer } from "./globals";
 import { SummarTimer } from "./summartimer";
@@ -109,40 +109,21 @@ export class AudioHandler extends SummarViewContainer {
 				file.name.toLowerCase().endsWith(".webm"))
 			.map(async (file) => {
 				const fileName = file.name;
-				const blob = file.slice(0, file.size, file.type);
 
 				const audioFilePath = normalizePath(`${noteFilePath}/${file.name}`);
 				SummarDebug.log(1, `audioFilePath: ${audioFilePath}`);
 
-				const formData = new FormData();
-				formData.append("file", blob, fileName);
-				formData.append("model", this.plugin.settings.transcriptEndpoint || "whisper-1");
-				if (this.plugin.settings.recordingLanguage && this.plugin.settings.recordingLanguage.length > 0) {
-					formData.append("language", this.plugin.settings.recordingLanguage);
-				}
-
-				if (this.plugin.settings.transcriptEndpoint === "whisper-1") {
-					formData.append("response_format", "verbose_json");
-				} else {
-					formData.append("response_format", "json");
-					if (this.plugin.settings.transcribingPrompt && this.plugin.settings.transcribingPrompt.length > 0) {
-						formData.append("prompt", this.plugin.settings.transcribingPrompt);
-					}
-				}				
-
-
 				try {
-					// Whisper API 호출 (fetch 사용)
-					const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-						method: "POST",
-						headers: {
-							Authorization: `Bearer ${this.plugin.settings.openaiApiKey}`,
-						},
-						body: formData,
-					});
-		
-					const data = await response.json();
-					
+/**
+					const ext = fileName.split(".").pop()?.toLowerCase();
+					const encoding = this.getEncodingFromExtension(ext);
+    				const audioBase64 = await this.readFileAsBase64(audioFilePath);
+					const transcript = await this.callGoogleTranscription(audioBase64, encoding as string);
+					return transcript || "";
+/**/
+					const blob = file.slice(0, file.size, file.type);
+					const { body: finalBody, contentType } = await this.buildMultipartFormData(blob, fileName, file.type);
+					const data = await this.callWhisperTranscription(finalBody, contentType);
 					// response.text().then((text) => {
 					// 	SummarDebug.log(3, `Response sendAudioData: ${text}`);
 					// });
@@ -173,7 +154,7 @@ export class AudioHandler extends SummarViewContainer {
 						.join("");
 
 					return srtContent;
-
+/**/
 				} catch (error) {
 					SummarDebug.error(1, `Error processing file ${fileName}:`, error);
 					this.timer.stop();
@@ -271,5 +252,169 @@ export class AudioHandler extends SummarViewContainer {
 		const milliseconds = Math.floor((seconds % 1) * 1000).toString().padStart(3, "0");
 
 		return `${hours}:${minutes}:${secs}.${milliseconds}`;
+	}
+
+	mapLanguageToWhisperCode(lang: string): string {
+		const map: Record<string, string> = {
+		  // BCP-47 전체 코드 → Whisper 언어 코드
+		  "ko-KR": "ko",
+		  "ja-JP": "ja",
+		  "en-US": "en",
+		  "en-GB": "en",
+		  "zh-CN": "zh",
+		  "zh-TW": "zh",
+		  "fr-FR": "fr",
+		  "de-DE": "de",
+		  "es-ES": "es",
+		  "pt-PT": "pt",
+		  "pt-BR": "pt",
+		  "vi-VN": "vi", // 베트남어
+		  "th-TH": "th", // 태국어
+	  
+		  // Whisper 코드 그대로인 경우도 허용
+		  "ko": "ko",
+		  "ja": "ja",
+		  "en": "en",
+		  "zh": "zh",
+		  "fr": "fr",
+		  "de": "de",
+		  "es": "es",
+		  "pt": "pt",
+		  "vi": "vi",
+		  "th": "th",
+		};
+	  
+		const normalized = lang.trim().toLowerCase();
+		return map[normalized] ?? "ko"; // 기본값은 영어
+	}
+
+	async buildMultipartFormData(blob: Blob, fileName: string, fileType: string): Promise<{ body: Blob, contentType: string }> {
+		const encoder = new TextEncoder();
+		const boundary = "----SummarFormBoundary" + Math.random().toString(16).slice(2);
+		const CRLF = "\r\n";
+
+		const bodyParts: (Uint8Array | Blob | string)[] = [];
+
+		function addField(name: string, value: string) {
+			bodyParts.push(
+				encoder.encode(`--${boundary}${CRLF}`),
+				encoder.encode(`Content-Disposition: form-data; name="${name}"${CRLF}${CRLF}`),
+				encoder.encode(`${value}${CRLF}`)
+			);
+		}
+
+		function addFileField(name: string, filename: string, type: string, content: Uint8Array) {
+			bodyParts.push(
+				encoder.encode(`--${boundary}${CRLF}`),
+				encoder.encode(`Content-Disposition: form-data; name="${name}"; filename="${filename}"${CRLF}`),
+				encoder.encode(`Content-Type: ${type}${CRLF}${CRLF}`),
+				content,
+				encoder.encode(CRLF)
+			);
+		}
+
+		const arrayBuffer = await blob.arrayBuffer();
+		const binaryContent = new Uint8Array(arrayBuffer);
+
+		addFileField("file", fileName, fileType, binaryContent);
+		addField("model", this.plugin.settings.transcriptEndpoint || "whisper-1");
+
+		if (this.plugin.settings.recordingLanguage) {
+			addField("language", this.mapLanguageToWhisperCode(this.plugin.settings.recordingLanguage));
+		}
+
+		addField("response_format", this.plugin.settings.transcriptEndpoint === "whisper-1" ? "verbose_json" : "json");
+
+		if (this.plugin.settings.transcriptEndpoint !== "whisper-1" && this.plugin.settings.transcribingPrompt) {
+			addField("prompt", this.plugin.settings.transcribingPrompt);
+		}
+
+		bodyParts.push(encoder.encode(`--${boundary}--${CRLF}`));
+
+		return {
+			body: new Blob(bodyParts, { type: `multipart/form-data; boundary=${boundary}` }),
+			contentType: `multipart/form-data; boundary=${boundary}`
+		};
+	}
+
+	async callWhisperTranscription(requestbody: Blob, contentType: string): Promise<any> {
+		const response = await requestUrl({
+			url: "https://api.openai.com/v1/audio/transcriptions",
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${this.plugin.settings.openaiApiKey}`,
+				"Content-Type": contentType,
+			},
+			body: await requestbody.arrayBuffer(),
+		});
+
+		return response.json;
+	}
+
+	////////////////////////////
+	getEncodingFromExtension(ext?: string): string | null {
+		switch (ext) {
+		  case "webm": return "WEBM_OPUS";
+		  case "mp3": return "MP3";
+		  case "wav": return "LINEAR16";
+		  case "ogg": return "OGG_OPUS";
+		  case "m4a": return "MP4";
+		  default: return null;
+		}
+	}
+
+	async readFileAsBase64(filePath: string): Promise<string> {
+		const arrayBuffer = await this.plugin.app.vault.adapter.readBinary(filePath);
+		const uint8Array = new Uint8Array(arrayBuffer);
+		let binary = '';
+		uint8Array.forEach(byte => binary += String.fromCharCode(byte));
+		return btoa(binary);
+	}
+
+	async callGoogleTranscription(audioBase64: string, encoding: string): Promise<string | null> {
+		const apiKey = this.plugin.settings.googleApiKey;
+		if (!apiKey || apiKey.length === 0) {
+		  SummarDebug.Notice(1, "Google API key is missing. Please add your API key in the settings.");
+		  return null;
+		}
+	
+		const request: RequestUrlParam = {	
+		  url: `https://speech.googleapis.com/v1/speech:recognize?key=${this.plugin.settings.googleApiKey}`,
+		  method: "POST",
+		  headers: {
+			"Content-Type": "application/json",
+		  },
+		  body: JSON.stringify({
+			config: {
+			  encoding: encoding,
+			//   sampleRateHertz: 16000,
+			  languageCode: "ko-KR",
+			},
+			audio: {
+			  content: audioBase64,
+			},
+		  }),
+		};
+	
+		try {
+		  const response = await SummarRequestUrl(this.plugin, request);
+		  const results = response.json.results;
+		  if (results && results.length > 0) {
+			SummarDebug.log(1, `Google Speech-to-Text API response: ${JSON.stringify(results)}`);
+			return results.map((r: any) => r.alternatives[0].transcript).join("\n");
+		  } else {
+			const errorMessage = response.json.error?.message || "Unknown error";
+			if (errorMessage) {
+				SummarDebug.Notice(1, `Google Speech-to-Text API error: ${errorMessage}`);
+				throw new Error(`Google Speech-to-Text API error: ${errorMessage}`);
+			} else {
+				SummarDebug.Notice(1, "No transcription results found.");	
+			}
+			return "";
+		  }
+		} catch (error) {
+		  SummarDebug.Notice(1, "Error calling Google Speech-to-Text API:", error);
+		  return null;
+		}
 	}
 }

@@ -40,7 +40,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 		// SummarDebug.log(2, "Fetched page content:", page_content);
 		SummarDebug.log(1, `newFilePath: ${newFilePath}`);
 
-		const webPrompt = this.plugin.settings.recordingPrompt;
+		const recordingPrompt = this.plugin.settings.recordingPrompt;
 		const openaiApiKey = this.plugin.settings.openaiApiKey;
 
 		try {
@@ -48,7 +48,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 				model: this.plugin.settings.transcriptModel,
 				messages: [
 					// { role: "system", content: systemPrompt },
-					{ role: "user", content: `${webPrompt}\n\n${transcripted}` },
+					{ role: "user", content: `${recordingPrompt}\n\n${transcripted}` },
 				],
 				// max_tokens: 16384,
 			});

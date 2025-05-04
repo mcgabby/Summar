@@ -114,6 +114,7 @@ RunLoop.main.run()
 
 export const DEFAULT_SETTINGS: PluginSettings = {
   openaiApiKey: "",
+  googleApiKey: "",
   confluenceApiToken: "",
 
   confluenceParentPageUrl: "",
@@ -155,7 +156,7 @@ transcriptModel: 'o3-mini',
   selectedDeviceId: "",
   recordingDir: "",
   recordingUnit: 15,
-  recordingLanguage: "ko",
+  recordingLanguage: "ko-KR",
   recordingPrompt: `
 # 명령
 아래는 회의록에 대하여 STT 로 입력받은 내용이야. 좀 정리가 안되어 있고 여러사람이 말하는 것이 섞여 있어. 본 회의에 대하여 요약해 주고 중요한 의사결정사항이 무엇인지  Action Item 이 무엇인지 정리해줘.

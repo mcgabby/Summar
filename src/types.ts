@@ -1,5 +1,6 @@
 export interface PluginSettings {
   openaiApiKey: string;
+  googleApiKey: string;
 
   confluenceApiToken: string;
   confluenceParentPageUrl: string;
