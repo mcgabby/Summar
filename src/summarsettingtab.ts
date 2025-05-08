@@ -319,7 +319,22 @@ async activateTab(tabId: string): Promise<void> {
         textAreaEl.style.width = "100%";
       });
 
-    containerEl.createEl("p"); 
+      new Setting(containerEl)
+      .setName("Gemini API Key")
+      .setDesc("Enter your Gemini API key.")
+      .addText((text) => {
+        text
+          .setPlaceholder("Enter Gemini API Key")
+          .setValue(this.plugin.settings.googleApiKey || "")
+          .onChange(async (value) => {
+            this.plugin.settings.googleApiKey = value;
+          });
+
+        const textAreaEl = text.inputEl;
+        textAreaEl.style.width = "100%";
+      });
+
+      containerEl.createEl("p"); 
 
     new Setting(containerEl)
       .setName("Confluence API Token")
@@ -704,14 +719,15 @@ async activateTab(tabId: string): Promise<void> {
               .addOptions({
                   "whisper-1": "whisper-1",
                   "gpt-4o-mini-transcribe": "gpt-4o-mini-transcribe",
-                  "gpt-4o-transcribe": "gpt-4o-transcribe"
+                  "gpt-4o-transcribe": "gpt-4o-transcribe",
+                  "gemini-2.0-flash": "gemini-2.0-flash"
               })
               .setValue(this.plugin.settings.transcriptEndpoint)
               .onChange(async (value) => {
                   this.plugin.settings.transcriptEndpoint = value;
                   const promptTextArea = containerEl.querySelector(".transcription-prompt-textarea") as HTMLTextAreaElement;
                   if (promptTextArea) {
-                    promptTextArea.parentElement?.toggleClass("hidden", value === "whisper-1");
+                    promptTextArea.parentElement?.toggleClass("hidden", value === "whisper-1" || value === "gemini-2.0-flash");
                   }
               })
       );
@@ -732,7 +748,8 @@ async activateTab(tabId: string): Promise<void> {
         textAreaEl.style.resize = "none";
 
         // 초기 숨김 여부 설정
-        if (this.plugin.settings.transcriptEndpoint === "whisper-1") {
+        if (this.plugin.settings.transcriptEndpoint === "whisper-1" || 
+            this.plugin.settings.transcriptEndpoint === "gemini-2.0-flash") {
           textAreaEl.parentElement?.classList.add("hidden");
         }
       })
