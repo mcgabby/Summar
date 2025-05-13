@@ -1,4 +1,4 @@
-import { Platform, normalizePath, FileSystemAdapter } from "obsidian";
+import { Platform, normalizePath, FileSystemAdapter, Modal, App } from "obsidian";
 import { spawn, exec } from "child_process";
 import { promisify } from "util";
 import { SWIFT_SCRIPT_TEMPLATE, SummarDebug } from "./globals";
@@ -240,6 +240,19 @@ export class CalendarHandler {
         `;
             eventEl.innerHTML = strInnerHTML;
 
+            const zoomLinkEl = eventEl.querySelector(".event-zoom-link");
+            zoomLinkEl?.addEventListener("click", async (e) => {
+
+                if (this.plugin.recordingManager.getRecorderState() !== "recording") {
+                    new ConfirmModal(this.plugin.app, async (shouldRecord: boolean) => {
+                        if (shouldRecord) {
+                            await this.plugin.recordingManager.startRecording(this.plugin.settings.recordingUnit);
+                        }
+                        }).open();
+                }
+            });
+
+
             // ✅ Obsidian 내에서 새 탭으로 노트 열기
             const obsidianLinkEl = eventEl.querySelector(".event-obsidian-link");
             obsidianLinkEl?.addEventListener("click", (e) => {
@@ -266,5 +279,38 @@ export class CalendarHandler {
         } catch (error) {
             SummarDebug.error(1, "Zoom 미팅 실행 실패:", error);
         }
+    }
+}
+
+class ConfirmModal extends Modal {
+    onSubmit: (result: boolean) => void;
+
+    constructor(app: App, onSubmit: (result: boolean) => void) {
+        super(app);
+        this.onSubmit = onSubmit;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.createEl("h3", { text: "Would you like to start recording?" });
+
+        const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
+
+        const yesButton = buttonContainer.createEl("button", { text: "Yes" });
+        yesButton.addEventListener("click", () => {
+            this.close();
+            this.onSubmit(true);
+        });
+
+        const noButton = buttonContainer.createEl("button", { text: "No" });
+        noButton.addEventListener("click", () => {
+            this.close();
+            this.onSubmit(false);
+        });
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
     }
 }
