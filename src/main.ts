@@ -141,9 +141,9 @@ export default class SummarPlugin extends Plugin {
                     SummarDebug.log(1, `File selected: ${file.path}`);
                     if (files && files.length > 0) {
                       this.activateView();
-                      const { fullText, newFilePath } = await this.audioHandler.sendAudioData(files);
-                      SummarDebug.log(3, `transcripted text: ${fullText}`);
-                      this.recordingManager.summarize(fullText, newFilePath);
+                      const { transcriptedText, newFilePath } = await this.audioHandler.sendAudioData(files);
+                      SummarDebug.log(3, `transcripted text: ${transcriptedText}`);
+                      const summarized = await this.recordingManager.summarize(transcriptedText, newFilePath);
                     }
                   } catch (error) {
                     SummarDebug.error(1, "Error handling file:", error);
@@ -184,9 +184,9 @@ export default class SummarPlugin extends Plugin {
 
                   // Send all selected files to sendAudioData
                   this.activateView();
-                  const { fullText, newFilePath } = await this.audioHandler.sendAudioData(files, file.path);
-                  SummarDebug.log(3, `transcripted text: ${fullText}`);
-                  this.recordingManager.summarize(fullText, newFilePath);
+                  const { transcriptedText, newFilePath } = await this.audioHandler.sendAudioData(files, file.path);
+                  SummarDebug.log(3, `transcripted text: ${transcriptedText}`);
+                  const summarized = await this.recordingManager.summarize(transcriptedText, newFilePath);
                 }
               });
           });
@@ -251,9 +251,9 @@ export default class SummarPlugin extends Plugin {
           const files = (event.target as HTMLInputElement).files;
           if (files && files.length > 0) {
             // Send all selected files to sendAudioData
-            const { fullText, newFilePath } = await this.audioHandler.sendAudioData(files);
-            SummarDebug.log(3, `transcripted text: ${fullText}`);
-            this.recordingManager.summarize(fullText, newFilePath);
+            const { transcriptedText, newFilePath } = await this.audioHandler.sendAudioData(files);
+            SummarDebug.log(3, `transcripted text: ${transcriptedText}`);
+            const summarized = this.recordingManager.summarize(transcriptedText, newFilePath);
           }
         };
 
@@ -294,9 +294,9 @@ export default class SummarPlugin extends Plugin {
             }
 
             // Send all selected files to sendAudioData
-            const { fullText, newFilePath } = await this.audioHandler.sendAudioData(files);
-            SummarDebug.log(3, `transcripted text: ${fullText}`);
-            this.recordingManager.summarize(fullText, newFilePath);
+            const { transcriptedText, newFilePath } = await this.audioHandler.sendAudioData(files);
+            SummarDebug.log(3, `transcripted text: ${transcriptedText}`);
+            const summarized = this.recordingManager.summarize(transcriptedText, newFilePath);
           }
         };
 
@@ -428,10 +428,10 @@ export default class SummarPlugin extends Plugin {
           })
         );
         // sendAudioData에 오디오 파일 경로 전달
-        const { fullText, newFilePath } = await this.audioHandler.sendAudioData(files, recordingPath);
+        const { transcriptedText, newFilePath } = await this.audioHandler.sendAudioData(files, recordingPath);
         SummarDebug.Notice(1, `Uploaded ${audioFiles.length} audio files successfully.`);
-        SummarDebug.log(3, `transcripted text: ${fullText}`);
-        this.recordingManager.summarize(fullText, newFilePath);
+        SummarDebug.log(3, `transcripted text: ${transcriptedText}`);
+        const summarized = await this.recordingManager.summarize(transcriptedText, newFilePath);
       } catch (error) {
         SummarDebug.error(0, "Error reading directory:", error);
         SummarDebug.Notice(1, "Failed to access the specified directory.");

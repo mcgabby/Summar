@@ -11,19 +11,19 @@ export class AudioHandler extends SummarViewContainer {
 		this.timer = new SummarTimer(plugin);
 	}
 
-	async sendAudioData(files: FileList | File[], givenFolderPath: string = ""): Promise<{ fullText: string, newFilePath: string }> {
+	async sendAudioData(files: FileList | File[], givenFolderPath: string = ""): Promise<{ transcriptedText: string, newFilePath: string }> {
 		this.updateResultText("convert audio to text using [" + this.plugin.settings.transcriptEndpoint + "]");
 		this.enableNewNote(false);
 
 		let audioList = "";
-		let fullText = "";
+		let transcriptedText = "";
 
 		// Check if the API key is set
 		if (!this.plugin.settings.openaiApiKey) {
 			SummarDebug.Notice(0,
 				"API key is missing. Please add your API key in the settings."
 			);
-			return { fullText: "", newFilePath: "" };
+			return { transcriptedText: "", newFilePath: "" };
 		}
 
 		// Convert FileList to an array
@@ -175,7 +175,7 @@ export class AudioHandler extends SummarViewContainer {
 		const transcriptions = await Promise.all(transcriptionPromises);
 
 		// Combine all transcriptions
-		fullText = transcriptions.join("\n");
+		transcriptedText = transcriptions.join("\n");
 
 		const baseFilePath = normalizePath(`${noteFilePath}/${folderPath}`);
 
@@ -201,14 +201,14 @@ export class AudioHandler extends SummarViewContainer {
 			newFilePath = `${baseFilePath}.md`;
 			SummarDebug.log(1, `File created: ${newFilePath}`);
 		}
-		await this.plugin.app.vault.create(newFilePath, `${audioList}\n${fullText}`);
+		await this.plugin.app.vault.create(newFilePath, `${audioList}\n${transcriptedText}`);
 		await this.plugin.app.workspace.openLinkText(
 			normalizePath(newFilePath),
 			"",
 			true
 		);
 		this.timer.stop();
-		return {fullText,newFilePath};
+		return {transcriptedText, newFilePath};
 
 		function formatTime(seconds: number): string {
 			const hours = Math.floor(seconds / 3600).toString().padStart(2, "0");

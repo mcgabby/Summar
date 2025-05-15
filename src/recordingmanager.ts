@@ -34,7 +34,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 		});
 	}
 
-	async summarize(transcripted: string, newFilePath: string): Promise<void> {
+	async summarize(transcripted: string, newFilePath: string): Promise<string> {
 		this.updateResultText("Summarizing from transcripted text");
 		this.enableNewNote(false);
 		// SummarDebug.log(2, "Fetched page content:", page_content);
@@ -42,6 +42,8 @@ export class AudioRecordingManager extends SummarViewContainer {
 
 		const recordingPrompt = this.plugin.settings.recordingPrompt;
 		const openaiApiKey = this.plugin.settings.openaiApiKey;
+
+		let summary = "";
 
 		try {
 			const body_content = JSON.stringify({
@@ -64,12 +66,12 @@ export class AudioRecordingManager extends SummarViewContainer {
 				this.enableNewNote(false);
 
 				this.timer.stop();
-				return;
+				return summary;
 			}
 
 			const aiData = aiResponse.json;
 			if (aiData.choices && aiData.choices.length > 0) {
-				const summary = aiData.choices[0].message.content || "No summary generated.";
+				summary = aiData.choices[0].message.content || "No summary generated.";
 				this.updateResultText(summary);
 				this.enableNewNote(true, newFilePath);
 				if (this.plugin.settings.recordingResultNewNote) {
@@ -90,11 +92,13 @@ export class AudioRecordingManager extends SummarViewContainer {
 				this.enableNewNote(false);
 			}
 			this.timer.stop();
+			return summary;
 		} catch (error) {
 			this.timer.stop();
 			SummarDebug.error(1, "Error:", error);
 			this.updateResultText("An error occurred while processing the request.");
 			this.enableNewNote(false);
+			return summary;
 		}
 
 
