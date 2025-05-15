@@ -5,6 +5,7 @@ import { SummarDebug, SummarViewContainer, fetchOpenai, getDeviceId, getDeviceId
 import { NativeAudioRecorder } from "./audiorecorder";
 import { RecordingTimer } from "./recordingtimer";
 import { SummarTimer } from "./summartimer";
+import { JsonBuilder } from "./jsonbuilder";
 
 export class AudioRecordingManager extends SummarViewContainer {
 	private timer: SummarTimer;
@@ -75,17 +76,22 @@ export class AudioRecordingManager extends SummarViewContainer {
 				this.updateResultText(summary);
 				this.enableNewNote(true, newFilePath);
 				if (this.plugin.settings.recordingResultNewNote) {
+					let summaryNote = "";
 					if (newFilePath.includes(".md")) {
-						newFilePath = newFilePath.replace(".md", " summary.md");
+						summaryNote = newFilePath.replace(".md", " summary.md");
 					} else {
-						newFilePath = newFilePath + " summary.md";
+						summaryNote = newFilePath + " summary.md";
 					}					
-					await this.plugin.app.vault.create(newFilePath, summary);
+					await this.plugin.app.vault.create(summaryNote, summary);
 					await this.plugin.app.workspace.openLinkText(
-						normalizePath(newFilePath),
+						normalizePath(summaryNote),
 						"",
 						true
 					);
+				}
+
+				{
+					this.refine(transcripted, summary, newFilePath);
 				}
 			} else {
 				this.updateResultText("No valid response from OpenAI API.");
@@ -100,8 +106,86 @@ export class AudioRecordingManager extends SummarViewContainer {
 			this.enableNewNote(false);
 			return summary;
 		}
+	}
 
+	async refine(transcripted: string, summarized: string, newFilePath: string): Promise<string> {
+		let refined = "";
+		this.updateResultText("Improving the summary…");
+		this.enableNewNote(false);
 
+		const refiningPrompt = `회의의 내용을 녹음해서 텍스트로 변환 후 회의록을 작성했습니다.
+회의록의 내용이 많이 생략된 것 같습니다. 원본 회의록과 비교해서 주어진 회의록의 포맷은 유지하되 이 회의록의 내용을 보강해주세요.
+요약보다는 논의 내용을 정확하게 전달할 수 있도록 회의록을 작성해주세요.
+작성된 회의록은 markdown 포맷의 일관성을 점검해주세요.`;
+		const openaiApiKey = this.plugin.settings.openaiApiKey;
+
+		try {
+			// const body_content = JSON.stringify({
+
+			// });
+			const jsonBuilder = new JsonBuilder();
+			jsonBuilder.addData("model", this.plugin.settings.transcriptModel);
+			jsonBuilder.addToArray("messages", {
+				role: "system",
+				content: refiningPrompt,
+			});
+			jsonBuilder.addToArray("messages", {
+				role: "user",
+				content: `=====회의록 요약본 시작=====\n\n${summarized}\n\n=====회의록 요약본 끝=====\n\n=====원본 transcript 시작=====\n\n${transcripted}\n\n====원본 transcript 끝====`,
+			});
+
+			const body_content = jsonBuilder.toString();
+
+			this.updateResultText("Refining...");
+			this.enableNewNote(false);
+			this.timer.start();
+SummarDebug.log(1,"refine() - 1");
+			const aiResponse = await fetchOpenai(this.plugin, openaiApiKey, body_content);
+
+			if (aiResponse.status !== 200) {
+SummarDebug.log(1,"refine() - 2");
+				const errorText = aiResponse.text;
+				SummarDebug.error(1, "OpenAI API Error:", errorText);
+				this.updateResultText(`Error: ${aiResponse.status} - ${errorText}`);
+				this.enableNewNote(false);
+
+				this.timer.stop();
+				return refined;
+			}
+SummarDebug.log(1,"refine() - 3");
+
+			const aiData = aiResponse.json;
+			if (aiData.choices && aiData.choices.length > 0) {
+				refined = aiData.choices[0].message.content || "Request failed.";
+				this.updateResultText(refined);
+				this.enableNewNote(true, newFilePath);
+				if (this.plugin.settings.recordingResultNewNote) {
+					let refinementNote = "";
+					if (newFilePath.includes(".md")) {
+						refinementNote = newFilePath.replace(".md", " refinement.md");
+					} else {
+						refinementNote = newFilePath + " refinement.md";
+					}					
+					await this.plugin.app.vault.create(refinementNote, refined);
+					await this.plugin.app.workspace.openLinkText(
+						normalizePath(refinementNote),
+						"",
+						true
+					);
+				}
+			} else {
+				this.updateResultText("No valid response from OpenAI API.");
+				this.enableNewNote(false);
+			}
+			this.timer.stop();
+			return refined;
+		} catch (error) {
+			this.timer.stop()
+//			this.updateResultText("An error occurred while processing the request.");
+			this.enableNewNote(false);			
+		}
+
+		return refined;
 	}
 
 	async startRecording(intervalInMinutes: number): Promise<void> {
