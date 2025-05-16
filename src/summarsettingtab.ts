@@ -784,8 +784,43 @@ async activateTab(tabId: string): Promise<void> {
         textAreaEl.style.width = "100%";
         textAreaEl.style.height = "150px";
         textAreaEl.style.resize = "none";
-      })
-      ;
+      });
+    
+    containerEl.createEl("p"); 
+    // Refining summary
+    new Setting(containerEl)
+        .setName("Refine summary based on transcription")
+        .setDesc("Use this prompt to refine the summary by comparing it with the recorded transcription.")
+        .addToggle((toggle) =>
+          toggle.setValue(this.plugin.settings.refineSummary).onChange(async (value) => {
+            this.plugin.settings.refineSummary = value;
+            const promptTextArea = containerEl.querySelector(".refining-prompt-textarea") as HTMLTextAreaElement;
+            if (promptTextArea) {
+              promptTextArea.parentElement?.toggleClass("hidden", !this.plugin.settings.refineSummary);
+            }
+      }));
+
+    new Setting(containerEl)
+        .setHeading()
+        .addTextArea((text) => {
+          text
+            .setPlaceholder("Enter prompt")
+            .setValue(this.plugin.settings.refiningPrompt || "")
+            .onChange(async (value) => {
+              this.plugin.settings.refiningPrompt = value;
+            });
+  
+          const textAreaEl = text.inputEl;
+          textAreaEl.classList.add("refining-prompt-textarea");
+          textAreaEl.style.width = "100%";
+          textAreaEl.style.height = "150px";
+          textAreaEl.style.resize = "none";
+
+          if (!this.plugin.settings.refineSummary) {
+            textAreaEl.parentElement?.classList.add("hidden");
+          }
+      });
+  
   }
 
   async buildCustomCommandSettings(containerEl: HTMLElement): Promise<void> {

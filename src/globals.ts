@@ -229,6 +229,11 @@ transcriptModel: 'o3-mini',
 ---
 `,
   recordingResultNewNote: true,
+  refineSummary: true,
+  refiningPrompt: `회의의 내용을 녹음해서 텍스트로 변환 후 회의록을 작성했습니다.
+회의록의 내용이 많이 생략된 것 같습니다. 원본 회의록과 비교해서 주어진 회의록의 포맷은 유지하되 이 회의록의 내용을 보강해주세요.
+요약보다는 논의 내용을 정확하게 전달할 수 있도록 회의록을 작성해주세요.
+작성된 회의록은 markdown 포맷의 일관성을 점검해주세요.`,
   //////
   testUrl: "",        // initial URL of the page to summarize
   debugLevel: 0,  // debug level
@@ -281,8 +286,13 @@ export class SummarViewContainer {
         now.getMinutes().toString().padStart(2, "0");
 
       this.plugin.newNoteName = newNotePath ? newNotePath : formattedDate;
+      if (!this.plugin.newNoteName.includes(".md")) {
+        this.plugin.newNoteName += ".md";
+      }
+    } else {
+      this.plugin.newNoteName = "";
     }
-} 
+  } 
 }
 
 export async function fetchOpenai(plugin: SummarPlugin, openaiApiKey: string, bodyContent: string): Promise<any> {

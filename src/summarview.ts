@@ -1,7 +1,7 @@
 import { View, WorkspaceLeaf, Platform, setIcon, normalizePath, MarkdownView } from "obsidian";
 
 import SummarPlugin  from "./main";
-import { SummarDebug, showSettingsTab } from "./globals";
+import { SummarDebug, SummarViewContainer, showSettingsTab } from "./globals";
 import { ConfluenceAPI } from "./confluenceapi";
 import MarkdownIt from "markdown-it";
 
@@ -219,14 +219,19 @@ export class SummarView extends View {
 
     // newNoteButton 클릭 이벤트 리스너
     newNoteButton.addEventListener("click", async() => {
+
       let newNoteName = this.plugin.newNoteName;
       
-      if (this.plugin.newNoteName.includes(".md")) {
-        newNoteName = newNoteName.replace(".md", " summary.md");
-      } else {
-        newNoteName = newNoteName + ".md";
+      // if (this.plugin.newNoteName.includes(".md")) {
+      //   newNoteName = newNoteName.replace(".md", " summary.md");
+      // } else {
+      //   newNoteName = newNoteName + ".md";
+      // }
+      if (!newNoteName || newNoteName === "") {
+        const summarView = new SummarViewContainer(this.plugin);
+        summarView.enableNewNote(true, newNoteName);
+        newNoteName = this.plugin.newNoteName;
       }
-    
 
       const filePath = normalizePath(newNoteName);
       const existingFile = this.plugin.app.vault.getAbstractFileByPath(filePath);
@@ -241,7 +246,7 @@ export class SummarView extends View {
             return;
           }
         }
-        await this.plugin.app.workspace.openLinkText(filePath, "", true);
+        await this.plugin.app.workspace.openLinkText(normalizePath(filePath), "", true);
       } else {
         SummarDebug.log(1, `file is not exist: ${filePath}`);
         const folderPath = filePath.substring(0, filePath.lastIndexOf("/"));
@@ -249,8 +254,10 @@ export class SummarView extends View {
         if (!folderExists) {
           await this.plugin.app.vault.adapter.mkdir(folderPath);
         }
+        SummarDebug.log(1, `resultContainer.value===\n${this.plugin.resultContainer.value}`);
+        // SummarDebug.log(1, this.plugin.resultContainer.value);
         await this.plugin.app.vault.create(filePath, this.plugin.resultContainer.value);
-        await this.plugin.app.workspace.openLinkText(filePath, "", true);
+        await this.plugin.app.workspace.openLinkText(normalizePath(filePath), "", true);
       }
     });
 

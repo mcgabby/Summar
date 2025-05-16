@@ -73,15 +73,19 @@ export class AudioRecordingManager extends SummarViewContainer {
 			const aiData = aiResponse.json;
 			if (aiData.choices && aiData.choices.length > 0) {
 				summary = aiData.choices[0].message.content || "No summary generated.";
+
+				let summaryNote = "";
+				if (newFilePath.includes(".md")) {
+					summaryNote = newFilePath.replace(".md", " summary.md");
+				} else {
+					summaryNote = newFilePath + " summary.md";
+				}					
 				this.updateResultText(summary);
-				this.enableNewNote(true, newFilePath);
+				this.enableNewNote(true, summaryNote);
+				
+				SummarDebug.log(1,`newFilePath = ${newFilePath}`);
+
 				if (this.plugin.settings.recordingResultNewNote) {
-					let summaryNote = "";
-					if (newFilePath.includes(".md")) {
-						summaryNote = newFilePath.replace(".md", " summary.md");
-					} else {
-						summaryNote = newFilePath + " summary.md";
-					}					
 					await this.plugin.app.vault.create(summaryNote, summary);
 					await this.plugin.app.workspace.openLinkText(
 						normalizePath(summaryNote),
@@ -90,7 +94,9 @@ export class AudioRecordingManager extends SummarViewContainer {
 					);
 				}
 
+				if (this.plugin.settings.refineSummary)
 				{
+					this.timer.stop();
 					this.refine(transcripted, summary, newFilePath);
 				}
 			} else {
@@ -113,20 +119,14 @@ export class AudioRecordingManager extends SummarViewContainer {
 		this.updateResultText("Improving the summary…");
 		this.enableNewNote(false);
 
-		const refiningPrompt = `회의의 내용을 녹음해서 텍스트로 변환 후 회의록을 작성했습니다.
-회의록의 내용이 많이 생략된 것 같습니다. 원본 회의록과 비교해서 주어진 회의록의 포맷은 유지하되 이 회의록의 내용을 보강해주세요.
-요약보다는 논의 내용을 정확하게 전달할 수 있도록 회의록을 작성해주세요.
-작성된 회의록은 markdown 포맷의 일관성을 점검해주세요.`;
+		const refiningPrompt = this.plugin.settings.refiningPrompt;
 		const openaiApiKey = this.plugin.settings.openaiApiKey;
 
 		try {
-			// const body_content = JSON.stringify({
-
-			// });
 			const jsonBuilder = new JsonBuilder();
 			jsonBuilder.addData("model", this.plugin.settings.transcriptModel);
 			jsonBuilder.addToArray("messages", {
-				role: "system",
+				role: "user",
 				content: refiningPrompt,
 			});
 			jsonBuilder.addToArray("messages", {
@@ -139,11 +139,10 @@ export class AudioRecordingManager extends SummarViewContainer {
 			this.updateResultText("Refining...");
 			this.enableNewNote(false);
 			this.timer.start();
-SummarDebug.log(1,"refine() - 1");
+
 			const aiResponse = await fetchOpenai(this.plugin, openaiApiKey, body_content);
 
 			if (aiResponse.status !== 200) {
-SummarDebug.log(1,"refine() - 2");
 				const errorText = aiResponse.text;
 				SummarDebug.error(1, "OpenAI API Error:", errorText);
 				this.updateResultText(`Error: ${aiResponse.status} - ${errorText}`);
@@ -152,20 +151,21 @@ SummarDebug.log(1,"refine() - 2");
 				this.timer.stop();
 				return refined;
 			}
-SummarDebug.log(1,"refine() - 3");
 
 			const aiData = aiResponse.json;
 			if (aiData.choices && aiData.choices.length > 0) {
 				refined = aiData.choices[0].message.content || "Request failed.";
+
+				let refinementNote = "";
+				if (newFilePath.includes(".md")) {
+					refinementNote = newFilePath.replace(".md", " refinement.md");
+				} else {
+					refinementNote = newFilePath + " refinement.md";
+				}					
 				this.updateResultText(refined);
-				this.enableNewNote(true, newFilePath);
+				this.enableNewNote(true, refinementNote);
+
 				if (this.plugin.settings.recordingResultNewNote) {
-					let refinementNote = "";
-					if (newFilePath.includes(".md")) {
-						refinementNote = newFilePath.replace(".md", " refinement.md");
-					} else {
-						refinementNote = newFilePath + " refinement.md";
-					}					
 					await this.plugin.app.vault.create(refinementNote, refined);
 					await this.plugin.app.workspace.openLinkText(
 						normalizePath(refinementNote),

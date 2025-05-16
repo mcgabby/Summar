@@ -26,6 +26,8 @@ export interface PluginSettings {
   recordingLanguage: string;
   recordingPrompt: string;
   recordingResultNewNote: boolean;
+  refineSummary: boolean;
+  refiningPrompt: string;
   /////
   testUrl: string;
   debugLevel: number;
