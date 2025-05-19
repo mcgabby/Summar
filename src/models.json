@@ -7,6 +7,17 @@
       "o1-mini": "o1-mini",
       "o3-mini": "o3-mini"
     },
+    "pdf": {
+      "gpt-4o": "gpt-4o",
+      "gpt-4.1": "gpt-4.1",
+      "gpt-4.1-mini": "gpt-4.1-mini"
+    },
+    "speech_to_text": {
+      "whisper-1": "whisper-1",
+      "gpt-4o-mini-transcribe": "gpt-4o-mini-transcribe",
+      "gpt-4o-transcribe": "gpt-4o-transcribe",
+      "gemini-2.0-flash": "gemini-2.0-flash"
+    },
     "transcription": {
       "gpt-4o": "gpt-4o",
       "gpt-4.1": "gpt-4.1",

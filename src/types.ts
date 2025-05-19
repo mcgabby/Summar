@@ -59,6 +59,8 @@ export interface ModelInfo {
 export interface ModelList {
     webpage: ModelInfo;
     transcription: ModelInfo;
+    pdf: ModelInfo;
+    speech_to_text: ModelInfo;
     custom: ModelInfo;
 }
 
@@ -66,4 +68,4 @@ export interface ModelData {
     model_list: ModelList;
 }
 
-export type ModelCategory = 'webpage' | 'transcription' | 'custom';
+export type ModelCategory = 'webpage' | 'pdf' | 'speech_to_text' | 'transcription' | 'custom';

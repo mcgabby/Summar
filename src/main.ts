@@ -47,6 +47,8 @@ export default class SummarPlugin extends Plugin {
   
   modelsByCategory: Record<ModelCategory, ModelInfo> = {
         webpage: {},
+        pdf: {},
+        speech_to_text: {},
         transcription: {},
         custom: {}
   };
@@ -507,6 +509,8 @@ export default class SummarPlugin extends Plugin {
   async loadModelsFromFile(): Promise<Record<ModelCategory, ModelInfo>> {
     const defaultModels: Record<ModelCategory, ModelInfo> = {
       webpage: {},
+      pdf: {},
+      speech_to_text: {},
       transcription: {},
       custom: {}
     };
@@ -524,7 +528,7 @@ export default class SummarPlugin extends Plugin {
         const modelData = JSON.parse(modelDataJson) as ModelData;
 
         if (modelData.model_list) {
-          const categories: ModelCategory[] = ['webpage', 'transcription', 'custom'];
+          const categories: ModelCategory[] = ['webpage', 'pdf', 'speech_to_text', 'transcription', 'custom'];
 
           for (const category of categories) {
             if (modelData.model_list[category]) {

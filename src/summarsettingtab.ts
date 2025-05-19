@@ -717,23 +717,26 @@ async activateTab(tabId: string): Promise<void> {
     new Setting(containerEl)
       .setName("Transcription Endpoint")
       .setDesc("Select the OpenAI model to transcribe the audio")
-      .addDropdown(dropdown => 
-          dropdown
-              .addOptions({
-                  "whisper-1": "whisper-1",
-                  "gpt-4o-mini-transcribe": "gpt-4o-mini-transcribe",
-                  "gpt-4o-transcribe": "gpt-4o-transcribe",
-                  "gemini-2.0-flash": "gemini-2.0-flash"
-              })
-              .setValue(this.plugin.settings.transcriptEndpoint)
-              .onChange(async (value) => {
-                  this.plugin.settings.transcriptEndpoint = value;
-                  const promptTextArea = containerEl.querySelector(".transcription-prompt-textarea") as HTMLTextAreaElement;
-                  if (promptTextArea) {
-                    promptTextArea.parentElement?.toggleClass("hidden", value === "whisper-1" || value === "gemini-2.0-flash");
-                  }
-              })
-      );
+      .addDropdown(dropdown => {
+        const options = this.plugin.getAllModelKeyValues("speech_to_text");
+        if (Object.keys(options).length === 0) {
+          options['whisper-1'] = 'whisper-1';
+          options['gpt-4o-mini-transcribe'] = 'gpt-4o-mini-transcribe';
+          options['gpt-4o-transcribe'] = 'gpt-4o-transcribe';
+          options['gemini-2.0-flash'] = 'gemini-2.0-flash';
+        }    
+
+        dropdown
+          .addOptions(options)
+          .setValue(this.plugin.settings.transcriptEndpoint)
+          .onChange(async (value) => {
+            this.plugin.settings.transcriptEndpoint = value;
+            const promptTextArea = containerEl.querySelector(".transcription-prompt-textarea") as HTMLTextAreaElement;
+            if (promptTextArea) {
+              promptTextArea.parentElement?.toggleClass("hidden", value === "whisper-1" || value === "gemini-2.0-flash");
+            }
+          })
+      });
       new Setting(containerEl)
       .setHeading()
       .addTextArea((text) => {
