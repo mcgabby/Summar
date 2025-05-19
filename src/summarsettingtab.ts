@@ -545,19 +545,21 @@ async activateTab(tabId: string): Promise<void> {
     new Setting(containerEl)
       .setName("Prompt (for Web page summary)")
       .setDesc("This prompt will guide the AI response.")
-      .addDropdown(dropdown => 
+      .addDropdown(dropdown => {
+        const options = this.plugin.getAllModelKeyValues("webpage");
+        if (Object.keys(options).length === 0) {
+          options['gpt-4o'] = 'gpt-4o'; 
+          options['gpt-4.1'] = 'gpt-4.1';
+          options['o1-mini'] = 'o1-mini';
+          options['o3-mini'] = 'o3-mini';
+        }            
         dropdown
-            .addOptions({
-                "gpt-4o": "gpt-4o",
-                "gpt-4.1": "gpt-4.1",               
-                "o1-mini": "o1-mini",
-                "o3-mini": "o3-mini"
-            })
-            .setValue(this.plugin.settings.webModel)
-            .onChange(async (value) => {
-                this.plugin.settings.webModel = value;
-            })
-    );
+          .addOptions(options)
+          .setValue(this.plugin.settings.webModel)
+          .onChange(async (value) => {
+            this.plugin.settings.webModel = value;
+          })
+      });
 
     new Setting(containerEl)
       .setHeading()
@@ -759,19 +761,22 @@ async activateTab(tabId: string): Promise<void> {
     new Setting(containerEl)
       .setName("Prompt (for summarizing recorded content))")
       .setDesc("This prompt will guide the AI response.")
-      .addDropdown(dropdown => 
-          dropdown
-              .addOptions({
-                  "gpt-4o": "gpt-4o",
-                  "gpt-4.1": "gpt-4.1",               
-                  "o1-mini": "o1-mini",
-                  "o3-mini": "o3-mini"
-              })
-              .setValue(this.plugin.settings.transcriptModel)
-              .onChange(async (value) => {
-                  this.plugin.settings.transcriptModel = value;
-              })
-      );
+      .addDropdown(dropdown => {
+        const options = this.plugin.getAllModelKeyValues("transcription");
+        if (Object.keys(options).length === 0) {
+          options['gpt-4o'] = 'gpt-4o'; 
+          options['gpt-4.1'] = 'gpt-4.1';
+          options['o1-mini'] = 'o1-mini';
+          options['o3-mini'] = 'o3-mini';
+        }    
+
+        dropdown
+          .addOptions(options)
+          .setValue(this.plugin.settings.transcriptModel)
+          .onChange(async (value) => {
+            this.plugin.settings.transcriptModel = value;
+          })
+      });
     new Setting(containerEl)
       .setHeading()
       .addTextArea((text) => {
@@ -876,19 +881,22 @@ async activateTab(tabId: string): Promise<void> {
         textEl.style.width = "100%";
       })
 
-      .addDropdown(dropdown =>
+      .addDropdown(dropdown => {
+        const options = this.plugin.getAllModelKeyValues("custom");
+        if (Object.keys(options).length === 0) {
+          options['gpt-4o'] = 'gpt-4o';
+          options['gpt-4.1'] = 'gpt-4.1';
+          options['o1-mini'] = 'o1-mini';
+          options['o3-mini'] = 'o3-mini';
+        }    
+
         dropdown
-          .addOptions({
-            "gpt-4o": "gpt-4o",
-            "gpt-4.1": "gpt-4.1",
-            "o1-mini": "o1-mini",
-            "o3-mini": "o3-mini"
-          })
+          .addOptions(options)
           .setValue(this.plugin.settings[`cmd_model_${index}`] as string)
           .onChange(async (value) => {
             this.plugin.settings[`cmd_model_${index}`] = value;
           })
-      )
+      })
   
       .addText((hotkeyInput) => {
         hotkeyInput

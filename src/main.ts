@@ -1,5 +1,5 @@
 import { App, Plugin, Setting, Platform, Menu, TFile, TFolder, Modal, normalizePath, MarkdownView, Stat } from "obsidian";
-import { PluginSettings } from "./types";
+import { PluginSettings, ModelCategory, ModelInfo, ModelList, ModelData } from "./types";
 import { DEFAULT_SETTINGS, SummarDebug, extractDomain, parseHotkey } from "./globals";
 import { PluginUpdater } from "./pluginupdater";
 import { SummarView } from "./summarview"
@@ -43,7 +43,13 @@ export default class SummarPlugin extends Plugin {
   PLUGIN_DIR: string = ""; // 플러그인 디렉토리
   PLUGIN_MANIFEST: string = ""; // 플러그인 디렉토리의 manifest.json
   PLUGIN_SETTINGS: string = "";  // 플러그인 디렉토리의 data.json
-
+  PLUGIN_MODELS: string = "";  // 플러그인 디렉토리의 models.json
+  
+  modelsByCategory: Record<ModelCategory, ModelInfo> = {
+        webpage: {},
+        transcription: {},
+        custom: {}
+  };
 
   async onload() {
     this.OBSIDIAN_PLUGIN_DIR = normalizePath("/.obsidian/plugins");
@@ -61,6 +67,10 @@ export default class SummarPlugin extends Plugin {
     SummarDebug.log(1, `PLUGIN_MANIFEST: ${this.PLUGIN_MANIFEST}`);
     SummarDebug.log(1, `PLUGIN_SETTINGS: ${this.PLUGIN_SETTINGS}`);
 
+    this.PLUGIN_MODELS = normalizePath(this.PLUGIN_DIR + "/models.json");
+    
+    this.modelsByCategory = await this.loadModelsFromFile();
+    
     // 로딩 후 1분 뒤에 업데이트 확인
     setTimeout(async () => {
       try {
@@ -466,6 +476,8 @@ export default class SummarPlugin extends Plugin {
     }
   }
 
+
+
   async loadSettingsFromFile(): Promise<PluginSettings> {
     if (await this.app.vault.adapter.exists(this.PLUGIN_SETTINGS)) {
       SummarDebug.log(1, "Settings file exists:", this.PLUGIN_SETTINGS);
@@ -490,6 +502,63 @@ export default class SummarPlugin extends Plugin {
       }
     }
     return DEFAULT_SETTINGS;
+  }
+
+  async loadModelsFromFile(): Promise<Record<ModelCategory, ModelInfo>> {
+    const defaultModels: Record<ModelCategory, ModelInfo> = {
+      webpage: {},
+      transcription: {},
+      custom: {}
+    };
+
+    if (await this.app.vault.adapter.exists(this.PLUGIN_MODELS)) {
+      SummarDebug.log(1, "Settings file exists:", this.PLUGIN_MODELS);
+    } else {
+      SummarDebug.log(1, "Settings file does not exist:", this.PLUGIN_MODELS);
+    }
+
+    if (await this.app.vault.adapter.exists(this.PLUGIN_MODELS)) {
+      SummarDebug.log(1, "Reading settings from data.json");
+      try {
+        const modelDataJson = await this.app.vault.adapter.read(this.PLUGIN_MODELS);
+        const modelData = JSON.parse(modelDataJson) as ModelData;
+
+        if (modelData.model_list) {
+          const categories: ModelCategory[] = ['webpage', 'transcription', 'custom'];
+
+          for (const category of categories) {
+            if (modelData.model_list[category]) {
+              defaultModels[category] = modelData.model_list[category];
+              SummarDebug.log(1, `${category} loaded:`, Object.keys(defaultModels[category]).length);
+            }
+          }
+        }
+
+        return defaultModels;
+      } catch (error) {
+        SummarDebug.log(1, "Error reading settings file:", error);
+        return defaultModels;
+      }
+   }
+   return defaultModels;
+  }
+
+  getModelsByCategory(category: ModelCategory): ModelInfo {
+    return this.modelsByCategory[category] || {};
+  }
+
+  getModelValueByKey(category: ModelCategory, key: string): string | undefined {
+      const models = this.modelsByCategory[category] || {};
+      return models[key];
+  }  
+  
+  getModelKeysByCategory(category: ModelCategory): string[] {
+    return Object.keys(this.modelsByCategory[category] || {});
+  }
+
+  getAllModelKeyValues(category: ModelCategory): Record<string, string> {
+    const models = this.modelsByCategory[category] || {};
+    return { ...models }; 
   }
 
   async saveSettingsToFile(): Promise<void> {

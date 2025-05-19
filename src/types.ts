@@ -51,3 +51,19 @@ export interface OpenAIResponse {
     };
   }[];
 }
+
+export interface ModelInfo {
+    [key: string]: string;
+}
+
+export interface ModelList {
+    webpage: ModelInfo;
+    transcription: ModelInfo;
+    custom: ModelInfo;
+}
+
+export interface ModelData {
+    model_list: ModelList;
+}
+
+export type ModelCategory = 'webpage' | 'transcription' | 'custom';
