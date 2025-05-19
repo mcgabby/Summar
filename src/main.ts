@@ -53,6 +53,14 @@ export default class SummarPlugin extends Plugin {
         custom: {}
   };
 
+  defaultModelsByCategory: Record<ModelCategory, string> = {
+    webpage: 'gpt-4o',
+    pdf: 'gpt-4o',
+    speech_to_text: 'whisper-1',
+    transcription: 'gpt-4o',
+    custom: 'gpt-4o'
+  };
+
   async onload() {
     this.OBSIDIAN_PLUGIN_DIR = normalizePath("/.obsidian/plugins");
     this.PLUGIN_ID = this.manifest.id;
@@ -71,7 +79,9 @@ export default class SummarPlugin extends Plugin {
 
     this.PLUGIN_MODELS = normalizePath(this.PLUGIN_DIR + "/models.json");
     
-    this.modelsByCategory = await this.loadModelsFromFile();
+    const {models, defaults} = await this.loadModelsFromFile();
+    this.modelsByCategory = models;
+    this.defaultModelsByCategory = defaults;
     
     // 로딩 후 1분 뒤에 업데이트 확인
     setTimeout(async () => {
@@ -506,13 +516,21 @@ export default class SummarPlugin extends Plugin {
     return DEFAULT_SETTINGS;
   }
 
-  async loadModelsFromFile(): Promise<Record<ModelCategory, ModelInfo>> {
+  async loadModelsFromFile(): Promise<{models:Record<ModelCategory, ModelInfo>, defaults:Record<ModelCategory, string>}> {
     const defaultModels: Record<ModelCategory, ModelInfo> = {
-      webpage: {},
-      pdf: {},
-      speech_to_text: {},
-      transcription: {},
-      custom: {}
+        webpage: {},
+        pdf: {},
+        speech_to_text: {},
+        transcription: {},
+        custom: {}
+    };    
+
+    const defaultValues: Record<ModelCategory, string> = {
+      webpage: 'gpt-4o',
+      pdf: 'gpt-4o',
+      speech_to_text: 'whisper-1',
+      transcription: 'gpt-4o',
+      custom: 'gpt-4o'
     };
 
     if (await this.app.vault.adapter.exists(this.PLUGIN_MODELS)) {
@@ -532,19 +550,29 @@ export default class SummarPlugin extends Plugin {
 
           for (const category of categories) {
             if (modelData.model_list[category]) {
-              defaultModels[category] = modelData.model_list[category];
-              SummarDebug.log(1, `${category} loaded:`, Object.keys(defaultModels[category]).length);
+
+              const modelsList = modelData.model_list[category].models;
+              if (modelsList && typeof modelsList === 'object') {
+                  defaultModels[category] = modelsList as ModelInfo;
+              }              
+              if (modelData.model_list[category].default) {
+                defaultValues[category] = modelData.model_list[category].default;
+              }
+              SummarDebug.log(1, `${category} loaded:`, Object.keys(defaultModels[category]).length, `(default: ${defaultValues[category]})`);
             }
           }
         }
-
-        return defaultModels;
+        return { models: defaultModels, defaults: defaultValues };
       } catch (error) {
         SummarDebug.log(1, "Error reading settings file:", error);
-        return defaultModels;
+        return { models: defaultModels, defaults: defaultValues };
       }
    }
-   return defaultModels;
+   return { models: defaultModels, defaults: defaultValues };
+  }
+
+  getDefaultModel(category: ModelCategory): string {
+    return this.defaultModelsByCategory[category];
   }
 
   getModelsByCategory(category: ModelCategory): ModelInfo {

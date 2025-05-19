@@ -338,7 +338,8 @@ export class AudioHandler extends SummarViewContainer {
 		const binaryContent = new Uint8Array(arrayBuffer);
 
 		addFileField("file", fileName, fileType, binaryContent);
-		addField("model", this.plugin.settings.transcriptEndpoint || "whisper-1");
+		// addField("model", this.plugin.settings.transcriptEndpoint || "whisper-1");
+		addField("model", this.plugin.settings.transcriptEndpoint || this.plugin.getDefaultModel("speech_to_text"));
 
 		if (this.plugin.settings.recordingLanguage) {
 			addField("language", this.mapLanguageToWhisperCode(this.plugin.settings.recordingLanguage));

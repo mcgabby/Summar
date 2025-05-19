@@ -56,11 +56,16 @@ export interface ModelInfo {
     [key: string]: string;
 }
 
+interface CategoryModelInfo {
+    default: string;
+    models: ModelInfo;
+}
+
 export interface ModelList {
     webpage: ModelInfo;
-    transcription: ModelInfo;
     pdf: ModelInfo;
     speech_to_text: ModelInfo;
+    transcription: ModelInfo;
     custom: ModelInfo;
 }
 
