@@ -149,7 +149,7 @@ webModel: 'o1-mini',
 // pdfModel: 'gpt-4o',
 transcriptEndpoint: "whisper-1",
 transcribingPrompt: "",
-transcriptModel: 'o3-mini',
+transcriptModel: 'gpt-4.1',
 // customModel: 'o3-mini',
 /////
 

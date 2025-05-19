@@ -549,6 +549,7 @@ async activateTab(tabId: string): Promise<void> {
         dropdown
             .addOptions({
                 "gpt-4o": "gpt-4o",
+                "gpt-4.1": "gpt-4.1",               
                 "o1-mini": "o1-mini",
                 "o3-mini": "o3-mini"
             })
@@ -762,6 +763,7 @@ async activateTab(tabId: string): Promise<void> {
           dropdown
               .addOptions({
                   "gpt-4o": "gpt-4o",
+                  "gpt-4.1": "gpt-4.1",               
                   "o1-mini": "o1-mini",
                   "o3-mini": "o3-mini"
               })
@@ -878,6 +880,7 @@ async activateTab(tabId: string): Promise<void> {
         dropdown
           .addOptions({
             "gpt-4o": "gpt-4o",
+            "gpt-4.1": "gpt-4.1",
             "o1-mini": "o1-mini",
             "o3-mini": "o3-mini"
           })
