@@ -6,7 +6,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
-		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production && cp src/manifest.json dist/manifest.json && cp src/styles.css dist/styles.css && cp src/models.json dist/models.json && zip -j dist/summar.zip dist/manifest.json dist/styles.css dist/main.js dist/models.json",
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production && cp src/manifest.json dist/manifest.json && cp src/styles.css dist/styles.css && cp src/models.json dist/models.json && cp src/prompts.json dist/prompts.json && zip -j dist/summar.zip dist/manifest.json dist/styles.css dist/main.js dist/models.json dist/prompts.json",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
 	"keywords": [],

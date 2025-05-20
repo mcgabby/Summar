@@ -15,7 +15,7 @@ export interface PluginSettings {
   /////
   webModel: string;
   // pdfModel: string;
-  transcriptEndpoint: string;
+  transcriptSTT: string;
   transcribingPrompt: string;
   transcriptModel: string;
   // customModel: string;
@@ -42,6 +42,7 @@ export interface PluginSettings {
   calendar_zoom_only: boolean;
   
   autoRecording: boolean;
+  autoRecordOnZoomMeeting: boolean;
 }
 
 export interface OpenAIResponse {
@@ -56,10 +57,10 @@ export interface ModelInfo {
     [key: string]: string;
 }
 
-interface CategoryModelInfo {
-    default: string;
-    models: ModelInfo;
-}
+// interface CategoryModelInfo {
+//     default: string;
+//     models: ModelInfo;
+// }
 
 export interface ModelList {
     webpage: ModelInfo;
@@ -74,3 +75,21 @@ export interface ModelData {
 }
 
 export type ModelCategory = 'webpage' | 'pdf' | 'speech_to_text' | 'transcription' | 'custom';
+
+export interface PromptList {
+    web: string[];
+    pdf: string[];
+    speech_to_text: string[];
+    transcription: string[];
+    refininement: string[];
+}
+
+export interface LangPromptData {
+    [lang: string]: PromptList;
+}
+
+export interface PromptData {
+    default_prompts: LangPromptData;
+}
+
+export type PromptCategory = 'web' | 'pdf' | 'speech_to_text' | 'transcription' | 'refininement';

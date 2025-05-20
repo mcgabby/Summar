@@ -12,7 +12,7 @@ export class AudioHandler extends SummarViewContainer {
 	}
 
 	async sendAudioData(files: FileList | File[], givenFolderPath: string = ""): Promise<{ transcriptedText: string, newFilePath: string }> {
-		this.updateResultText("convert audio to text using [" + this.plugin.settings.transcriptEndpoint + "]");
+		this.updateResultText("convert audio to text using [" + this.plugin.settings.transcriptSTT + "]");
 		this.enableNewNote(false);
 
 		let audioList = "";
@@ -115,7 +115,7 @@ export class AudioHandler extends SummarViewContainer {
 				const seconds = match ? parseInt(match[1], 10) : 0; // convert to seconds
 
 				try {
-					if (this.plugin.settings.transcriptEndpoint=== "gemini-2.0-flash") {
+					if (this.plugin.settings.transcriptSTT=== "gemini-2.0-flash") {
 						const { base64, mimeType } = await this.readFileAsBase64(audioFilePath);
 						const transcript = await this.callGeminiAPI(base64, mimeType) || "";
 						SummarDebug.log(3, transcript);
@@ -338,16 +338,17 @@ export class AudioHandler extends SummarViewContainer {
 		const binaryContent = new Uint8Array(arrayBuffer);
 
 		addFileField("file", fileName, fileType, binaryContent);
-		// addField("model", this.plugin.settings.transcriptEndpoint || "whisper-1");
-		addField("model", this.plugin.settings.transcriptEndpoint || this.plugin.getDefaultModel("speech_to_text"));
+		// addField("model", this.plugin.settings.transcriptSTT || "whisper-1");
+		addField("model", this.plugin.settings.transcriptSTT || this.plugin.getDefaultModel("speech_to_text"));
 
 		if (this.plugin.settings.recordingLanguage) {
 			addField("language", this.mapLanguageToWhisperCode(this.plugin.settings.recordingLanguage));
 		}
 
-		addField("response_format", this.plugin.settings.transcriptEndpoint === "whisper-1" ? "verbose_json" : "json");
+		addField("response_format", this.plugin.settings.transcriptSTT === "whisper-1" ? "verbose_json" : "json");
 
-		if (this.plugin.settings.transcriptEndpoint !== "whisper-1" && this.plugin.settings.transcribingPrompt) {
+		if ((this.plugin.settings.transcriptSTT === "gpt-4o-mini-transcribe" || this.plugin.settings.transcriptSTT === "gpt-4o-transcribe")
+			&& this.plugin.settings.transcribingPrompt) {
 			addField("prompt", this.plugin.settings.transcribingPrompt);
 		}
 

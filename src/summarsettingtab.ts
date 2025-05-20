@@ -606,6 +606,15 @@ async activateTab(tabId: string): Promise<void> {
   async buildRecordingSettings(containerEl: HTMLElement): Promise<void> {
     containerEl.createEl("h2", { text: "Transcription Summary" });
 
+    new Setting(containerEl)
+      .setName("Auto record on Zoom meeting")
+      .setDesc("Automatically start recording when a Zoom meeting starts, and stop when it ends.")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.autoRecordOnZoomMeeting).onChange(async (value) => {
+          this.plugin.settings.autoRecordOnZoomMeeting = value;
+          await this.plugin.saveSettingsToFile();
+        })
+      );
     /////////////////////////////////////////////////////
     // containerEl.createEl("h2", { text: "Audio Input Plugin Settings" });
 
@@ -679,26 +688,11 @@ async activateTab(tabId: string): Promise<void> {
           });
       });
 
-      // new Setting(containerEl)
-      // .setName("OpenAI Model")
-      // .setDesc("Select the OpenAI model to use in the prompt.")
-      // .addDropdown(dropdown => 
-      //     dropdown
-      //         .addOptions({
-      //             "gpt-4o": "gpt-4o",
-      //             "o1-mini": "o1-mini",
-      //             "o3-mini": "o3-mini"
-      //         })
-      //         .setValue(this.plugin.settings.transcriptModel)
-      //         .onChange(async (value) => {
-      //             this.plugin.settings.transcriptModel = value;
-      //         })
-      // );
     new Setting(containerEl)
       .setName("Transcription Language")
       .setDesc("Please select the language of the recorded meeting transcript.")
-      .addDropdown(dropdown => 
-        dropdown
+      .addDropdown(dropdown =>
+          dropdown
           .addOptions({
             "": "Auto Detect",
             "ko-KR": "Korean (ko)",
@@ -714,9 +708,10 @@ async activateTab(tabId: string): Promise<void> {
           })
       );
 
+
     new Setting(containerEl)
-      .setName("Transcription Endpoint")
-      .setDesc("Select the OpenAI model to transcribe the audio")
+      .setName("Speech to Text Model")
+      .setDesc("Select the STT model to transcribe the audio")
       .addDropdown(dropdown => {
         const options = this.plugin.getAllModelKeyValues("speech_to_text");
         if (Object.keys(options).length === 0) {
@@ -728,12 +723,12 @@ async activateTab(tabId: string): Promise<void> {
 
         dropdown
           .addOptions(options)
-          .setValue(this.plugin.settings.transcriptEndpoint)
+          .setValue(this.plugin.settings.transcriptSTT)
           .onChange(async (value) => {
-            this.plugin.settings.transcriptEndpoint = value;
+            this.plugin.settings.transcriptSTT = value;
             const promptTextArea = containerEl.querySelector(".transcription-prompt-textarea") as HTMLTextAreaElement;
             if (promptTextArea) {
-              promptTextArea.parentElement?.toggleClass("hidden", value === "whisper-1" || value === "gemini-2.0-flash");
+              promptTextArea.parentElement?.toggleClass("hidden", value !== "gpt-4o-mini-transcribe" && value !== "gpt-4o-transcribe");
             }
           })
       });
@@ -754,8 +749,8 @@ async activateTab(tabId: string): Promise<void> {
         textAreaEl.style.resize = "none";
 
         // 초기 숨김 여부 설정
-        if (this.plugin.settings.transcriptEndpoint === "whisper-1" || 
-            this.plugin.settings.transcriptEndpoint === "gemini-2.0-flash") {
+        if (this.plugin.settings.transcriptSTT !== "gpt-4o-mini-transcribe" && 
+            this.plugin.settings.transcriptSTT !== "gpt-4o-transcribe") {
           textAreaEl.parentElement?.classList.add("hidden");
         }
       })

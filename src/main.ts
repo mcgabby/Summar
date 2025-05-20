@@ -1,6 +1,6 @@
 import { App, Plugin, Setting, Platform, Menu, TFile, TFolder, Modal, normalizePath, MarkdownView, Stat } from "obsidian";
-import { PluginSettings, ModelCategory, ModelInfo, ModelList, ModelData } from "./types";
-import { DEFAULT_SETTINGS, SummarDebug, extractDomain, parseHotkey } from "./globals";
+import { PluginSettings, ModelCategory, ModelInfo, ModelData, PromptData, LangPromptData } from "./types";
+import { SummarDebug, extractDomain, parseHotkey } from "./globals";
 import { PluginUpdater } from "./pluginupdater";
 import { SummarView } from "./summarview"
 import { SummarSettingsTab } from "./summarsettingtab";
@@ -14,7 +14,49 @@ import { StatusBar } from "./statusbar";
 
 
 export default class SummarPlugin extends Plugin {
-  settings: PluginSettings;
+  settings: PluginSettings = {
+    openaiApiKey: "",
+    googleApiKey: "",
+    confluenceApiToken: "",
+
+    confluenceParentPageUrl: "",
+    confluenceParentPageSpaceKey: "",
+    confluenceParentPageId: "",
+    useConfluenceAPI: true,
+    confluenceDomain: "",
+
+    systemPrompt: "",
+    webPrompt: "",
+    pdfPrompt: "",
+    webModel: "",
+    
+    transcriptSTT: "",
+    transcribingPrompt: "",
+    transcriptModel: "",
+    
+    selectedDeviceId: "",
+    recordingDir: "",
+    recordingUnit: 15,
+    recordingLanguage: "ko-KR",
+    recordingPrompt: "",
+    recordingResultNewNote: true,
+    refineSummary: true,
+    refiningPrompt: "",
+    
+    testUrl: "",
+    debugLevel: 0,
+    
+    cmd_max: 10,
+    cmd_count: 0,
+    
+    calendar_count: 0,
+    calendar_fetchdays: 1,
+    calendar_polling_interval: 600000,
+    calendar_zoom_only: false,
+    autoRecording: false,
+    autoRecordOnZoomMeeting: false
+  };
+
   resultContainer: HTMLTextAreaElement;
   // uploadNoteToWikiButton: HTMLButtonElement;
   newNoteButton: HTMLButtonElement;
@@ -44,6 +86,7 @@ export default class SummarPlugin extends Plugin {
   PLUGIN_MANIFEST: string = ""; // 플러그인 디렉토리의 manifest.json
   PLUGIN_SETTINGS: string = "";  // 플러그인 디렉토리의 data.json
   PLUGIN_MODELS: string = "";  // 플러그인 디렉토리의 models.json
+  PLUGIN_PROMPTS: string = "";  // 플러그인 디렉토리의 prompts.json
   
   modelsByCategory: Record<ModelCategory, ModelInfo> = {
         webpage: {},
@@ -61,13 +104,21 @@ export default class SummarPlugin extends Plugin {
     custom: 'gpt-4o'
   };
 
+  defaultPrompts: LangPromptData = {};
+
   async onload() {
     this.OBSIDIAN_PLUGIN_DIR = normalizePath("/.obsidian/plugins");
     this.PLUGIN_ID = this.manifest.id;
     this.PLUGIN_DIR = normalizePath(this.OBSIDIAN_PLUGIN_DIR + "/" + this.PLUGIN_ID);
     this.PLUGIN_MANIFEST = normalizePath(this.PLUGIN_DIR + "/manifest.json");
-    this.PLUGIN_SETTINGS = normalizePath(this.PLUGIN_DIR + "/data.json");
 
+    this.PLUGIN_MODELS = normalizePath(this.PLUGIN_DIR + "/models.json");    
+    await this.loadModelsFromFile();
+
+    this.PLUGIN_PROMPTS = normalizePath(this.PLUGIN_DIR + "/prompts.json");
+    await this.loadPromptsFromFile();
+    
+    this.PLUGIN_SETTINGS = normalizePath(this.PLUGIN_DIR + "/data.json");
     this.settings = await this.loadSettingsFromFile();
     SummarDebug.initialize(this.settings.debugLevel);
 
@@ -77,11 +128,6 @@ export default class SummarPlugin extends Plugin {
     SummarDebug.log(1, `PLUGIN_MANIFEST: ${this.PLUGIN_MANIFEST}`);
     SummarDebug.log(1, `PLUGIN_SETTINGS: ${this.PLUGIN_SETTINGS}`);
 
-    this.PLUGIN_MODELS = normalizePath(this.PLUGIN_DIR + "/models.json");
-    
-    const {models, defaults} = await this.loadModelsFromFile();
-    this.modelsByCategory = models;
-    this.defaultModelsByCategory = defaults;
     
     // 로딩 후 1분 뒤에 업데이트 확인
     setTimeout(async () => {
@@ -491,6 +537,8 @@ export default class SummarPlugin extends Plugin {
 
 
   async loadSettingsFromFile(): Promise<PluginSettings> {
+    let defaultSettings = this.settings;
+
     if (await this.app.vault.adapter.exists(this.PLUGIN_SETTINGS)) {
       SummarDebug.log(1, "Settings file exists:", this.PLUGIN_SETTINGS);
     } else {
@@ -500,7 +548,7 @@ export default class SummarPlugin extends Plugin {
       SummarDebug.log(1, "Reading settings from data.json");
       try {
         const rawData = await this.app.vault.adapter.read(this.PLUGIN_SETTINGS);
-        const settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(rawData)) as PluginSettings;
+        const settings = Object.assign({}, defaultSettings, JSON.parse(rawData)) as PluginSettings;
         const domain = extractDomain(settings.confluenceDomain);
         if (domain) {
           settings.confluenceDomain = domain;
@@ -510,29 +558,23 @@ export default class SummarPlugin extends Plugin {
         return settings;
       } catch (error) {
         SummarDebug.log(1, "Error reading settings file:", error);
-        return DEFAULT_SETTINGS;
+        return defaultSettings;
       }
     }
-    return DEFAULT_SETTINGS;
+    return defaultSettings;
   }
 
-  async loadModelsFromFile(): Promise<{models:Record<ModelCategory, ModelInfo>, defaults:Record<ModelCategory, string>}> {
-    const defaultModels: Record<ModelCategory, ModelInfo> = {
-        webpage: {},
-        pdf: {},
-        speech_to_text: {},
-        transcription: {},
-        custom: {}
-    };    
+  async saveSettingsToFile(): Promise<void> {
+    try {
+      await this.app.vault.adapter.mkdir(this.PLUGIN_DIR);
+      await this.app.vault.adapter.write(this.PLUGIN_SETTINGS, JSON.stringify(this.settings, null, 2));
+      SummarDebug.log(1, "Settings saved to data.json");
+    } catch (error) {
+      SummarDebug.error(1, "Error saving settings file:", error);
+    }
+  }
 
-    const defaultValues: Record<ModelCategory, string> = {
-      webpage: 'gpt-4o',
-      pdf: 'gpt-4o',
-      speech_to_text: 'whisper-1',
-      transcription: 'gpt-4o',
-      custom: 'gpt-4o'
-    };
-
+  async loadModelsFromFile(): Promise<void> {
     if (await this.app.vault.adapter.exists(this.PLUGIN_MODELS)) {
       SummarDebug.log(1, "Settings file exists:", this.PLUGIN_MODELS);
     } else {
@@ -553,22 +595,28 @@ export default class SummarPlugin extends Plugin {
 
               const modelsList = modelData.model_list[category].models;
               if (modelsList && typeof modelsList === 'object') {
-                  defaultModels[category] = modelsList as ModelInfo;
+                  this.modelsByCategory[category] = modelsList as ModelInfo;
               }              
               if (modelData.model_list[category].default) {
-                defaultValues[category] = modelData.model_list[category].default;
+                this.defaultModelsByCategory[category] = modelData.model_list[category].default;
               }
-              SummarDebug.log(1, `${category} loaded:`, Object.keys(defaultModels[category]).length, `(default: ${defaultValues[category]})`);
+              SummarDebug.log(1, `${category} loaded:`, Object.keys(this.modelsByCategory[category]).length, `(default: ${this.defaultModelsByCategory[category]})`);
             }
           }
+
+          this.settings.webModel = this.getDefaultModel('webpage');
+          this.settings.pdfModel = this.getDefaultModel('pdf');
+          this.settings.transcriptSTT = this.getDefaultModel('speech_to_text');
+          this.settings.transcriptModel = this.getDefaultModel('transcription');
+          this.settings.customModel = this.getDefaultModel('custom');
         }
-        return { models: defaultModels, defaults: defaultValues };
+        // return { models: defaultModels, defaults: defaultValues };
       } catch (error) {
         SummarDebug.log(1, "Error reading settings file:", error);
-        return { models: defaultModels, defaults: defaultValues };
+        // return { models: defaultModels, defaults: defaultValues };
       }
    }
-   return { models: defaultModels, defaults: defaultValues };
+  //  return { models: defaultModels, defaults: defaultValues };
   }
 
   getDefaultModel(category: ModelCategory): string {
@@ -593,15 +641,43 @@ export default class SummarPlugin extends Plugin {
     return { ...models }; 
   }
 
-  async saveSettingsToFile(): Promise<void> {
-    try {
-      await this.app.vault.adapter.mkdir(this.PLUGIN_DIR);
-      await this.app.vault.adapter.write(this.PLUGIN_SETTINGS, JSON.stringify(this.settings, null, 2));
-      SummarDebug.log(1, "Settings saved to data.json");
-    } catch (error) {
-      SummarDebug.error(1, "Error saving settings file:", error);
+  async loadPromptsFromFile(): Promise<void> {
+    if (await this.app.vault.adapter.exists(this.PLUGIN_PROMPTS)) {
+      SummarDebug.log(1, "Settings file exists:", this.PLUGIN_PROMPTS);
+    } else {
+      SummarDebug.log(1, "Settings file does not exist:", this.PLUGIN_PROMPTS);
+    }
+
+    if (await this.app.vault.adapter.exists(this.PLUGIN_PROMPTS)) {
+      SummarDebug.log(1, "Reading settings from data.json");
+      try {
+        const promptDataJson = await this.app.vault.adapter.read(this.PLUGIN_PROMPTS);
+        const promptData = JSON.parse(promptDataJson) as PromptData;
+        if (promptData.default_prompts) {
+          // console.log("=======\ndefault_prompts loaded");
+          this.defaultPrompts = promptData.default_prompts;
+          this.settings.webPrompt = this.defaultPrompts.ko.web.join("\n");
+          this.settings.pdfPrompt = this.defaultPrompts.ko.pdf.join("\n");
+          this.settings.recordingPrompt = this.defaultPrompts.ko.transcription.join("\n");
+          this.settings.refiningPrompt = this.defaultPrompts.ko.refininement.join("\n");
+          // console.log(`setting.webPrompt: \n${this.settings.webPrompt}`);
+          // console.log(`setting.pdfPrompt: \n${this.settings.pdfPrompt}`);
+          // console.log(`setting.recordingPrompt: \n${this.settings.recordingPrompt}`);
+          // console.log(`setting.refiningPrompt: \n${this.settings.refiningPrompt}`);
+        }
+        else {
+          console.log("=======\ndefault_prompts not found");
+        }
+
+        SummarDebug.log(1, "Prompts loaded successfully");
+      } catch (error) {
+        SummarDebug.log(1, "Error reading settings file:", error);
+      }
     }
   }
+
+
+
 
   // 커맨드에서 사용할 링크 설정
   setLinkForCommand(link: string) {
