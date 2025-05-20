@@ -1,4 +1,4 @@
-import { PluginSettingTab, Setting, Platform, ButtonComponent } from "obsidian";
+import { PluginSettingTab, Setting, Platform, ButtonComponent, DropdownComponent } from "obsidian";
 
 import { SummarDebug, getDeviceId, sanitizeLabel } from "./globals";
 import { PluginUpdater } from "./pluginupdater";
@@ -582,9 +582,25 @@ async activateTab(tabId: string): Promise<void> {
   async buildPdfSettings(containerEl: HTMLElement): Promise<void> {
     containerEl.createEl("h2", { text: "PDF Summary" });
 
+    // PDF 모델 선택 드롭다운 및 프롬프트 입력 UI를 Webpage와 동일하게 구성
     new Setting(containerEl)
       .setName("Prompt (for PDF to Markdown)")
       .setDesc("This prompt will guide the AI response.")
+      .addDropdown(dropdown => {
+        const options = this.plugin.getAllModelKeyValues("pdf");
+        if (Object.keys(options).length === 0) {
+          options['gpt-4o'] = 'gpt-4o';
+          options['gpt-4.1'] = 'gpt-4.1';
+          options['gpt-4.1-mini'] = 'gpt-4.1-mini';
+        }
+        dropdown
+          .addOptions(options)
+          .setValue(String(this.plugin.settings.pdfModel))
+          .onChange(async (value) => {
+            this.plugin.settings.pdfModel = value;
+          });
+      });
+
     new Setting(containerEl)
       .setHeading()
       .addTextArea((text) => {
@@ -599,8 +615,7 @@ async activateTab(tabId: string): Promise<void> {
         textAreaEl.style.width = "100%";
         textAreaEl.style.height = "100px";
         textAreaEl.style.resize = "none";
-      })
-      ;
+      });
   }
 
   async buildRecordingSettings(containerEl: HTMLElement): Promise<void> {
