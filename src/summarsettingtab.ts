@@ -613,6 +613,7 @@ async activateTab(tabId: string): Promise<void> {
         toggle.setValue(this.plugin.settings.autoRecordOnZoomMeeting).onChange(async (value) => {
           this.plugin.settings.autoRecordOnZoomMeeting = value;
           await this.plugin.saveSettingsToFile();
+          this.plugin.updateZoomAutoRecordWatcher(); // 토글 변경 시 감시 상태 갱신
         })
       );
     /////////////////////////////////////////////////////
