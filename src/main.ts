@@ -374,6 +374,11 @@ export default class SummarPlugin extends Plugin {
     });
 
     this.registerCustomCommandAndMenus();
+
+    // 플러그인 로딩 시 Zoom 자동녹음 watcher 시작
+    if (this.settings.autoRecordOnZoomMeeting) {
+      this.recordingManager.startZoomAutoRecordWatcher();
+    }
   }
 
   registerCustomCommandAndMenus() {
