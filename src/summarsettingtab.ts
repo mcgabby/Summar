@@ -690,23 +690,6 @@ async activateTab(tabId: string): Promise<void> {
           });
       });
 
-    // Recording Quality
-    new Setting(containerEl)
-      .setName("Recording Quality")
-      .setDesc("Set the quality of the recording.")
-      .addDropdown((dropdown) => {
-        dropdown
-          .addOptions({
-            "low": "Low (8 kHz)",
-            "standard": "Standard (16 kHz)",
-            "high": "High (44.1 kHz)",
-          })
-          .setValue(this.plugin.settings.recordingQuality?.toString?.() ?? "standard")
-          .onChange(async (value) => {
-            this.plugin.settings.recordingQuality = value;
-          });
-      });
-
     // Transcription Model
     new Setting(containerEl)
       .setName("Transcription Model")

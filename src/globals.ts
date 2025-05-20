@@ -156,94 +156,17 @@ transcriptModel: 'gpt-4.1',
   selectedDeviceId: "",
   recordingDir: "",
   recordingUnit: 15,
-  recordingLanguage: "ko-KR",
-  recordingPrompt: `
-### 명령
-• 아래에 제공된 STT 원문은 여러 사람이 발언한 내용이 섞여 있고, 정리가 되어 있지 않습니다.
-• 제공된 단어 리스트를 먼저 참고하여, STT 원문에서 잘못 기입된 단어가 있으면 반드시 수정하세요.
-• 회의 내용을 요약하지 말고, 원문 내용을 최대한 빠짐없이, 세부 내용까지 모두 포함하여 정리하세요.
-• 중요한 의사결정 사항과 Action Item을 별도로 정리하세요.
-
-### 제약사항
-• 결과물은 오직 markdown 문서로만 작성하세요. 코드펜스(\`\`\`)는 사용하지 않습니다.
-• markdown 이외의 다른 텍스트(설명, 안내 등)는 출력하지 않습니다.
-• 제공된 정보만 사용하여 문서를 작성하세요. 추측이나 가정은 하지 않습니다.
-• 결과물은 반드시 한국어로 작성하세요.
-• 입력된 정보를 바탕으로 완결된 문서 형식으로 작성하세요.
-• 구조의 순서는 정보가 잘 전달될 수 있도록 재배열할 수 있습니다.
-• 불필요한 어미나 조사는 제거하고, 간결한 형태로 변환하세요.  
-  예시: '고려해야 함' → '고려 필요', '개발할 계획임' → '개발할 계획', '요구하고 있음' → '요구 중'
-• 논의 내용은 요약하지 말고, 최대한 원문 그대로, 세부 내용까지 모두 담으세요.
-• 입력된 내용 중 누락이 없도록 하세요.
-• **markdown에서 bold 표현은 사용하지 않습니다.**
-• 단어 리스트에 있는 용어는 반드시 정확하게 표기하세요.
-
-### 단어 리스트
-• LY, LY Corp, LINE+
-• CTO Scrum, Maintenance
-• 구L, 구Y
-
-#### Confluence 문서 제목
-• EN: 영어 Confluence 문서 제목
-• KO: 한국어 Confluence 문서 제목
-• JA: 일본어 Confluence 문서 제목
-
-### 검수
-• 회의록을 작성한 후, 입력된 원문과 비교하여 누락된 내용이 없는지 반드시 확인하세요.
-• 정보가 부족한 부분이 있다면, 회의록에 내용을 추가하세요.
-• 추가 후 다시 검수 절차를 반복하세요.
-
-### 출력 포맷
-
-## 배경
-• 내용
-...
-
-## Executive Summary
-• 내용
-...
-
-## 논의 내용
-1. 그룹화된 제목
-    - 내용
-        - 상세내용
-        - 상세내용
-    - 내용
-        - 상세내용
-        - 상세내용
-2. 그룹화된 제목
-    - 내용
-        - 상세내용
-        - 상세내용
-...
-
-## Action Item
-• 내용
-• 내용
-
----
-
-**위 지침을 참고하여, STT 원문을 입력하면 회의록을 작성하세요.  
-특히, 논의 내용은 요약하지 말고, 원문에 있는 모든 세부 내용을 빠짐없이 포함하세요.**
-
----
-`,
-  recordingResultNewNote: true,
-  refineSummary: true,
-  refiningPrompt: `회의의 내용을 녹음해서 텍스트로 변환 후 회의록을 작성했습니다.
-회의록의 내용이 많이 생략된 것 같습니다. 원본 회의록과 비교해서 주어진 회의록의 포맷은 유지하되 이 회의록의 내용을 보강해주세요.
-그룹화된 제목에서 빠진 내용이 있었다면 빠진 내용도 추가해서 작성해주세요.
-요약보다는 논의 내용을 정확하게 전달할 수 있도록 회의록을 작성해주세요.
-작성된 회의록은 markdown 포맷의 일관성을 점검해주세요.`,
-  //////
-  testUrl: "",        // initial URL of the page to summarize
-  debugLevel: 0,  // debug level
-
-  cmd_max: 10,
+  recordingPrompt: "",
+  recordingResultNewNote: false,
+  refineSummary: false,
+  refiningPrompt: "",
+  testUrl: "",
+  debugLevel: 0,
+  cmd_max: 0,
   cmd_count: 0,
   calendar_count: 0,
-  calendar_fetchdays: 1,
-  calendar_polling_interval: 600000,
+  calendar_fetchdays: 0,
+  calendar_polling_interval: 0,
   calendar_zoom_only: false,
   autoRecording: false,
   autoRecordOnZoomMeeting: false

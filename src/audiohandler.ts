@@ -276,39 +276,6 @@ export class AudioHandler extends SummarViewContainer {
 		);
 	}
 
-	mapLanguageToWhisperCode(lang: string): string {
-		const map: Record<string, string> = {
-		  // BCP-47 전체 코드 → Whisper 언어 코드
-		  "ko-KR": "ko",
-		  "ja-JP": "ja",
-		  "en-US": "en",
-		  "en-GB": "en",
-		  "zh-CN": "zh",
-		  "zh-TW": "zh",
-		  "fr-FR": "fr",
-		  "de-DE": "de",
-		  "es-ES": "es",
-		  "pt-PT": "pt",
-		  "pt-BR": "pt",
-		  "vi-VN": "vi", 
-		  "th-TH": "th", 
-		  
-		  "ko": "ko",
-		  "ja": "ja",
-		  "en": "en",
-		  "zh": "zh",
-		  "fr": "fr",
-		  "de": "de",
-		  "es": "es",
-		  "pt": "pt",
-		  "vi": "vi",
-		  "th": "th",
-		};
-	  
-		const normalized = lang.trim().toLowerCase();
-		return map[normalized] ?? "ko"; 
-	}
-
 	async buildMultipartFormData(blob: Blob, fileName: string, fileType: string): Promise<{ body: Blob, contentType: string }> {
 		const encoder = new TextEncoder();
 		const boundary = "----SummarFormBoundary" + Math.random().toString(16).slice(2);
@@ -340,10 +307,6 @@ export class AudioHandler extends SummarViewContainer {
 		addFileField("file", fileName, fileType, binaryContent);
 		// addField("model", this.plugin.settings.transcriptEndpoint || "whisper-1");
 		addField("model", this.plugin.settings.transcriptEndpoint || this.plugin.getDefaultModel("speech_to_text"));
-
-		if (this.plugin.settings.recordingLanguage) {
-			addField("language", this.mapLanguageToWhisperCode(this.plugin.settings.recordingLanguage));
-		}
 
 		addField("response_format", this.plugin.settings.transcriptEndpoint === "whisper-1" ? "verbose_json" : "json");
 
@@ -512,11 +475,6 @@ export class AudioHandler extends SummarViewContainer {
 7. If multiple speakers are present, clearly indicate speaker changes (e.g., "Speaker 1: Hello").
 
 Your response must contain ONLY the SRT format transcript with no additional explanation or text.`;
-
-        // add language information if available
-		if (this.plugin.settings.recordingLanguage) {
-			systemInstruction += ` The input language is ${this.mapLanguageToWhisperCode(this.plugin.settings.recordingLanguage)}.`;
-		}
 
         try {
             const response = await SummarRequestUrl(this.plugin, {
