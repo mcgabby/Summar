@@ -606,16 +606,18 @@ async activateTab(tabId: string): Promise<void> {
   async buildRecordingSettings(containerEl: HTMLElement): Promise<void> {
     containerEl.createEl("h2", { text: "Transcription Summary" });
 
-    new Setting(containerEl)
-      .setName("Auto record on Zoom meeting")
-      .setDesc("Automatically start recording when a Zoom meeting starts, and stop when it ends.")
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.autoRecordOnZoomMeeting).onChange(async (value) => {
-          this.plugin.settings.autoRecordOnZoomMeeting = value;
-          await this.plugin.saveSettingsToFile();
-          this.plugin.updateZoomAutoRecordWatcher(); // 토글 변경 시 감시 상태 갱신
-        })
-      );
+    if ((Platform.isMacOS && Platform.isDesktopApp)) {
+      new Setting(containerEl)
+        .setName("Auto record on Zoom meeting")
+        .setDesc("Automatically start recording when a Zoom meeting starts, and stop when it ends.")
+        .addToggle((toggle) =>
+          toggle.setValue(this.plugin.settings.autoRecordOnZoomMeeting).onChange(async (value) => {
+            this.plugin.settings.autoRecordOnZoomMeeting = value;
+            await this.plugin.saveSettingsToFile();
+            this.plugin.updateZoomAutoRecordWatcher(); // 토글 변경 시 감시 상태 갱신
+          })
+        );
+    }
     /////////////////////////////////////////////////////
     // containerEl.createEl("h2", { text: "Audio Input Plugin Settings" });
 

@@ -1,4 +1,4 @@
-import { normalizePath, Notice } from "obsidian";
+import { normalizePath, Platform, Notice } from "obsidian";
 import SummarPlugin from "./main";
 import { OpenAIResponse } from "./types";
 import { SummarDebug, SummarViewContainer, fetchOpenai, getDeviceId, getDeviceIdFromLabel } from "./globals";
@@ -378,6 +378,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 	}
 
 	startZoomAutoRecordWatcher() {
+		if (!(Platform.isMacOS && Platform.isDesktopApp)) return;
 		if (!this.plugin.settings.autoRecordOnZoomMeeting) return;
 		if (this.zoomWatcherInterval) return;
 		this.zoomWatcherInterval = setInterval(() => {
@@ -387,16 +388,17 @@ export class AudioRecordingManager extends SummarViewContainer {
 				if (isMeetingRunning && !this.wasZoomRunning) {
 					// Zoom 미팅 시작됨
 					this.plugin.recordingManager.startRecording(this.plugin.settings.recordingUnit);
-				} else if (!isMeetingRunning && this.wasZoomRunning) {
+				} else if (!isMeetingRunning && this.wasZoomRunning && this.plugin.recordingManager.getRecorderState() === "recording") {
+					this.plugin.toggleRecording();
 					// Zoom 미팅 종료됨
-					this.plugin.recordingManager.stopRecording().then((recordingPath) => {
-						if (recordingPath) {
-							// 자동 트랜스크립션
-							if (typeof (this.plugin as any).handleRecordingStopped === 'function') {
-								(this.plugin as any).handleRecordingStopped(recordingPath);
-							}
-						}
-					});
+					// this.plugin.recordingManager.stopRecording().then((recordingPath) => {
+					// 	if (recordingPath) {
+					// 		// 자동 트랜스크립션
+					// 		if (typeof (this.plugin as any).handleRecordingStopped === 'function') {
+					// 			(this.plugin as any).handleRecordingStopped(recordingPath);
+					// 		}
+					// 	}
+					// });
 				}
 				this.wasZoomRunning = isMeetingRunning;
 			});
