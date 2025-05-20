@@ -90,7 +90,7 @@ export class ConfluenceAPI {
       "Content-Type": "application/json",
     };
 
-    // Confluence REST API endpoint
+    // Confluence REST API STT
     const apiUrl = `https://${confluenceDomain}/rest/api/content/${pageId}?expand=body.storage`;
 
     SummarDebug.log(1, "Fetching Confluence page content...");
