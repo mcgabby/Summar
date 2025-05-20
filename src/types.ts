@@ -42,6 +42,7 @@ export interface PluginSettings {
   calendar_zoom_only: boolean;
   
   autoRecording: boolean;
+  autoRecordOnZoomMeeting: boolean;
 }
 
 export interface OpenAIResponse {

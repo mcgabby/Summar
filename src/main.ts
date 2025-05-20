@@ -328,6 +328,19 @@ export default class SummarPlugin extends Plugin {
     });
 
     this.registerCustomCommandAndMenus();
+
+    // Zoom 미팅 자동 녹음 감시 시작
+    if (this.settings.autoRecordOnZoomMeeting) {
+      this.recordingManager.startZoomAutoRecordWatcher();
+    }
+    // settings 변경 감지(간단히 polling, 실제로는 settings 저장시에도 호출 필요)
+    setInterval(() => {
+      if (this.settings.autoRecordOnZoomMeeting) {
+        this.recordingManager.startZoomAutoRecordWatcher();
+      } else {
+        this.recordingManager.stopZoomAutoRecordWatcher();
+      }
+    }, 5000);
   }
 
   registerCustomCommandAndMenus() {
@@ -417,49 +430,51 @@ export default class SummarPlugin extends Plugin {
     } else {
       const recordingPath = await this.recordingManager.stopRecording();
       SummarDebug.log(1, `main.ts - recordingPath: ${recordingPath}`);
-
-      try {
-        // Vault adapter를 사용해 디렉토리 내용을 읽음
-        const fileEntries = await this.app.vault.adapter.list(recordingPath);
-        const audioFiles = fileEntries.files.filter((file) =>
-          file.toLowerCase().match(/\.(webm|mp3|wav|ogg|m4a)$/)
-        );
-        // 파일명을 추출하고 로그 출력
-        fileEntries.files.forEach((filePath) => {
-          const fileName = filePath.split('/').pop(); // 파일 경로에서 마지막 부분(파일명) 추출
-          SummarDebug.log(1, `File found: ${fileName}`);
-        });
-        // 파일명을 추출하고 로그 출력
-        audioFiles.forEach((filePath) => {
-          const fileName = filePath.split('/').pop(); // 파일 경로에서 파일명만 추출
-          SummarDebug.log(1, `Audio file found: ${fileName}`);
-        });
-        if (audioFiles.length === 0) {
-          // 오디오 파일이 없을 경우 사용자에게 알림
-          SummarDebug.Notice(1, "No audio files found in the specified directory.");
-          return;
-        }
-
-        // 파일 경로를 File 객체로 변환
-        const files = await Promise.all(
-          audioFiles.map(async (filePath) => {
-            const content = await this.app.vault.adapter.readBinary(filePath);
-            const blob = new Blob([content]);
-            SummarDebug.log(1, `stop - filePath: ${filePath}`);
-            return new File([blob], filePath.split("/").pop() || "unknown", { type: blob.type });
-          })
-        );
-        // sendAudioData에 오디오 파일 경로 전달
-        const { transcriptedText, newFilePath } = await this.audioHandler.sendAudioData(files, recordingPath);
-        SummarDebug.Notice(1, `Uploaded ${audioFiles.length} audio files successfully.`);
-        SummarDebug.log(3, `transcripted text: ${transcriptedText}`);
-        const summarized = await this.recordingManager.summarize(transcriptedText, newFilePath);
-      } catch (error) {
-        SummarDebug.error(0, "Error reading directory:", error);
-        SummarDebug.Notice(1, "Failed to access the specified directory.");
-      }
+      await this.handleRecordingStopped(recordingPath);
     }
 
+  }
+
+  async handleRecordingStopped(recordingPath: string) {
+    try {
+      // Vault adapter를 사용해 디렉토리 내용을 읽음
+      const fileEntries = await this.app.vault.adapter.list(recordingPath);
+      const audioFiles = fileEntries.files.filter((file) =>
+        file.toLowerCase().match(/\.(webm|mp3|wav|ogg|m4a)$/)
+      );
+      // 파일명을 추출하고 로그 출력
+      fileEntries.files.forEach((filePath) => {
+        const fileName = filePath.split('/').pop(); // 파일 경로에서 마지막 부분(파일명) 추출
+        SummarDebug.log(1, `File found: ${fileName}`);
+      });
+      // 파일명을 추출하고 로그 출력
+      audioFiles.forEach((filePath) => {
+        const fileName = filePath.split('/').pop(); // 파일 경로에서 파일명만 추출
+        SummarDebug.log(1, `Audio file found: ${fileName}`);
+      });
+      if (audioFiles.length === 0) {
+        // 오디오 파일이 없을 경우 사용자에게 알림
+        SummarDebug.Notice(1, "No audio files found in the specified directory.");
+        return;
+      }
+      // 파일 경로를 File 객체로 변환
+      const files = await Promise.all(
+        audioFiles.map(async (filePath) => {
+          const content = await this.app.vault.adapter.readBinary(filePath);
+          const blob = new Blob([content]);
+          SummarDebug.log(1, `stop - filePath: ${filePath}`);
+          return new File([blob], filePath.split("/").pop() || "unknown", { type: blob.type });
+        })
+      );
+      // sendAudioData에 오디오 파일 경로 전달
+      const { transcriptedText, newFilePath } = await this.audioHandler.sendAudioData(files, recordingPath);
+      SummarDebug.Notice(1, `Uploaded ${audioFiles.length} audio files successfully.`);
+      SummarDebug.log(3, `transcripted text: ${transcriptedText}`);
+      const summarized = await this.recordingManager.summarize(transcriptedText, newFilePath);
+    } catch (error) {
+      SummarDebug.error(0, "Error reading directory:", error);
+      SummarDebug.Notice(1, "Failed to access the specified directory.");
+    }
   }
 
   async onunload() {

@@ -136,7 +136,7 @@ MarkDown의 Heading과 Bold는 사용하지마.
 요약된 내용은 구조화된 형태로 이해하기 쉽게 재구성해줘.
 날짜(년도, 연 포함)가 나오는 부분은 절대 생략하지 말고 포함해야 해.
 텍스트에 URL 링크가 있다면 요약에 URL을 포함해줘. 텍스트와 연결되지 않은 URL에 링크가 걸리지는 않는지 검증한 뒤 URL을 포함해줘.
-MarkDown에서 title, bold(**) 속성은 쓰지 않고 모두 bullet으로만 표현해줘.
+MarkDown에서 title, bold(**) 속성은 쓰지 않고 모두 bullet로만 표현해줘.
 응답할 때 '없습니다', '예정이다', '평가한다', '있다', '한다' 대신 '없음', '예정', '평가', '함', '있음'과 같은 축약된 어미를 사용해 줘.
 요약된 정보에 대해서는 읽어보고 의미없는 정보는 생략해줘.`,
   pdfPrompt: `이 대화는 여러 PDF 페이지를 포함합니다. 각 페이지를 인식하여 마크다운 형식으로 변환하세요.
@@ -245,7 +245,8 @@ transcriptModel: 'gpt-4.1',
   calendar_fetchdays: 1,
   calendar_polling_interval: 600000,
   calendar_zoom_only: false,
-  autoRecording: false
+  autoRecording: false,
+  autoRecordOnZoomMeeting: false
 };
 
 export class SummarViewContainer {

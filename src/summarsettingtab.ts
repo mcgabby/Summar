@@ -606,6 +606,17 @@ async activateTab(tabId: string): Promise<void> {
   async buildRecordingSettings(containerEl: HTMLElement): Promise<void> {
     containerEl.createEl("h2", { text: "Transcription Summary" });
 
+    // Zoom 미팅 자동 녹음 토글 (Transcription Summary 탭 상단에 위치)
+    new Setting(containerEl)
+      .setName("Auto record on Zoom meeting")
+      .setDesc("Automatically start recording when a Zoom meeting starts, and stop when it ends.")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.autoRecordOnZoomMeeting).onChange(async (value) => {
+          this.plugin.settings.autoRecordOnZoomMeeting = value;
+          await this.plugin.saveSettingsToFile();
+        })
+      );
+
     /////////////////////////////////////////////////////
     // containerEl.createEl("h2", { text: "Audio Input Plugin Settings" });
 
@@ -679,43 +690,26 @@ async activateTab(tabId: string): Promise<void> {
           });
       });
 
-      // new Setting(containerEl)
-      // .setName("OpenAI Model")
-      // .setDesc("Select the OpenAI model to use in the prompt.")
-      // .addDropdown(dropdown => 
-      //     dropdown
-      //         .addOptions({
-      //             "gpt-4o": "gpt-4o",
-      //             "o1-mini": "o1-mini",
-      //             "o3-mini": "o3-mini"
-      //         })
-      //         .setValue(this.plugin.settings.transcriptModel)
-      //         .onChange(async (value) => {
-      //             this.plugin.settings.transcriptModel = value;
-      //         })
-      // );
+    // Recording Quality
     new Setting(containerEl)
-      .setName("Transcription Language")
-      .setDesc("Please select the language of the recorded meeting transcript.")
-      .addDropdown(dropdown => 
+      .setName("Recording Quality")
+      .setDesc("Set the quality of the recording.")
+      .addDropdown((dropdown) => {
         dropdown
           .addOptions({
-            "": "Auto Detect",
-            "ko-KR": "Korean (ko)",
-            "ja-JP": "Japanese (ja)",
-            "en-US": "English (en)",
-            "zh-TW": "Chinese (zh)",
-            "th-TH": "ภาษาไทย (th)",
-            "vi-VN": "Tiếng Việt (vi)"
+            "low": "Low (8 kHz)",
+            "standard": "Standard (16 kHz)",
+            "high": "High (44.1 kHz)",
           })
-          .setValue(this.plugin.settings.recordingLanguage || "")
+          .setValue(this.plugin.settings.recordingQuality?.toString?.() ?? "standard")
           .onChange(async (value) => {
-            this.plugin.settings.recordingLanguage = value;
-          })
-      );
+            this.plugin.settings.recordingQuality = value;
+          });
+      });
 
+    // Transcription Model
     new Setting(containerEl)
-      .setName("Transcription Endpoint")
+      .setName("Transcription Model")
       .setDesc("Select the OpenAI model to transcribe the audio")
       .addDropdown(dropdown => {
         const options = this.plugin.getAllModelKeyValues("speech_to_text");

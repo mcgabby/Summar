@@ -6,6 +6,7 @@ import { NativeAudioRecorder } from "./audiorecorder";
 import { RecordingTimer } from "./recordingtimer";
 import { SummarTimer } from "./summartimer";
 import { JsonBuilder } from "./jsonbuilder";
+import { exec } from "child_process";
 
 export class AudioRecordingManager extends SummarViewContainer {
 	private timer: SummarTimer;
@@ -22,6 +23,9 @@ export class AudioRecordingManager extends SummarViewContainer {
 
 	private deviceId: string;
 	private isRecording: boolean = false;
+
+	private zoomWatcherInterval: NodeJS.Timeout | null = null;
+	private wasZoomRunning = false;
 
 	constructor(plugin: SummarPlugin) {
 		super(plugin);
@@ -371,5 +375,39 @@ export class AudioRecordingManager extends SummarViewContainer {
 
 	public getRecorderState(): "inactive" | "recording" | "paused" | undefined {
 		return this.recorder.getRecordingState?.();
+	}
+
+	startZoomAutoRecordWatcher() {
+		if (!this.plugin.settings.autoRecordOnZoomMeeting) return;
+		if (this.zoomWatcherInterval) return;
+		this.zoomWatcherInterval = setInterval(() => {
+			// Zoom 미팅 중에만 존재하는 프로세스(CptHost) 감지
+			exec('pgrep -x "CptHost"', (err, stdout) => {
+				const isMeetingRunning = !!stdout.trim();
+				if (isMeetingRunning && !this.wasZoomRunning) {
+					// Zoom 미팅 시작됨
+					this.plugin.recordingManager.startRecording(this.plugin.settings.recordingUnit);
+				} else if (!isMeetingRunning && this.wasZoomRunning) {
+					// Zoom 미팅 종료됨
+					const stopPromise = this.plugin.recordingManager.stopRecording();
+					stopPromise.then((recordingPath) => {
+						if (recordingPath) {
+							// main의 handleRecordingStopped 호출 (자동 요약)
+							if (typeof (this.plugin as any).handleRecordingStopped === 'function') {
+								(this.plugin as any).handleRecordingStopped(recordingPath);
+							}
+						}
+					});
+				}
+				this.wasZoomRunning = isMeetingRunning;
+			});
+		}, 3000); // 3초마다 체크
+	}
+
+	stopZoomAutoRecordWatcher() {
+		if (this.zoomWatcherInterval) {
+			clearInterval(this.zoomWatcherInterval);
+			this.zoomWatcherInterval = null;
+		}
 	}
 }
