@@ -508,6 +508,14 @@ export default class SummarPlugin extends Plugin {
 
   }
 
+  public updateZoomAutoRecordWatcher() {
+    if (this.settings.autoRecordOnZoomMeeting) {
+      this.recordingManager.startZoomAutoRecordWatcher();
+    } else {
+      this.recordingManager.stopZoomAutoRecordWatcher();
+    }
+  }
+
   async onunload() {
     this.app.workspace.detachLeavesOfType(SummarView.VIEW_TYPE);
     this.recordingStatus.remove();
