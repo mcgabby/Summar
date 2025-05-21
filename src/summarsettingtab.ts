@@ -1,4 +1,4 @@
-import { PluginSettingTab, Setting, Platform, ButtonComponent, DropdownComponent } from "obsidian";
+import { PluginSettingTab, Setting, Platform, ButtonComponent } from "obsidian";
 
 import { SummarDebug, getDeviceId, sanitizeLabel } from "./globals";
 import { PluginUpdater } from "./pluginupdater";
@@ -599,8 +599,7 @@ async activateTab(tabId: string): Promise<void> {
           .onChange(async (value) => {
             this.plugin.settings.pdfModel = value;
           });
-      });
-
+      });      
     new Setting(containerEl)
       .setHeading()
       .addTextArea((text) => {

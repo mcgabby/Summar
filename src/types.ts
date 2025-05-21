@@ -14,7 +14,7 @@ export interface PluginSettings {
   pdfPrompt: string;
   /////
   webModel: string;
-  // pdfModel: string;
+  pdfModel: string;
   transcriptSTT: string;
   transcribingPrompt: string;
   transcriptModel: string;
