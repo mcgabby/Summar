@@ -80,8 +80,9 @@
 
 .setting-item {
     border-top: none !important; /* Setting 내부에서 자동 추가되는 선 제거 */
-    margin: 0 !important; /* 불필요한 여백 제거 */
-    padding: 0 !important;
+    margin: 2px !important; 
+    padding: 0px !important;
+    margin-bottom: 10px !important; /* Custom commands 등에서 아이템 간격 확보 */
   }
   
 /* 기본 버튼 스타일 */
