@@ -895,7 +895,7 @@ async activateTab(tabId: string): Promise<void> {
         const textEl = text.inputEl;
         textEl.style.width = "100%";
       })
-
+      
       .addDropdown(dropdown => {
         const options = this.plugin.getAllModelKeyValues("custom");
         if (Object.keys(options).length === 0) {
@@ -998,6 +998,51 @@ async activateTab(tabId: string): Promise<void> {
         textAreaEl.style.height = "80px";
         textAreaEl.style.resize = "none";
       });
+
+    // 옵션 토글 2개: Append Results to Note, Copy Results to Clipboard (TextArea 바로 아래, 한 줄, 우측 정렬)
+    const optionRow = document.createElement('div');
+    optionRow.className = 'custom-command-options-row';
+    optionRow.style.display = 'flex';
+    optionRow.style.justifyContent = 'flex-end';
+    optionRow.style.gap = '24px';
+    optionRow.style.marginTop = '4px';
+    optionRow.style.marginBottom = '4px';
+
+    // Append Results to Note
+    const appendLabel = document.createElement('label');
+    appendLabel.style.display = 'flex';
+    appendLabel.style.alignItems = 'center';
+    appendLabel.style.gap = '4px';
+    appendLabel.style.fontSize = '0.95em';
+    appendLabel.style.cursor = 'pointer';
+    const appendToggle = document.createElement('input');
+    appendToggle.type = 'checkbox';
+    appendToggle.checked = !!this.plugin.settings[`cmd_append_to_note_${index}`];
+    appendToggle.addEventListener('change', () => {
+      this.plugin.settings[`cmd_append_to_note_${index}`] = appendToggle.checked;
+    });
+    appendLabel.appendChild(appendToggle);
+    appendLabel.appendChild(document.createTextNode('Append Results to Note'));
+    optionRow.appendChild(appendLabel);
+
+    // Copy Results to Clipboard
+    const copyLabel = document.createElement('label');
+    copyLabel.style.display = 'flex';
+    copyLabel.style.alignItems = 'center';
+    copyLabel.style.gap = '4px';
+    copyLabel.style.fontSize = '0.95em';
+    copyLabel.style.cursor = 'pointer';
+    const copyToggle = document.createElement('input');
+    copyToggle.type = 'checkbox';
+    copyToggle.checked = !!this.plugin.settings[`cmd_copy_to_clipboard_${index}`];
+    copyToggle.addEventListener('change', () => {
+      this.plugin.settings[`cmd_copy_to_clipboard_${index}`] = copyToggle.checked;
+    });
+    copyLabel.appendChild(copyToggle);
+    copyLabel.appendChild(document.createTextNode('Copy Results to Clipboard'));
+    optionRow.appendChild(copyLabel);
+
+    containerEl.appendChild(optionRow);
   }
 
   createCalendarField(containerEl: HTMLElement, index: number): void {

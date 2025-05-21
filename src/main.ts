@@ -387,7 +387,7 @@ export default class SummarPlugin extends Plugin {
 
 
     for (let i = 1; i <= this.settings.cmd_count; i++) {
-      const cmdId = `openai-command-${i}`;
+      const cmdId = `custom-command-${i}`;
       const cmdText = this.settings[`cmd_text_${i}`] as string;
       const cmdModel = this.settings[`cmd_model_${i}`] as string || 'gpt-4o';
       const cmdPrompt = this.settings[`cmd_prompt_${i}`] as string;
@@ -403,7 +403,14 @@ export default class SummarPlugin extends Plugin {
               const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
               if (editor) {
                 if (!checking) {
-                  this.commandHandler.executePrompt(editor.getSelection(), cmdModel, cmdPrompt);
+                  let selectedText = editor.getSelection();
+                  if (!selectedText) {
+                    const cursor = editor.getCursor();
+                    const lineText = editor.getLine(cursor.line);
+                    editor.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line, ch: lineText.length });
+                    selectedText = editor.getSelection();
+                  }
+                  this.commandHandler.executePrompt(selectedText, cmdId);
                 }
                 return true;
               }
@@ -423,7 +430,14 @@ export default class SummarPlugin extends Plugin {
               const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
               if (editor) {
                 if (!checking) {
-                  this.commandHandler.executePrompt(editor.getSelection(), cmdModel, cmdPrompt);
+                  let selectedText = editor.getSelection();
+                  if (!selectedText) {
+                    const cursor = editor.getCursor();
+                    const lineText = editor.getLine(cursor.line);
+                    editor.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line, ch: lineText.length });
+                    selectedText = editor.getSelection();
+                  }
+                  this.commandHandler.executePrompt(selectedText, cmdId);
                 }
                 return true;
               }
@@ -439,6 +453,7 @@ export default class SummarPlugin extends Plugin {
 
     this.customCommandMenu = this.app.workspace.on('editor-menu', (menu, editor) => {
       for (let i = 1; i <= this.settings.cmd_count; i++) {
+        const cmdId = `custom-command-${i}`; // cmdId 정의 변경
         const cmdText = this.settings[`cmd_text_${i}`] as string;
         const cmdModel = this.settings[`cmd_model_${i}`] as string || 'gpt-4o';
         const cmdPrompt = this.settings[`cmd_prompt_${i}`] as string;
@@ -446,7 +461,16 @@ export default class SummarPlugin extends Plugin {
         if (cmdText && cmdText.length > 0) {
           menu.addItem((item) => {
             item.setTitle(cmdText)
-              .onClick(() => this.commandHandler.executePrompt(editor.getSelection(), cmdModel, cmdPrompt));
+              .onClick(() => {
+                let selectedText = editor.getSelection();
+                if (!selectedText) {
+                  const cursor = editor.getCursor();
+                  const lineText = editor.getLine(cursor.line);
+                  editor.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line, ch: lineText.length });
+                  selectedText = editor.getSelection();
+                }
+                this.commandHandler.executePrompt(selectedText, cmdId);
+              });
           });
         }
       }
