@@ -582,6 +582,7 @@ async activateTab(tabId: string): Promise<void> {
   async buildPdfSettings(containerEl: HTMLElement): Promise<void> {
     containerEl.createEl("h2", { text: "PDF Summary" });
 
+    // PDF 모델 선택 드롭다운 및 프롬프트 입력 UI를 Webpage와 동일하게 구성
     new Setting(containerEl)
       .setName("Prompt (for PDF to Markdown)")
       .setDesc("This prompt will guide the AI response.")
@@ -598,7 +599,11 @@ async activateTab(tabId: string): Promise<void> {
           .onChange(async (value) => {
             this.plugin.settings.pdfModel = value;
           });
+<<<<<<< HEAD
       });      
+=======
+      });
+>>>>>>> 32c7e4f8f340ada824e4c002cd3c489b8b70f480
 
     new Setting(containerEl)
       .setHeading()
