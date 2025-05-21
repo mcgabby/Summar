@@ -585,6 +585,21 @@ async activateTab(tabId: string): Promise<void> {
     new Setting(containerEl)
       .setName("Prompt (for PDF to Markdown)")
       .setDesc("This prompt will guide the AI response.")
+      .addDropdown(dropdown => {
+        const options = this.plugin.getAllModelKeyValues("pdf");
+        if (Object.keys(options).length === 0) {
+          options['gpt-4o'] = 'gpt-4o';
+          options['gpt-4.1'] = 'gpt-4.1';
+          options['gpt-4.1-mini'] = 'gpt-4.1-mini';
+        }
+        dropdown
+          .addOptions(options)
+          .setValue(String(this.plugin.settings.pdfModel))
+          .onChange(async (value) => {
+            this.plugin.settings.pdfModel = value;
+          });
+      });      
+
     new Setting(containerEl)
       .setHeading()
       .addTextArea((text) => {
@@ -599,8 +614,7 @@ async activateTab(tabId: string): Promise<void> {
         textAreaEl.style.width = "100%";
         textAreaEl.style.height = "100px";
         textAreaEl.style.resize = "none";
-      })
-      ;
+      });
   }
 
   async buildRecordingSettings(containerEl: HTMLElement): Promise<void> {

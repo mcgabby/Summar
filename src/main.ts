@@ -29,6 +29,7 @@ export default class SummarPlugin extends Plugin {
     webPrompt: "",
     pdfPrompt: "",
     webModel: "",
+    pdfModel: "",
     
     transcriptSTT: "",
     transcribingPrompt: "",
