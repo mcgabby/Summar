@@ -55,7 +55,7 @@ export class PdfHandler extends SummarViewContainer {
 					const jsonBuilder = new JsonBuilder();
 
 					// 기본 데이터 추가
-					jsonBuilder.addData("model", "gpt-4o");
+					jsonBuilder.addData("model", this.plugin.settings.pdfModel);
 
 					// 시스템 메시지 추가
 					jsonBuilder.addToArray("messages", {
