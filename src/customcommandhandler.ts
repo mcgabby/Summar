@@ -118,7 +118,11 @@ export class CustomCommandHandler extends SummarViewContainer {
 		} catch (error) {
 			this.timer.stop();
 			SummarDebug.error(1, "Error:", error);
-			this.updateResultText("An error occurred while processing the request.");
+			let msg = "An error occurred while processing the request.";
+			if (error) {
+				msg += ` | ${error?.status || ''} ${error?.message || error?.toString?.() || error}`;
+			}
+			this.updateResultText(msg);
 			this.enableNewNote(false);
 		}
 	}

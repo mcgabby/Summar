@@ -112,7 +112,11 @@ export class AudioRecordingManager extends SummarViewContainer {
 		} catch (error) {
 			this.timer.stop();
 			SummarDebug.error(1, "Error:", error);
-			this.updateResultText("An error occurred while processing the request.");
+			let msg = "An error occurred while processing the request.";
+			if (error) {
+				msg += ` | ${error?.status || ''} ${error?.message || error?.toString?.() || error}`;
+			}
+			this.updateResultText(msg);
 			this.enableNewNote(false);
 			return summary;
 		}
@@ -185,7 +189,6 @@ export class AudioRecordingManager extends SummarViewContainer {
 			return refined;
 		} catch (error) {
 			this.timer.stop()
-//			this.updateResultText("An error occurred while processing the request.");
 			this.enableNewNote(false);			
 		}
 
