@@ -314,7 +314,21 @@ async activateTab(tabId: string): Promise<void> {
           .onChange(async (value) => {
             this.plugin.settings.openaiApiKey = value;
           });
+        const textAreaEl = text.inputEl;
+        textAreaEl.style.width = "100%";
+      });
 
+    // OpenAI API Endpoint 입력란 추가
+    new Setting(containerEl)
+      .setName("OpenAI API Endpoint URL")
+      .setDesc("(Optional) Enter the OpenAI API endpoint URL.")
+      .addText((text) => {
+        text
+          .setPlaceholder("https://api.openai.com")
+          .setValue(this.plugin.settings.openaiApiEndpoint || "")
+          .onChange(async (value) => {
+            this.plugin.settings.openaiApiEndpoint = value;
+          });
         const textAreaEl = text.inputEl;
         textAreaEl.style.width = "100%";
       });

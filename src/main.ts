@@ -16,6 +16,8 @@ import { StatusBar } from "./statusbar";
 export default class SummarPlugin extends Plugin {
   settings: PluginSettings = {
     openaiApiKey: "",
+    openaiApiEndpoint: "",
+
     googleApiKey: "",
     confluenceApiToken: "",
 

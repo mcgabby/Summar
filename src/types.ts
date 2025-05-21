@@ -43,6 +43,8 @@ export interface PluginSettings {
   
   autoRecording: boolean;
   autoRecordOnZoomMeeting: boolean;
+
+  openaiApiEndpoint: string; // OpenAI API 엔드포인트 URL (기본값: https://api.openai.com)
 }
 
 export interface OpenAIResponse {
