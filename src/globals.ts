@@ -211,8 +211,12 @@ export async function fetchOpenai(plugin: SummarPlugin, openaiApiKey: string, bo
     SummarDebug.log(1, `openaiApiKey: ${openaiApiKey}`);
     SummarDebug.log(2, `bodyContent: ${bodyContent}`);
 
+    // 엔드포인트 설정 (비어있으면 기본값)
+    const endpoint = plugin.settings.openaiApiEndpoint?.trim() || "https://api.openai.com";
+    const url = `${endpoint.replace(/\/$/, "")}/v1/chat/completions`;
+
     const response = await SummarRequestUrl(plugin, {
-      url: "https://api.openai.com/v1/chat/completions",
+      url: url,
       method: "POST",
       headers: {
         "Content-Type": "application/json",

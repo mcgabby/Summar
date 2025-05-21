@@ -361,18 +361,21 @@ export class AudioHandler extends SummarViewContainer {
 	}
 
 	async callWhisperTranscription(requestbody: Blob, contentType: string): Promise<any> {
-		const response = await requestUrl({
-			url: "https://api.openai.com/v1/audio/transcriptions",
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${this.plugin.settings.openaiApiKey}`,
-				"Content-Type": contentType,
-			},
-			body: await requestbody.arrayBuffer(),
-		});
+        // 엔드포인트 설정 (비어있으면 기본값)
+        const endpoint = this.plugin.settings.openaiApiEndpoint?.trim() || "https://api.openai.com";
+        const url = `${endpoint.replace(/\/$/, "")}/v1/audio/transcriptions`;
+        const response = await requestUrl({
+            url: url,
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${this.plugin.settings.openaiApiKey}`,
+                "Content-Type": contentType,
+            },
+            body: await requestbody.arrayBuffer(),
+        });
 
-		return response.json;
-	}
+        return response.json;
+    }
 
 	////////////////////////////
 	async readFileAsBase64(filePath: string): Promise<{ base64:string; mimeType: string }> {
