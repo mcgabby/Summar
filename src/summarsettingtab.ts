@@ -599,12 +599,7 @@ async activateTab(tabId: string): Promise<void> {
           .onChange(async (value) => {
             this.plugin.settings.pdfModel = value;
           });
-<<<<<<< HEAD
       });      
-=======
-      });
->>>>>>> 32c7e4f8f340ada824e4c002cd3c489b8b70f480
-
     new Setting(containerEl)
       .setHeading()
       .addTextArea((text) => {
