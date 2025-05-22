@@ -12,11 +12,6 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
-    # manifest.json이 변경된 경우에만 실행
-    if: contains(github.event.head_commit.message, '[force]') || 
-        github.event.commits.*.modified[*] | join(',') | contains('dist/manifest.json') ||
-        github.event.commits.*.added[*] | join(',') | contains('dist/manifest.json')
-
     steps:
       - name: Checkout main branch
         uses: actions/checkout@v3
@@ -32,19 +27,31 @@ jobs:
       - name: Build project
         run: npm run build
 
+      - name: Check if manifest.json changed
+        id: check_manifest
+        run: |
+          echo "Checking manifest.json diff between ${{ github.event.before }} and ${{ github.sha }}"
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q '^dist/manifest.json$'; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Prepare deployment directory
+        if: steps.check_manifest.outputs.changed == 'true'
         run: |
           mkdir deploy
           cp dist/summar.zip deploy/
           cp dist/manifest.json deploy/
 
       - name: Deploy to releases/last branch
+        if: steps.check_manifest.outputs.changed == 'true'
         run: |
           cd deploy
           git init
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/mcgabby/Summar.git
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git checkout -b releases/last
           git add .
           git commit -m "Deploy summar.zip and manifest.json from main"
