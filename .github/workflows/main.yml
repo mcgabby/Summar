@@ -1,0 +1,51 @@
+name: Deploy to releases/last if manifest.json changed
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    # manifest.json이 변경된 경우에만 실행
+    if: contains(github.event.head_commit.message, '[force]') || 
+        github.event.commits.*.modified[*] | join(',') | contains('dist/manifest.json') ||
+        github.event.commits.*.added[*] | join(',') | contains('dist/manifest.json')
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Prepare deployment directory
+        run: |
+          mkdir deploy
+          cp dist/summar.zip deploy/
+          cp dist/manifest.json deploy/
+
+      - name: Deploy to releases/last branch
+        run: |
+          cd deploy
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/mcgabby/Summar.git
+          git checkout -b releases/last
+          git add .
+          git commit -m "Deploy summar.zip and manifest.json from main"
+          git push --force origin releases/last
