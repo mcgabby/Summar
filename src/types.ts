@@ -53,6 +53,7 @@ export interface PluginSettings {
   autoLaunchZoomOnlyAccepted: boolean;
 
   openaiApiEndpoint: string; // OpenAI API 엔드포인트 URL (기본값: https://api.openai.com)
+  addLinkToDailyNotes: boolean; // Daily Notes에 회의록 링크 추가 여부
 
   //////////// deprecated variables
   recordingResultNewNote: boolean; // before 1.0.0

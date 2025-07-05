@@ -362,11 +362,21 @@ export class AudioHandler extends SummarViewContainer {
 		}
 
 		await this.plugin.app.vault.create(newFilePath, transcriptionContent);
-		await this.plugin.app.workspace.openLinkText(
-			normalizePath(newFilePath),
-			"",
-			true
-		);
+		
+		// summary가 활성화되어 있지 않으면 transcript 파일을 열기
+		// summary가 활성화되어 있으면 나중에 summary나 refined 파일이 열릴 예정이므로 transcript는 열지 않음
+		if (!this.plugin.settings.saveTranscriptAndRefineToNewNote) {
+			await this.plugin.app.workspace.openLinkText(
+				normalizePath(newFilePath),
+				"",
+				true
+			);
+		}
+		
+		// Daily Notes에 전사 완료 링크 추가 (녹음 날짜 기준)
+		const recordingDate = this.extractRecordingDateFromPath(folderPath, filesToSave, noteFilePath);
+		await this.plugin.dailyNotesHandler.addMeetingLinkToDailyNote(newFilePath, 'transcript', recordingDate);
+		
 		this.timer.stop();
 		return {transcriptedText, newFilePath};
 
@@ -916,6 +926,101 @@ export class AudioHandler extends SummarViewContainer {
 		}
 	}
 
+	/**
+	 * 폴더 경로나 오디오 파일들에서 녹음 날짜를 추출합니다.
+	 */
+	private extractRecordingDateFromPath(folderPath: string, filesToSave: { file: File; fileName: string; }[], noteFilePath?: string): Date | undefined {
+		try {
+			SummarDebug.log(2, `Extracting recording date from folderPath: ${folderPath}, noteFilePath: ${noteFilePath || 'N/A'}`);
+			
+			// 0. 전체 파일 경로(noteFilePath)에서 먼저 날짜 추출 시도
+			if (noteFilePath) {
+				const fullPathDateMatch = noteFilePath.match(/(\d{4})-(\d{2})-(\d{2})|(\d{4})(\d{2})(\d{2})|(\d{4})\.(\d{2})\.(\d{2})|(\d{2})(\d{2})(\d{2})/);
+				if (fullPathDateMatch) {
+					const date = this.parseDateFromMatch(fullPathDateMatch);
+					if (date) {
+						SummarDebug.log(2, `Extracted recording date from full path: ${date.toISOString().split('T')[0]}`);
+						return date;
+					}
+				}
+			}
+			
+			// 1. 폴더 경로에서 날짜 추출 시도
+			const folderDateMatch = folderPath.match(/(\d{4})-(\d{2})-(\d{2})|(\d{4})(\d{2})(\d{2})|(\d{4})\.(\d{2})\.(\d{2})|(\d{2})(\d{2})(\d{2})/);
+			if (folderDateMatch) {
+				const date = this.parseDateFromMatch(folderDateMatch);
+				if (date) {
+					SummarDebug.log(2, `Extracted recording date from folder path: ${date.toISOString().split('T')[0]}`);
+					return date;
+				}
+			}
+
+			// 2. 파일명에서 날짜 추출 시도
+			for (const fileInfo of filesToSave) {
+				const fileName = fileInfo.fileName;
+				const fileNameDateMatch = fileName.match(/(\d{4})-(\d{2})-(\d{2})|(\d{4})(\d{2})(\d{2})|(\d{2})(\d{2})(\d{2})/);
+				if (fileNameDateMatch) {
+					const date = this.parseDateFromMatch(fileNameDateMatch);
+					if (date) {
+						SummarDebug.log(2, `Extracted recording date from file name: ${date.toISOString().split('T')[0]}`);
+						return date;
+					}
+				}
+			}
+
+			// 3. 파일 수정 시간을 사용 (최후의 수단)
+			if (filesToSave.length > 0) {
+				const file = filesToSave[0].file;
+				if (file.lastModified) {
+					const date = new Date(file.lastModified);
+					SummarDebug.log(2, `Using file modification date: ${date.toISOString().split('T')[0]}`);
+					return date;
+				}
+			}
+
+			SummarDebug.log(2, `Could not extract recording date from path: ${folderPath}`);
+			return undefined;
+		} catch (error) {
+			SummarDebug.log(2, `Error extracting recording date:`, error);
+			return undefined;
+		}
+	}
+	
+	/**
+	 * 정규식 매치 결과에서 날짜를 파싱합니다.
+	 */
+	private parseDateFromMatch(match: RegExpMatchArray): Date | null {
+		let year: number | undefined, month: number | undefined, day: number | undefined;
+		
+		if (match[1]) { // YYYY-MM-DD
+			year = parseInt(match[1], 10);
+			month = parseInt(match[2], 10) - 1;
+			day = parseInt(match[3], 10);
+		} else if (match[4]) { // YYYYMMDD
+			year = parseInt(match[4], 10);
+			month = parseInt(match[5], 10) - 1;
+			day = parseInt(match[6], 10);
+		} else if (match[7]) { // YYYY.MM.DD
+			year = parseInt(match[7], 10);
+			month = parseInt(match[8], 10) - 1;
+			day = parseInt(match[9], 10);
+		} else if (match[10]) { // YYMMDD (2자리 년도)
+			const shortYear = parseInt(match[10], 10);
+			// 2자리 년도를 4자리로 변환 (20년대는 2020년대, 그 외는 19년대로 가정)
+			year = shortYear >= 0 && shortYear <= 30 ? 2000 + shortYear : 1900 + shortYear;
+			month = parseInt(match[11], 10) - 1;
+			day = parseInt(match[12], 10);
+		}
+		
+		if (year !== undefined && month !== undefined && day !== undefined) {
+			const date = new Date(year, month, day);
+			if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
+				return date;
+			}
+		}
+		
+		return null;
+	}
 }
 
 // Helper functions

@@ -866,6 +866,25 @@ async activateTab(tabId: string): Promise<void> {
           this.plugin.settings.saveTranscriptAndRefineToNewNote = value;
         }));
 
+    // Daily Notes 연동 설정 추가
+    const dailyNotesAvailable = (this.plugin.app as any).internalPlugins?.plugins?.['daily-notes']?.enabled;
+    
+    new Setting(containerEl)
+      .setName('Add meeting links to Daily Notes')
+      .setDesc(dailyNotesAvailable 
+        ? 'When enabled, automatically adds links to transcripts and meeting notes to the Daily Note based on the recording date.'
+        : '⚠️ Daily Notes core plugin is not enabled. Please enable it in Settings → Core plugins → Daily notes to use this feature.'
+      )
+      .addToggle((toggle) => {
+        toggle
+          .setValue(this.plugin.settings.addLinkToDailyNotes)
+          .setDisabled(!dailyNotesAvailable)
+          .onChange(async (value) => {
+            this.plugin.settings.addLinkToDailyNotes = value;
+            await this.plugin.saveSettingsToFile();
+          });
+      });
+
     // Recording Unit
     new Setting(containerEl)
       .setName("Recording Unit")

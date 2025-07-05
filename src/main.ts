@@ -10,6 +10,7 @@ import { AudioHandler } from "./audiohandler";
 import { AudioRecordingManager } from "./recordingmanager";
 import { CustomCommandHandler } from "./customcommandhandler";
 import { CalendarHandler } from "./calendarhandler";
+import { DailyNotesHandler } from "./dailynoteshandler";
 import { StatusBar } from "./statusbar";
 import { SummarStatsModal } from "./summarstatsmodal";
 import { IndexedDBManager } from "./summarailog";
@@ -67,6 +68,7 @@ export default class SummarPlugin extends Plugin {
     calendar_polling_interval: 600000,
     autoLaunchZoomOnSchedule: false,
     autoLaunchZoomOnlyAccepted: true,
+    addLinkToDailyNotes: true,
     /// deprecated variables // before 1.0.0
     recordingResultNewNote: true,
     transcriptSTT: "",
@@ -90,6 +92,7 @@ export default class SummarPlugin extends Plugin {
   audioHandler: AudioHandler;
   commandHandler: CustomCommandHandler;
   calendarHandler: CalendarHandler;
+  dailyNotesHandler: DailyNotesHandler;
 
   recordingStatus: StatusBar;
   reservedStatus: StatusBar;
@@ -191,6 +194,7 @@ export default class SummarPlugin extends Plugin {
     this.recordingStatus = new StatusBar(this);
     this.reservedStatus = new StatusBar(this,true);
     this.calendarHandler = new CalendarHandler(this);
+    this.dailyNotesHandler = new DailyNotesHandler(this);
 
     this.dbManager = new IndexedDBManager();
     await this.dbManager.init(this);
