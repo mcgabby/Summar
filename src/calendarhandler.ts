@@ -122,8 +122,9 @@ export class CalendarHandler {
 
             args.push(`--fetch-calendars=${calendarList.join(",")}`);
             const scriptPath = normalizePath((this.plugin.app.vault.adapter as FileSystemAdapter).getBasePath() + "/.obsidian/plugins/summar/fetch_calendar.swift");
-            const spawnArgs = [scriptPath, ...args];
-            const process = spawn("swift", spawnArgs);
+            const fetchCalendarPath = normalizePath((this.plugin.app.vault.adapter as FileSystemAdapter).getBasePath() + "/.obsidian/plugins/summar/fetch_calendar");
+            const spawnArgs = [...args];
+            const process = spawn(fetchCalendarPath, spawnArgs);
             let output = "";
             let errorOutput = "";
 
@@ -406,7 +407,8 @@ export class CalendarHandler {
             const { FileSystemAdapter } = require('obsidian');
             const basePath = (this.plugin.app.vault.adapter as typeof FileSystemAdapter).getBasePath();
             const scriptPath = normalizePath(basePath + "/.obsidian/plugins/summar/fetch_calendar.swift");
-            const process = spawn('swift', [scriptPath, '--list-calendars']);
+            const fetchCalendarPath = normalizePath(basePath + "/.obsidian/plugins/summar/fetch_calendar");
+            const process = spawn(fetchCalendarPath, ['--list-calendars']);
             let output = '';
             let errorOutput = '';
             process.stdout.on('data', (data: Buffer) => {
@@ -861,9 +863,10 @@ export class CalendarHandler {
 
             args.push(`--fetch-calendars=${calendarList.join(",")}`);
             const scriptPath = normalizePath((this.plugin.app.vault.adapter as FileSystemAdapter).getBasePath() + "/.obsidian/plugins/summar/fetch_calendar.swift");
-            const spawnArgs = [scriptPath, ...args];
-            SummarDebug.log(1, `Executing Swift command: swift ${spawnArgs.join(" ")}`);
-            const process = spawn("swift", spawnArgs);
+            const fetchCalendarPath = normalizePath((this.plugin.app.vault.adapter as FileSystemAdapter).getBasePath() + "/.obsidian/plugins/summar/fetch_calendar");
+            const spawnArgs = [...args];
+            SummarDebug.log(1, `Executing fetch_calendar binary: ${fetchCalendarPath} ${spawnArgs.join(" ")}`);
+            const process = spawn(fetchCalendarPath, spawnArgs);
             let output = "";
             let errorOutput = "";
 

@@ -1591,8 +1591,8 @@ async activateTab(tabId: string): Promise<void> {
           const basePath: string = (adapter instanceof (FileSystemAdapter as any))
             ? (adapter as typeof FileSystemAdapter).getBasePath()
             : require('process').cwd();
-          const scriptPath: string = normalizePath(basePath + "/.obsidian/plugins/summar/fetch_calendar.swift");
-          const swiftProcess = spawn('swift', [scriptPath, '--check-permission']);
+          const scriptPath: string = normalizePath(basePath + "/.obsidian/plugins/summar/fetch_calendar");
+          const swiftProcess = spawn(scriptPath, ['--check-permission']);
           let output: string = '';
           let errorOutput: string = '';
           swiftProcess.stdout.on('data', (data: Buffer) => {
