@@ -65,7 +65,45 @@ func requestCalendarAccess(completion: @escaping (Bool) -> Void) {
 }
 
 // 명령줄 인자 파싱: --list-calendars가 있으면 캘린더 목록만 출력
-if CommandLine.arguments.contains("--list-calendars") {
+if CommandLine.arguments.contains("--check-permission") {
+    // 캘린더 권한 상태만 확인 및 요청
+    requestCalendarAccess { granted in
+        if granted {
+            print("authorized")
+            exit(0)
+        } else {
+            // 권한 거부 또는 미결정
+            let status: String
+            if #available(macOS 14.0, *) {
+                switch EKEventStore.authorizationStatus(for: .event) {
+                case .authorized:
+                    status = "authorized"
+                case .denied:
+                    status = "denied"
+                case .notDetermined:
+                    status = "notDetermined"
+                default:
+                    status = "unknown"
+                }
+            } else {
+                switch EKEventStore.authorizationStatus(for: .event) {
+                case .authorized:
+                    status = "authorized"
+                case .denied:
+                    status = "denied"
+                case .notDetermined:
+                    status = "notDetermined"
+                default:
+                    status = "unknown"
+                }
+            }
+            print(status)
+            exit(0)
+        }
+    }
+    RunLoop.main.run()
+
+} else if CommandLine.arguments.contains("--list-calendars") {
     requestCalendarAccess { granted in
         guard granted else {
             print("-1")
@@ -269,6 +307,6 @@ if CommandLine.arguments.contains("--list-calendars") {
     RunLoop.main.run()
 } else {
     // 인자가 없으면 아무 동작도 하지 않고 종료
-    print("No valid argument provided. Use --list-calendars or --fetch-calendars.")
+    print("No valid argument provided. Use --check-permission, --list-calendars or --fetch-calendars.")
     exit(0)
 }

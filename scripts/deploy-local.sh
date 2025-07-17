@@ -45,8 +45,11 @@ if [ -f "$BUILD_DIR/model-pricing.json" ]; then
     cp "$BUILD_DIR/model-pricing.json" "$PLUGIN_DIR/"
 fi
 
-if [ -f "$BUILD_DIR/fetch_calendar.swift" ]; then
-    cp "$BUILD_DIR/fetch_calendar.swift" "$PLUGIN_DIR/"
+if [ ! -f "$BUILD_DIR/fetch_calendar" ]; then
+    echo "🛠️ fetch_calendar 바이너리가 없습니다. npm run build로 먼저 빌드하세요."
+else
+    cp "$BUILD_DIR/fetch_calendar" "$PLUGIN_DIR/"
+fi
 fi
 
 echo "✅ Plugin deployed successfully to: $PLUGIN_DIR"
