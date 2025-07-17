@@ -1,4 +1,4 @@
-import { PluginSettingTab, Setting, Platform, ButtonComponent } from "obsidian";
+import { PluginSettingTab, Setting, Platform, ButtonComponent, Modal, App } from "obsidian";
 
 import { SummarDebug, SummarRequestUrl, getDeviceId, sanitizeLabel, SummarTooltip } from "./globals";
 import { PluginUpdater } from "./pluginupdater";
@@ -282,6 +282,8 @@ async activateTab(tabId: string): Promise<void> {
 
   async buildCommonSettings(containerEl: HTMLElement): Promise<void> {
     containerEl.createEl("h2", { text: "Common Settings" });
+
+    // ...기존 코드...
 
     // Current version과 Available version을 Setting UI로 분리
     const currentVersion = this.plugin.manifest.version;
@@ -1568,10 +1570,94 @@ async activateTab(tabId: string): Promise<void> {
   }
 
   async buildCalendarSettings(containerEl: HTMLElement): Promise<void> {
+    // 안내문 먼저 렌더링
     containerEl.createEl('h2', { text: 'Calendar integration' });
     containerEl.createEl('p', {
       text: 'This feature works on macOS and integrates with the default macOS Calendar.'
     });
+
+    // 권한 확인 버튼을 안내문 바로 아래에 배치
+    new Setting(containerEl)
+      .setName("Check Calendar Permission")
+      .setDesc("Check and request access to macOS Calendar events.")
+      .addButton((button) => {
+        button.setButtonText("Check Permission");
+        button.onClick(async () => {
+          const { spawn } = require('child_process');
+          const { normalizePath, FileSystemAdapter } = require('obsidian');
+          button.setDisabled(true);
+          button.setButtonText("Checking...");
+          const adapter = this.plugin.app.vault.adapter;
+          const basePath: string = (adapter instanceof (FileSystemAdapter as any))
+            ? (adapter as typeof FileSystemAdapter).getBasePath()
+            : require('process').cwd();
+          const scriptPath: string = normalizePath(basePath + "/.obsidian/plugins/summar/fetch_calendar.swift");
+          const swiftProcess = spawn('swift', [scriptPath, '--check-permission']);
+          let output: string = '';
+          let errorOutput: string = '';
+          swiftProcess.stdout.on('data', (data: Buffer) => {
+            output += data.toString();
+          });
+          swiftProcess.stderr.on('data', (data: Buffer) => {
+            errorOutput += data.toString();
+          });
+          swiftProcess.on('close', (code: number) => {
+            button.setDisabled(false);
+            button.setButtonText("Check Permission");
+            let result = output.trim();
+            let message = "";
+            if (code !== 0) {
+              message = `Error: ${errorOutput || 'Swift process error.'}`;
+            } else if (result === "authorized") {
+              message = "✅ Calendar access is authorized.";
+            } else if (result === "denied") {
+              message = "❌ Calendar access is denied. Please allow access in System Settings > Privacy & Security > Calendar.";
+            } else if (result === "notDetermined") {
+              message = "Permission request initiated. If no popup appears, please allow access manually in System Settings.";
+            } else {
+              message = `Unknown result: ${result}`;
+            }
+            class CalendarPermissionModal extends Modal {
+              constructor(app: App, message: string) {
+                super(app);
+                this.message = message;
+              }
+              message: string;
+              onOpen() {
+                const { contentEl } = this;
+                contentEl.empty();
+                // 원래 크기(360px)로 복구
+                contentEl.style.width = "360px";
+                contentEl.style.maxWidth = "90vw";
+                contentEl.style.padding = "32px 24px";
+                contentEl.style.textAlign = "center";
+                contentEl.createEl("h2", { text: "Calendar Permission Status" }).style.marginBottom = "16px";
+                const msgEl = contentEl.createEl("p", { text: this.message });
+                msgEl.style.fontSize = "1.15em";
+                msgEl.style.margin = "0 0 12px 0";
+                msgEl.style.wordBreak = "keep-all";
+                msgEl.style.whiteSpace = "pre-line";
+                // 닫기 버튼 추가
+                const closeBtn = contentEl.createEl("button", { text: "Close" });
+                closeBtn.style.marginTop = "18px";
+                closeBtn.style.padding = "8px 24px";
+                closeBtn.style.fontSize = "1em";
+                closeBtn.style.borderRadius = "6px";
+                closeBtn.style.background = "var(--background-secondary)";
+                closeBtn.style.border = "1px solid var(--background-modifier-border)";
+                closeBtn.style.cursor = "pointer";
+                closeBtn.onclick = () => this.close();
+              }
+              onClose() {
+                const { contentEl } = this;
+                contentEl.empty();
+              }
+            }
+            new CalendarPermissionModal(this.plugin.app, message).open();
+          });
+        });
+      });
+    // ...기존 안내문 및 권한 확인 버튼 렌더링...
     new Setting(containerEl)
       .setName('Enter the macOS calendar to search for events')
       .setDesc('Click Add Calendar and select a calendar to fetch events.')
