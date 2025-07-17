@@ -1,4 +1,6 @@
 // API Handler Tests - Testing core API functionality
+export {};
+
 describe('API Handler Tests', () => {
   // Mock API response scenarios
   const mockFetch = jest.fn();

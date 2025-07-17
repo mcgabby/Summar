@@ -1,4 +1,6 @@
 // Simple JsonBuilder functionality tests
+export {};
+
 describe('JsonBuilder Tests', () => {
   // Test implementation that mirrors the actual JsonBuilder
   class TestJsonBuilder {

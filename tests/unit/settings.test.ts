@@ -1,4 +1,6 @@
-// Settings and Configuration Tests
+// Settings management tests
+export {};
+
 describe('Settings Management Tests', () => {
   const defaultSettings = {
     openaiApiKey: '',
