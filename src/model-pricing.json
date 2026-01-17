@@ -1,13 +1,17 @@
 {
   "openai": {
-    "gpt-5": { "inputPerK": 0.00125, "outputPerK": 0.010 },
-    "gpt-5-mini": { "inputPerK": 0.00025, "outputPerK": 0.002 },
-    "gpt-5-nano": { "inputPerK": 0.00005, "outputPerK": 0.0004 },
-    "gpt-5-chat-latest": { "inputPerK": 0.00125, "outputPerK": 0.010 },
+    "gpt-5.2": { "inputPerK": 0.00175, "outputPerK": 0.014 },
+    "gpt-5.2-pro": { "inputPerK": 0.021, "outputPerK": 0.168 },
+    "gpt-5.2-chat-latest": { "inputPerK": 0.00175, "outputPerK": 0.014 },
+    "gpt-5.2-codex": { "inputPerK": 0.00175, "outputPerK": 0.014 },
     "gpt-5.1": { "inputPerK": 0.00125, "outputPerK": 0.010 },
     "gpt-5.1-chat-latest": { "inputPerK": 0.00125, "outputPerK": 0.010 },
     "gpt-5.1-codex": { "inputPerK": 0.00125, "outputPerK": 0.010 },
     "gpt-5.1-codex-mini": { "inputPerK": 0.00025, "outputPerK": 0.002 },
+    "gpt-5": { "inputPerK": 0.00125, "outputPerK": 0.010 },
+    "gpt-5-mini": { "inputPerK": 0.00025, "outputPerK": 0.002 },
+    "gpt-5-nano": { "inputPerK": 0.00005, "outputPerK": 0.0004 },
+    "gpt-5-chat-latest": { "inputPerK": 0.00125, "outputPerK": 0.010 },
     "gpt-4.1": { "inputPerK": 0.002, "outputPerK": 0.008 },
     "gpt-4.1-mini": { "inputPerK": 0.0004, "outputPerK": 0.0016 },
     "gpt-4.1-nano": { "inputPerK": 0.0001, "outputPerK": 0.0004 },
@@ -40,14 +44,17 @@
     "gpt-4o-mini-transcribe": { "inputPerMinute": 0.003 }
   },
   "gemini": {
+    "gemini-3-pro-preview": {
+      "under200k":   { "inputPerK": 0.002,  "outputPerK": 0.012 },
+      "over200k":    { "inputPerK": 0.004,  "outputPerK": 0.018 }
+    },
     "gemini-2.5-pro": {
       "under200k":   { "inputPerK": 0.00125, "outputPerK": 0.01 },
       "over200k":    { "inputPerK": 0.0025,  "outputPerK": 0.015 }
     },
+    "gemini-3-flash-preview": { "inputPerK": 0.0005,  "outputPerK": 0.003, "audioPerK": 0.001 },
     "gemini-2.5-flash":       { "inputPerK": 0.0003,  "outputPerK": 0.0025, "audioPerK": 0.001 },
-    "gemini-2.0-flash":       { "inputPerK": 0.0001,  "outputPerK": 0.0004, "audioPerK": 0.0007 },
-    "gemini-2.0-latest-lite": { "inputPerK": 0.00005, "outputPerK": 0.0002 },
-    "gemini-1.5-lite":        { "inputPerK": 0.00005, "outputPerK": 0.0002 },
-    "gemini-1.0-lite":        { "inputPerK": 0.00002, "outputPerK": 0.0001 }
+    "gemini-2.5-flash-lite":  { "inputPerK": 0.0001,  "outputPerK": 0.0004, "audioPerK": 0.0003 },
+    "gemini-2.0-flash":       { "inputPerK": 0.0001,  "outputPerK": 0.0004, "audioPerK": 0.0007 }
   }
 }

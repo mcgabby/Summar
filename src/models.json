@@ -10,10 +10,14 @@
         "gpt-5-mini": "gpt-5-mini",
         "gpt-5-nano": "gpt-5-nano",
         "gpt-5.1": "gpt-5.1",
+        "gpt-5.2": "gpt-5.2",
+        "gpt-5.2-chat-latest": "gpt-5.2-chat-latest",
         "o1-mini": "o1-mini",
         "o3-mini": "o3-mini",
         "gemini-2.0-flash": "gemini-2.0-flash",
-        "gemini-2.5-flash": "gemini-2.5-flash"
+        "gemini-2.5-flash": "gemini-2.5-flash",
+        "gemini-3-pro-preview": "gemini-3-pro-preview",
+        "gemini-3-flash-preview": "gemini-3-flash-preview"
       }
     },
     "pdfModel": {
@@ -23,6 +27,8 @@
         "gpt-4.1": "gpt-4.1",
         "gpt-4.1-mini": "gpt-4.1-mini",
         "gpt-5": "gpt-5",
+        "gpt-5.2": "gpt-5.2",
+        "gpt-5.2-chat-latest": "gpt-5.2-chat-latest",
         "gpt-5-mini": "gpt-5-mini",
         "gpt-5-nano": "gpt-5-nano",
         "gpt-5.1": "gpt-5.1"
@@ -35,7 +41,8 @@
         "gpt-4o-mini-transcribe": "gpt-4o-mini-transcribe",
         "gpt-4o-transcribe": "gpt-4o-transcribe",
         "gemini-2.0-flash": "gemini-2.0-flash",
-        "gemini-2.5-flash": "gemini-2.5-flash"
+        "gemini-2.5-flash": "gemini-2.5-flash",
+        "gemini-3-flash-preview": "gemini-3-flash-preview"
       }
     },
     "transcriptSummaryModel": {
@@ -48,10 +55,14 @@
         "gpt-5-mini": "gpt-5-mini",
         "gpt-5-nano": "gpt-5-nano",
         "gpt-5.1": "gpt-5.1",
+        "gpt-5.2": "gpt-5.2",
+        "gpt-5.2-chat-latest": "gpt-5.2-chat-latest",
         "o1-mini": "o1-mini",
         "o3-mini": "o3-mini",
         "gemini-2.0-flash": "gemini-2.0-flash",
-        "gemini-2.5-flash": "gemini-2.5-flash"
+        "gemini-2.5-flash": "gemini-2.5-flash",
+        "gemini-3-pro-preview": "gemini-3-pro-preview",
+        "gemini-3-flash-preview": "gemini-3-flash-preview"
       }
     },
     "customModel": {
@@ -64,10 +75,14 @@
         "gpt-5-mini": "gpt-5-mini",
         "gpt-5-nano": "gpt-5-nano",
         "gpt-5.1": "gpt-5.1",
+        "gpt-5.2": "gpt-5.2",
+        "gpt-5.2-chat-latest": "gpt-5.2-chat-latest",
         "o1-mini": "o1-mini",
         "o3-mini": "o3-mini",
         "gemini-2.0-flash": "gemini-2.0-flash",
-        "gemini-2.5-flash": "gemini-2.5-flash"
+        "gemini-2.5-flash": "gemini-2.5-flash",
+        "gemini-3-pro-preview": "gemini-3-pro-preview",
+        "gemini-3-flash-preview": "gemini-3-flash-preview"
       }
     }
   }

@@ -1197,10 +1197,9 @@ async activateTab(tabId: string): Promise<void> {
             
             // 프롬프트 영역 표시/숨김 처리
             if (promptSettingDiv && promptButtonsDiv) {
-              if (value === "gpt-4o-mini-transcribe" || 
+              if (value === "gpt-4o-mini-transcribe" ||
                 value === "gpt-4o-transcribe" ||
-                value === "gemini-2.0-flash" ||
-                value === "gemini-2.5-flash") {
+                value.startsWith("gemini-")) {
                 promptSettingDiv.style.display = "";
                 promptButtonsDiv.style.display = "";
                 // 해당 모델의 프롬프트 값으로 텍스트 영역 업데이트
@@ -1304,10 +1303,9 @@ async activateTab(tabId: string): Promise<void> {
           .setValue(currentPrompt)
           .onChange(async (value) => {
             const selectedModel = this.plugin.settingsv2.recording.sttModel;
-            if (selectedModel === "gpt-4o-mini-transcribe" || 
+            if (selectedModel === "gpt-4o-mini-transcribe" ||
                 selectedModel === "gpt-4o-transcribe" ||
-                selectedModel === "gemini-2.0-flash" ||
-                selectedModel === "gemini-2.5-flash") {
+                selectedModel.startsWith("gemini-")) {
               this.plugin.settingsv2.recording.sttPrompt[selectedModel] = value;
               await this.plugin.settingsv2.saveSettings();
               
@@ -1341,10 +1339,9 @@ async activateTab(tabId: string): Promise<void> {
 
     // 드롭다운 값에 따라 최초 표시/숨김 상태를 정확히 반영 (display로 직접 제어)
     const currentSttModel = this.plugin.settingsv2.recording.sttModel;
-    if (currentSttModel !== "gpt-4o-mini-transcribe" 
+    if (currentSttModel !== "gpt-4o-mini-transcribe"
       && currentSttModel !== "gpt-4o-transcribe"
-      && currentSttModel !== "gemini-2.0-flash"
-      && currentSttModel !== "gemini-2.5-flash") {
+      && !currentSttModel.startsWith("gemini-")) {
       promptSettingDiv.style.display = "none";
       if (promptButtonsDiv) promptButtonsDiv.style.display = "none";
     } else {

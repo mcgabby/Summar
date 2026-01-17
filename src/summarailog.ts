@@ -836,23 +836,23 @@ SummarDebug.log(3, `model: ${m}, matched: ${matchedKey}, inputPerK: ${price.inpu
         const pricing = this.plugin.modelPricing?.gemini ?? {};
         let inputPerK = 0, outputPerK = 0;
 
-        // if (model.includes('2.5-pro')) {
-        if (m.toLocaleLowerCase() === 'gemini-2.5-pro') {
+        // 모델 매칭
+        const matchedKey = Object.keys(pricing).find(key => key.toLowerCase() === m) ?? '';
+        const modelPricing = pricing[matchedKey];
+
+        // 계층형 가격 모델 여부를 JSON 구조로 판단 (under200k/over200k 키 존재 여부)
+        const isTieredModel = modelPricing?.under200k !== undefined && modelPricing?.over200k !== undefined;
+
+        if (isTieredModel) {
             const tier = promptTokens > 200_000
-                ? pricing["gemini-2.5-pro"]?.over200k
-                : pricing["gemini-2.5-pro"]?.under200k;
+                ? modelPricing.over200k
+                : modelPricing.under200k;
             inputPerK = tier?.inputPerK ?? 0;
             outputPerK = tier?.outputPerK ?? 0;
         } else {
-            // const matchedKey = Object.keys(pricing).find(key => model.includes(key)) ?? '';
-            const matchedKey = Object.keys(pricing).find(key => key.toLowerCase() === m) ?? '';            
-            const tier = pricing[matchedKey] ?? { inputPerK: 0, outputPerK: 0, audioPerK: 0 };
-SummarDebug.log(3, `model: ${m}, matched: ${matchedKey}, inputPerK: ${inputPerK}, outputPerK: ${outputPerK}`);
-// SummarDebug.log(1, `calculateGemini() - ${model}, stt:${sttFlag}, audioPerK:${tier.audioPerK}, inputPerK: ${tier.inputPerK}, outputPerK: ${tier.outputPerK}`);
+            const tier = modelPricing ?? { inputPerK: 0, outputPerK: 0, audioPerK: 0 };
             inputPerK = (sttFlag === true) ? tier.audioPerK : tier.inputPerK;
             outputPerK = tier.outputPerK;
-// SummarDebug.log(1, `inputPerK 계산: (${promptTokens} * inputPerK / 1000 + ${completionTokens} * outputPerK / 1000) = ${(promptTokens * tier.inputPerK / 1000 + completionTokens * tier.outputPerK / 1000 )}`);
-// SummarDebug.log(1, `audioPerK 계산: (${promptTokens} * audioPerK / 1000 + ${completionTokens} * outputPerK / 1000) = ${(promptTokens * tier.audioPerK / 1000 + completionTokens * tier.outputPerK / 1000 )}`);
         }
 
 
