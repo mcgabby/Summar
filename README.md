@@ -173,3 +173,10 @@ Complete reference for Summar's configuration files and data structures:
 - **2025-09-20**: Enhanced note synchronization with contextual note opening, content retrieval, and key resolution improvements
 - **2025-09-21**: Added custom vocabulary pipeline with shared base-name handling for transcription outputs
 - **2025-09-22**: Exposed custom vocabulary settings in the UI for more accurate speech-to-text results
+- **2025-09-23**: Added context menu copy functionality for conversation items and upgraded TypeScript to v5.9.2
+- **2025-09-26**: Released v1.3.0 with Slack API configuration improvements and codebase cleanup
+- **2025-11-08**: Enhanced context menu with markdown/formatted content copy options and added conversation deletion functionality
+- **2025-11-19**: Added GPT-5.1 models and removed deprecated models, released v1.3.1
+- **2025-12-31**: Fixed WebM duration metadata for proper playback, improved HTTP error handling in audio transcription API
+- **2025-12-31**: Added folder autocomplete suggestion for recording folder setting and option to organize recordings by date hierarchy (YYYY/YYYY-MM/YYYY-MM-DD)
+- **2026-01-17**: Added Gemini 3 Pro/Flash preview models with tiered pricing support and dynamic pricing detection from JSON structure, released v1.3.3

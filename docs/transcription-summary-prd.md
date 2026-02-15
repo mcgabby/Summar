@@ -53,6 +53,7 @@ Summar의 "Transcription Summary" 기능은 오디오 파일(회의/녹음 등) 
 - autoRecordOnZoomMeeting: Zoom 미팅 시작 시 자동으로 녹음을 시작할지 여부를 설정합니다.
 - deviceId: 사용할 오디오 입력 장치(마이크)를 선택합니다.
 - recordingUnit: 녹음 단위 시간(분)을 설정합니다.
+- organizeByDate: 녹음 파일을 날짜 계층 폴더(YYYY/YYYY-MM/YYYY-MM-DD (Day))로 자동 정리할지 여부를 설정합니다.
 
 ## 6. 예외 및 에러 처리
 - API Key 미설정, 파일 미선택, 모델 미설정 등 상황별 안내 메시지 제공
@@ -68,6 +69,10 @@ Summar의 "Transcription Summary" 기능은 오디오 파일(회의/녹음 등) 
       - 여러 파일을 한 번에 업로드하면: 업로드한 폴더명(폴더째 업로드 시) 또는 여러 파일의 공통 경로명
       - 자동 녹음 시: 타임스탬프 기반 폴더명
     - 예시: `Recordings/250612-103000/` (자동 녹음), `Recordings/회의자료/` (폴더 업로드)
+  - **날짜별 정리 (Organize by Date)**: `organizeByDate` 옵션을 켜면, 녹음 파일이 날짜 계층 폴더 구조로 자동 정리됩니다.
+    - 폴더 구조: `recordingDir/YYYY/YYYY-MM/YYYY-MM-DD (Day)/폴더명/`
+    - 예시: `Recordings/2025/2025-06/2025-06-12 (Thu)/250612-103000/`
+    - 이 옵션이 꺼져 있으면 기존처럼 `recordingDir/폴더명/`에 바로 저장됩니다.
   - 지정한 폴더가 아직 없다면, Summar 플러그인이 파일을 저장하기 전에 해당 폴더를 자동으로 만들어줍니다.
 
 - 오디오 파일 저장:

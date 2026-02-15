@@ -64,27 +64,27 @@ AI 모델 목록 및 분류 - 각 기능별 사용 가능한 모델과 기본 �
   - `webModel`: 웹페이지 요약용 모델 그룹
     - `default`: 기본 모델 (예: "gpt-4.1-mini")
     - `models`: 사용 가능한 모델 목록
-      - `gpt-4o`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `o1-mini`, `o3-mini`
-      - `gemini-2.0-flash`, `gemini-2.5-flash`
+      - `gpt-4o`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `gpt-5.1`, `gpt-5.2`, `gpt-5.2-chat-latest`, `o1-mini`, `o3-mini`
+      - `gemini-2.0-flash`, `gemini-2.5-flash`, `gemini-3-pro-preview`, `gemini-3-flash-preview`
   - `pdfModel`: PDF 요약용 모델 그룹
     - `default`: 기본 모델 (예: "gpt-4o")
     - `models`: 사용 가능한 모델 목록
-      - `gpt-4o`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-5`, `gpt-5-mini`, `gpt-5-nano`
+      - `gpt-4o`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `gpt-5.1`, `gpt-5.2`, `gpt-5.2-chat-latest`
   - `sttModel`: 음성 인식용 모델 그룹
     - `default`: 기본 모델 (예: "whisper-1")
     - `models`: 사용 가능한 모델 목록
       - `whisper-1`, `gpt-4o-mini-transcribe`, `gpt-4o-transcribe`
-      - `gemini-2.0-flash`, `gemini-2.5-flash`
+      - `gemini-2.0-flash`, `gemini-2.5-flash`, `gemini-3-flash-preview`
   - `transcriptSummaryModel`: 녹취 요약용 모델 그룹
     - `default`: 기본 모델 (예: "gpt-4.1-mini")
     - `models`: 사용 가능한 모델 목록
-      - `gpt-4o`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `o1-mini`, `o3-mini`
-      - `gemini-2.0-flash`, `gemini-2.5-flash`
+      - `gpt-4o`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `gpt-5.1`, `gpt-5.2`, `gpt-5.2-chat-latest`, `o1-mini`, `o3-mini`
+      - `gemini-2.0-flash`, `gemini-2.5-flash`, `gemini-3-pro-preview`, `gemini-3-flash-preview`
   - `customModel`: 커스텀 명령용 모델 그룹
     - `default`: 기본 모델 (예: "gpt-4.1-mini")
     - `models`: 사용 가능한 모델 목록
-      - `gpt-4o`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `o1-mini`, `o3-mini`
-      - `gemini-2.0-flash`, `gemini-2.5-flash`
+      - `gpt-4o`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `gpt-5.1`, `gpt-5.2`, `gpt-5.2-chat-latest`, `o1-mini`, `o3-mini`
+      - `gemini-2.0-flash`, `gemini-2.5-flash`, `gemini-3-pro-preview`, `gemini-3-flash-preview`
 ---
 
 ## prompts.json
@@ -121,19 +121,30 @@ AI 모델 목록 및 분류 - 각 기능별 사용 가능한 모델과 기본 �
 모델별 과금 정보 - OpenAI와 Gemini 모델의 토큰당 가격 정보
 
 - `openai`: OpenAI 모델별 과금 정보
+  - `gpt-5.2`: `{ "inputPerK": 0.00175, "outputPerK": 0.014 }`
+  - `gpt-5.2-pro`: `{ "inputPerK": 0.021, "outputPerK": 0.168 }`
+  - `gpt-5.2-chat-latest`: `{ "inputPerK": 0.00175, "outputPerK": 0.014 }`
+  - `gpt-5.2-codex`: `{ "inputPerK": 0.00175, "outputPerK": 0.014 }`
+  - `gpt-5.1`: `{ "inputPerK": 0.00125, "outputPerK": 0.010 }`
+  - `gpt-5.1-chat-latest`: `{ "inputPerK": 0.00125, "outputPerK": 0.010 }`
+  - `gpt-5.1-codex`: `{ "inputPerK": 0.00125, "outputPerK": 0.010 }`
+  - `gpt-5.1-codex-mini`: `{ "inputPerK": 0.00025, "outputPerK": 0.002 }`
   - `gpt-5`: `{ "inputPerK": 0.00125, "outputPerK": 0.010 }`
   - `gpt-5-mini`: `{ "inputPerK": 0.00025, "outputPerK": 0.002 }`
   - `gpt-5-nano`: `{ "inputPerK": 0.00005, "outputPerK": 0.0004 }`
   - `gpt-4.1`: `{ "inputPerK": 0.002, "outputPerK": 0.008 }`
   - `gpt-4.1-mini`: `{ "inputPerK": 0.0004, "outputPerK": 0.0016 }`
+  - `gpt-4.1-nano`: `{ "inputPerK": 0.0001, "outputPerK": 0.0004 }`
   - `gpt-4o`: `{ "inputPerK": 0.0025, "outputPerK": 0.010 }`
   - `gpt-4o-mini`: `{ "inputPerK": 0.00015, "outputPerK": 0.0006 }`
   - `gpt-4`: `{ "inputPerK": 0.03, "outputPerK": 0.06 }`
   - `gpt-4-turbo`: `{ "inputPerK": 0.01, "outputPerK": 0.03 }`
   - `gpt-3.5-turbo`: `{ "inputPerK": 0.0005, "outputPerK": 0.0015 }`
   - `o1`: `{ "inputPerK": 0.015, "outputPerK": 0.060 }`
+  - `o1-pro`: `{ "inputPerK": 0.150, "outputPerK": 0.600 }`
   - `o1-mini`: `{ "inputPerK": 0.0011, "outputPerK": 0.0044 }`
   - `o3`: `{ "inputPerK": 0.002, "outputPerK": 0.008 }`
+  - `o3-pro`: `{ "inputPerK": 0.020, "outputPerK": 0.080 }`
   - `o3-mini`: `{ "inputPerK": 0.0011, "outputPerK": 0.0044 }`
   - `o4-mini`: `{ "inputPerK": 0.0011, "outputPerK": 0.0044 }`
   - `whisper-1`: `{ "inputPerMinute": 0.006 }` (음성 모델, 분당 가격)
@@ -141,14 +152,16 @@ AI 모델 목록 및 분류 - 각 기능별 사용 가능한 모델과 기본 �
   - `gpt-4o-mini-transcribe`: `{ "inputPerMinute": 0.003 }`
 
 - `gemini`: Gemini 모델별 과금 정보
+  - `gemini-3-pro-preview`: 토큰 수에 따른 차등 가격
+    - `under200k`: `{ "inputPerK": 0.002, "outputPerK": 0.012 }`
+    - `over200k`: `{ "inputPerK": 0.004, "outputPerK": 0.018 }`
   - `gemini-2.5-pro`: 토큰 수에 따른 차등 가격
     - `under200k`: `{ "inputPerK": 0.00125, "outputPerK": 0.01 }`
     - `over200k`: `{ "inputPerK": 0.0025, "outputPerK": 0.015 }`
+  - `gemini-3-flash-preview`: `{ "inputPerK": 0.0005, "outputPerK": 0.003, "audioPerK": 0.001 }`
   - `gemini-2.5-flash`: `{ "inputPerK": 0.0003, "outputPerK": 0.0025, "audioPerK": 0.001 }`
+  - `gemini-2.5-flash-lite`: `{ "inputPerK": 0.0001, "outputPerK": 0.0004, "audioPerK": 0.0003 }`
   - `gemini-2.0-flash`: `{ "inputPerK": 0.0001, "outputPerK": 0.0004, "audioPerK": 0.0007 }`
-  - `gemini-2.0-latest-lite`: `{ "inputPerK": 0.00005, "outputPerK": 0.0002 }`
-  - `gemini-1.5-lite`: `{ "inputPerK": 0.00005, "outputPerK": 0.0002 }`
-  - `gemini-1.0-lite`: `{ "inputPerK": 0.00002, "outputPerK": 0.0001 }`
 
 **가격 단위**: USD 기준, K=1000토큰
 
@@ -381,7 +394,9 @@ AI 모델 목록 및 분류 - 각 기능별 사용 가능한 모델과 기본 �
 - `selectedDeviceId`: 디바이스별 오디오 장치 매핑 (object, 기본: {})
   - 키: 디바이스 식별자 (string)
   - 값: 선택된 오디오 장치명 (string)
-- `recordingDir`: 녹음 파일 저장 디렉토리 (string, 기본: "")
+- `recordingDir`: 녹음 파일 저장 디렉토리 (string, 기본: ""), 폴더 자동완성 제안 지원
+- `organizeByDate`: 녹음 파일을 날짜별 폴더 구조로 정리 (boolean, 기본: false)
+  - 활성화 시 `YYYY/YYYY-MM/YYYY-MM-DD (Day)` 형식의 계층 폴더 구조 생성
 - `saveTranscriptAndRefineToNewNote`: 녹취 결과를 새 노트로 저장 여부 (boolean, 기본: true)
 - `addLinkToDailyNotes`: Daily Notes에 회의록 링크 추가 여부 (boolean, 기본: true)
 - `recordingUnit`: 녹음 단위 초 (number, 기본: 15)
@@ -389,11 +404,12 @@ AI 모델 목록 및 분류 - 각 기능별 사용 가능한 모델과 기본 �
 
 **음성 인식 및 요약 설정**
 - `sttModel`: 음성 인식 모델 (string, 기본: "" → `models.json`의 `sttModel.default`에서 자동 설정)
-- `sttPrompt`: 모델별 음성 인식 프롬프트 (object, 기본: {})
+- `sttPrompt`: 모델별 음성 인식 프롬프트 (object, 기본: {}). gemini- 접두사 모델은 모두 프롬프트 입력 가능
   - `"gpt-4o-transcribe"`: gpt-4o-transcribe 모델용 프롬프트 (string, V1에서 마이그레이션된 값)
   - `"gpt-4o-mini-transcribe"`: gpt-4o-mini-transcribe 모델용 프롬프트 (string, 기본: "")
   - `"gemini-2.0-flash"`: gemini-2.0-flash 모델용 프롬프트 (string, 기본: "" → `prompts.json`에서 자동 설정)
   - `"gemini-2.5-flash"`: gemini-2.5-flash 모델용 프롬프트 (string, 기본: "" → `prompts.json`에서 자동 설정)
+  - `"gemini-3-flash-preview"`: gemini-3-flash-preview 모델용 프롬프트 (string, 기본: "" → `prompts.json`에서 자동 설정)
 - `transcriptSummaryModel`: 녹취 요약 모델 (string, 기본: "" → `models.json`의 `transcriptSummaryModel.default`에서 자동 설정)
 - `transcriptSummaryPrompt`: 녹취 요약 프롬프트 (string, 기본: "" → `prompts.json`의 `ko.transcriptSummaryPrompt`에서 자동 설정)
 - `refineSummary`: 요약 정제 사용 여부 (boolean, 기본: true)
@@ -533,14 +549,22 @@ AI 모델 목록 및 분류 - 각 기능별 사용 가능한 모델과 기본 �
 
 ### 최신 AI 모델 지원
 **새로 추가된 OpenAI 모델:**
-- `gpt-5` 시리즈: `gpt-5`, `gpt-5-mini`, `gpt-5-nano`
-- `o3`/`o4` 시리즈: `o3`, `o3-mini`, `o4-mini`
-- 특수 모델: `o1-pro`, `o3-pro`, `computer-use-preview`
+- `gpt-5.2` 시리즈: `gpt-5.2`, `gpt-5.2-pro`, `gpt-5.2-chat-latest`, `gpt-5.2-codex`
+- `gpt-5.1` 시리즈: `gpt-5.1`, `gpt-5.1-chat-latest`, `gpt-5.1-codex`, `gpt-5.1-codex-mini`
+- `gpt-5` 시리즈: `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `gpt-5-chat-latest`
+- `o3`/`o4` 시리즈: `o3`, `o3-pro`, `o3-mini`, `o4-mini`
+- 특수 모델: `o1-pro`, `codex-mini-latest`, `computer-use-preview`
+
+**새로 추가된 Gemini 모델:**
+- `gemini-3-pro-preview`: 계층형 가격 (under200k/over200k)
+- `gemini-3-flash-preview`: 오디오 처리 지원
+- `gemini-2.5-flash-lite`: 경량 모델
 
 **업데이트된 가격 정보:**
 - 모든 신규 모델의 토큰당 정확한 가격 반영
 - 음성 모델 분당 가격 업데이트
-- Gemini 모델 오디오 처리 가격 추가
+- Gemini 모델 오디오 처리 가격 (`audioPerK`) 추가
+- 계층형 가격 모델 동적 감지 지원 (JSON 구조의 `under200k`/`over200k` 키 존재 여부로 판단)
 
 ### 대화 아카이빙 및 SummarView 개선 (2025-09)
 - `conversation` 섹션 신설로 SummarView 대화 모델과 보관 기간을 JSON에서 직접 관리합니다.

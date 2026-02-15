@@ -37,7 +37,7 @@ The Summar plugin settings are organized into multiple tabs, each offering speci
   - Enhanced update mechanism with progress indicators
 
 ### Webpage Tab
-- **Model Selection**: Choose AI model for web page summarization (gpt-4o, gpt-4.1, gpt-4.1-mini, gpt-5, gpt-5-mini, gpt-5-nano, o1-mini, o3-mini, gemini-2.0-flash, gemini-2.5-flash)
+- **Model Selection**: Choose AI model for web page summarization (gpt-4o, gpt-4.1, gpt-4.1-mini, gpt-5, gpt-5-mini, gpt-5-nano, gpt-5.1, gpt-5.2, gpt-5.2-chat-latest, o1-mini, o3-mini, gemini-2.0-flash, gemini-2.5-flash, gemini-3-pro-preview, gemini-3-flash-preview)
 - **Prompt Management**: 
   - Edit custom prompts for web page summarization
   - "Set default prompt" button to restore original settings
@@ -66,6 +66,8 @@ The Summar plugin settings are organized into multiple tabs, each offering speci
   - Recording unit (1-20 seconds)
   - Toggle for saving transcripts to new notes
   - Daily Notes integration toggle (when Daily Notes plugin is enabled)
+  - **Organize by Date**: Option to organize recordings into date hierarchy folders (YYYY/YYYY-MM/YYYY-MM-DD (Day))
+  - **Folder Autocomplete**: Recording folder path input with autocomplete suggestions from existing vault folders
 - **Summary Refinement**: 
   - Toggle summary refinement feature
   - Custom prompts for refining summaries
@@ -75,7 +77,7 @@ The Summar plugin settings are organized into multiple tabs, each offering speci
 - **Command Management**: Create up to 10 custom commands
 - **Command Configuration**:
   - Menu name for context menu display
-  - AI model selection (gpt-4o, gpt-4.1, gpt-4.1-mini, gpt-5, gpt-5-mini, gpt-5-nano, o1-mini, o3-mini, gemini-2.0-flash, gemini-2.5-flash)
+  - AI model selection (gpt-4o, gpt-4.1, gpt-4.1-mini, gpt-5, gpt-5-mini, gpt-5-nano, gpt-5.1, gpt-5.2, gpt-5.2-chat-latest, o1-mini, o3-mini, gemini-2.0-flash, gemini-2.5-flash, gemini-3-pro-preview, gemini-3-flash-preview)
   - Custom prompt for selected text processing
   - Hotkey assignment (supports Ctrl/Cmd + Shift + Alt combinations)
   - Result handling options:
@@ -172,6 +174,10 @@ The SummarView provides a dedicated interface for interacting with Summar featur
   - Load recent conversations from the `conversations/` directory via the header menu
   - Original import filenames are preserved to make reloading historical sessions effortless
   - Fold/unfold actions keep transcript, conversation, and note-sync items synchronized
+  - **Delete Conversations**: Remove individual conversation entries from the list via context menu
+  - **Context Menu Copy Options**: Right-click on conversation items for copy options:
+    - **Copy as Markdown**: Copy raw markdown content to clipboard
+    - **Copy as Formatted**: Copy rendered/formatted content to clipboard
 
 ## 3. Conversation Workflows
 
