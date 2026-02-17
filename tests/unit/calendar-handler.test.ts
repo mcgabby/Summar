@@ -97,8 +97,8 @@ describe('CalendarHandler', () => {
                     calendar_polling_interval: 600000,
                     calendarName: ['Test Calendar'],
                     calendar_fetchdays: 7,
-                    autoLaunchZoomOnSchedule: true,
-                    autoLaunchZoomOnlyAccepted: false
+                    autoLaunchVideoMeetingOnSchedule: true,
+                    autoLaunchVideoMeetingOnlyAccepted: false
                 }
             },
             reservedStatus: {
@@ -355,8 +355,8 @@ describe('CalendarHandler', () => {
             expect(SummarDebug.log).toHaveBeenCalledWith(1, expect.stringContaining('(Status: accepted)'));
         });
 
-        test('should skip meetings based on participant status when autoLaunchZoomOnlyAccepted is true', async () => {
-            mockPlugin.settingsv2.schedule.autoLaunchZoomOnlyAccepted = true;
+        test('should skip meetings based on participant status when autoLaunchVideoMeetingOnlyAccepted is true', async () => {
+            mockPlugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted = true;
             
             const declinedTime = new Date(Date.now() + 300000);
             const pendingTime = new Date(Date.now() + 600000);

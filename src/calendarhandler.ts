@@ -49,12 +49,12 @@ export class CalendarHandler {
                 
                 // 초기 실행
                 await this.updateScheduledMeetings();
-                if (this.plugin.settingsv2.schedule.autoLaunchZoomOnSchedule) {
+                if (this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule) {
                     this.plugin.reservedStatus.setStatusbarIcon("calendar-clock", "red");
                 } else {
                     this.plugin.reservedStatus.setStatusbarIcon("calendar-x", "var(--text-muted)");
                 }
-                // this.plugin.reservedStatus.update(this.plugin.settings.autoLaunchZoomOnSchedule ? "⏰" : "", this.plugin.settings.autoLaunchZoomOnSchedule ? "green" : "black");
+                // this.plugin.reservedStatus.update(this.plugin.settings.autoLaunchVideoMeetingOnSchedule ? "⏰" : "", this.plugin.settings.autoLaunchVideoMeetingOnSchedule ? "green" : "black");
 
                 // 10분마다 업데이트 실행
                 this.intervalId = setInterval(() => {
@@ -333,11 +333,11 @@ export class CalendarHandler {
                 const delayMs = event.start.getTime() - now.getTime();
 
                 // 자동 줌 미팅 참석 조건 확인
-                const shouldAutoLaunch = this.plugin.settingsv2.schedule.autoLaunchZoomOnSchedule &&
+                const shouldAutoLaunch = this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule &&
                     delayMs > 0 && delayMs < MAX_DELAY &&
                     !this.timers.has(event.start.getTime()) &&
                     event.zoom_link && event.zoom_link.length > 0 &&
-                    (!this.plugin.settingsv2.schedule.autoLaunchZoomOnlyAccepted || 
+                    (!this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted || 
                      event.participant_status === "accepted" || 
                      event.participant_status === "organizer" ||
                      event.participant_status === "unknown"); // tentative 제거
@@ -353,18 +353,18 @@ export class CalendarHandler {
                     SummarDebug.log(1, `   🚀 Zoom meeting reserved: ${event.start} (Status: ${event.participant_status || "unknown"})`);
                     // this.timers.push({ title: event.title, start: event.start, timeoutId: timer });
                     this.timers.set(event.start.getTime(), timer);
-                } else if (this.plugin.settingsv2.schedule.autoLaunchZoomOnSchedule && 
-                          this.plugin.settingsv2.schedule.autoLaunchZoomOnlyAccepted &&
+                } else if (this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule && 
+                          this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted &&
                           event.zoom_link && event.zoom_link.length > 0 &&
                           event.participant_status === "declined") {
                     SummarDebug.log(1, `   ❌ Zoom meeting skipped (declined): ${event.start}`);
-                } else if (this.plugin.settingsv2.schedule.autoLaunchZoomOnSchedule && 
-                          this.plugin.settingsv2.schedule.autoLaunchZoomOnlyAccepted &&
+                } else if (this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule && 
+                          this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted &&
                           event.zoom_link && event.zoom_link.length > 0 &&
                           event.participant_status === "pending") {
                     SummarDebug.log(1, `   ⏸️ Zoom meeting skipped (pending response): ${event.start}`);
-                } else if (this.plugin.settingsv2.schedule.autoLaunchZoomOnSchedule && 
-                          this.plugin.settingsv2.schedule.autoLaunchZoomOnlyAccepted &&
+                } else if (this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule && 
+                          this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted &&
                           event.zoom_link && event.zoom_link.length > 0 &&
                           event.participant_status === "tentative") {
                     SummarDebug.log(1, `   ❓ Zoom meeting skipped (tentative): ${event.start}`);
@@ -399,7 +399,7 @@ export class CalendarHandler {
                 // 그리고 새로운 설정에 따라 참석 상태도 확인
                 const shouldAutoLaunch = this.autoRecord && 
                     event.zoom_link && event.zoom_link.length > 0 &&
-                    (!this.plugin.settingsv2.schedule.autoLaunchZoomOnlyAccepted || 
+                    (!this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted || 
                      event.participant_status === "accepted" || 
                      event.participant_status === "organizer" ||
                      event.participant_status === "unknown");

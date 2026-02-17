@@ -49,8 +49,8 @@ export interface PluginSettings {
   calendar_fetchdays: number;
   calendar_polling_interval: number;
   
-  autoLaunchZoomOnSchedule: boolean;
-  autoLaunchZoomOnlyAccepted: boolean;
+  autoLaunchVideoMeetingOnSchedule: boolean;
+  autoLaunchVideoMeetingOnlyAccepted: boolean;
 
   openaiApiEndpoint: string; // OpenAI API 엔드포인트 URL (기본값: https://api.openai.com)
   addLinkToDailyNotes: boolean; // Daily Notes에 회의록 링크 추가 여부
@@ -127,7 +127,10 @@ export interface SettingHelperConfig {
     };
     recording: {
         customVocabulary: string;
-    }
+    };
+    calendar?: {
+        selectCalendar: string;  // Google Apps Script 웹앱 URL
+    };
 }
 
 // export type PromptCategory = 'webPrompt' | 'pdfPrompt' | 'sttPrompt' | 'transcriptSummaryPrompt' | 'refineSummaryPrompt';

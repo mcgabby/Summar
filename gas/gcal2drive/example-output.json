@@ -1,0 +1,70 @@
+{
+  "selectedCalendars": [
+    {
+      "id": "primary",
+      "name": "Work Calendar"
+    },
+    {
+      "id": "spbear@linecorp.com",
+      "name": "Personal"
+    }
+  ],
+  "events": [
+    {
+      "calendarName": "Work Calendar",
+      "title": "Team Standup",
+      "start": "2025-02-17T14:00:00.000Z",
+      "end": "2025-02-17T14:15:00.000Z",
+      "meeting_url": "https://meet.google.com/abc-defg-hij",
+      "description": "Daily standup meeting",
+      "location": "Conference Room A",
+      "attendees": [
+        "alice@example.com",
+        "bob@example.com",
+        "charlie@example.com"
+      ],
+      "participant_status": "accepted",
+      "isAllDay": false
+    },
+    {
+      "calendarName": "Work Calendar",
+      "title": "1:1 with Manager",
+      "start": "2025-02-17T15:00:00.000Z",
+      "end": "2025-02-17T15:30:00.000Z",
+      "meeting_url": "https://zoom.us/j/987654321?pwd=abc123",
+      "description": "Biweekly sync",
+      "location": "",
+      "attendees": [
+        "manager@example.com"
+      ],
+      "participant_status": "accepted",
+      "isAllDay": false
+    },
+    {
+      "calendarName": "Personal",
+      "title": "Team All-Hands",
+      "start": "2025-02-18T09:00:00.000Z",
+      "end": "2025-02-18T10:00:00.000Z",
+      "meeting_url": "https://teams.microsoft.com/l/meetup-join/...",
+      "description": "Monthly all-hands meeting",
+      "location": "Virtual",
+      "attendees": [
+        "team@example.com"
+      ],
+      "participant_status": "tentative",
+      "isAllDay": false
+    },
+    {
+      "calendarName": "Personal",
+      "title": "Holiday",
+      "start": "2025-02-19T00:00:00.000Z",
+      "end": "2025-02-19T00:00:00.000Z",
+      "meeting_url": "",
+      "description": "",
+      "location": "",
+      "attendees": [],
+      "participant_status": "",
+      "isAllDay": true
+    }
+  ]
+}

@@ -22,7 +22,7 @@
 │  updateScheduledMeetings()                                               │
 │  ├─ fetchZoomMeetings() → Swift 스크립트 실행 → JSON 파싱                   │
 │  ├─ 일정 목록 갱신 (this.events)                                           │
-│  └─ autoLaunchZoomOnSchedule 활성화 시                                     │
+│  └─ autoLaunchVideoMeetingOnSchedule 활성화 시                                     │
 │     └─ setTimeout(delayMs) → launchZoomMeeting(zoom_link)                │
 └──────────────────────────────────────────────────────────────────────────┘
 
@@ -71,7 +71,7 @@
    │   ├─ EventKit으로 캘린더 접근
    │   ├─ Zoom 링크 추출 (정규식: https?://\S*zoom\.us\S*)
    │   └─ 참석 상태 확인 (accepted/organizer/declined/pending/tentative)
-   └─ autoLaunchZoomOnSchedule && shouldAutoLaunch
+   └─ autoLaunchVideoMeetingOnSchedule && shouldAutoLaunch
        └─ setTimeout(delayMs) → launchZoomMeeting() (macOS `open` 명령)
 
 3. Zoom 미팅 시작 감지
@@ -95,8 +95,8 @@
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `schedule.autoLaunchZoomOnSchedule` | false | 캘린더 일정에 따라 Zoom 자동 실행 |
-| `schedule.autoLaunchZoomOnlyAccepted` | true | accepted/organizer 상태만 자동 실행 |
+| `schedule.autoLaunchVideoMeetingOnSchedule` | false | 캘린더 일정에 따라 Zoom 자동 실행 |
+| `schedule.autoLaunchVideoMeetingOnlyAccepted` | true | accepted/organizer 상태만 자동 실행 |
 | `schedule.calendar_polling_interval` | 600,000ms | 캘린더 업데이트 주기 (10분) |
 | `recording.autoRecordOnZoomMeeting` | false | Zoom 미팅 시 자동 녹음 |
 | `recording.recordingUnit` | 15분 | 녹음 청크 저장 간격 |
@@ -106,11 +106,11 @@
 
 ```typescript
 const shouldAutoLaunch =
-    autoLaunchZoomOnSchedule &&                    // 설정 활성화
+    autoLaunchVideoMeetingOnSchedule &&                    // 설정 활성화
     delayMs > 0 && delayMs < MAX_DELAY &&          // 시간 범위 내 (polling * 3)
     !this.timers.has(event.start.getTime()) &&     // 중복 예약 방지
     event.zoom_link && event.zoom_link.length > 0 && // Zoom 링크 존재
-    (!autoLaunchZoomOnlyAccepted ||                // 참석 상태 조건
+    (!autoLaunchVideoMeetingOnlyAccepted ||                // 참석 상태 조건
      event.participant_status === "accepted" ||
      event.participant_status === "organizer" ||
      event.participant_status === "unknown");
@@ -254,7 +254,7 @@ if (shouldAutoLaunch) {
 // Google Meet 자동 실행 + 녹음 로직 추가
 const hasGoogleMeetLink = event.google_meet_link && event.google_meet_link.length > 0;
 const shouldAutoLaunchGoogleMeet =
-    this.plugin.settingsv2.schedule.autoLaunchZoomOnSchedule &&
+    this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule &&
     delayMs > 0 && delayMs < MAX_DELAY &&
     !this.timers.has(event.start.getTime()) &&
     !event.zoom_link &&              // Zoom 링크가 없는 경우만

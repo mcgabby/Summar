@@ -9,11 +9,13 @@ import { SummarStatsModal } from "./summarstatsmodal";
 import { SettingHelperConfig } from "./types";
 import { SettingHelperModal } from "./settinghelper";
 import { FolderSuggest } from "./foldersuggest";
+import { CalendarSettingModal } from "./calendarsettingmodal";
 
 export class SummarSettingsTab extends PluginSettingTab {
   plugin: SummarPlugin;
   savedTabId: string;
   deviceId: string;
+  private calendarSettingModal: CalendarSettingModal | null = null;
 
   constructor(plugin: SummarPlugin) {
     super(plugin.app, plugin);
@@ -1789,8 +1791,65 @@ async activateTab(tabId: string): Promise<void> {
   }
 
   async buildCalendarSettings(containerEl: HTMLElement): Promise<void> {
-    // 안내문 먼저 렌더링
     containerEl.createEl('h2', { text: 'Calendar integration' });
+
+    // summar_common.json 요청하여 조건부 UI 결정
+    const helperUrl = 'https://line-objects-dev.com/summar/summar_common.json';
+
+    try {
+      const response = await SummarRequestUrlWithTimeout(this.plugin, helperUrl, 2000);
+
+      if (response.status === 200 && response.json) {
+        const config = response.json as SettingHelperConfig;
+
+        if (config.calendar?.selectCalendar) {
+          // Google Calendar setting UI
+          this.renderGoogleCalendarUI(containerEl, config.calendar.selectCalendar);
+          return;
+        }
+      }
+    } catch (error) {
+      console.log('[Calendar Settings] Failed to fetch summar_common.json, using CalDAV setting');
+    }
+
+    // CalDAV setting UI (기존 로직)
+    this.renderCalDAVUI(containerEl);
+  }
+
+  // Google Calendar setting UI
+  private renderGoogleCalendarUI(containerEl: HTMLElement, webAppUrl: string): void {
+    new Setting(containerEl)
+      .setName('Calendar setting')
+      .setDesc('Open Google Calendar sync settings')
+      .addButton(button => button
+        .setButtonText('Calendar setting')
+        .onClick(() => {
+          // Prevent multiple modals from opening
+          if (this.calendarSettingModal) {
+            return;
+          }
+
+          // Create new modal
+          this.calendarSettingModal = new CalendarSettingModal(
+            this.plugin.app,
+            this.plugin,
+            webAppUrl
+          );
+
+          // Override onClose to clean up reference
+          const originalOnClose = this.calendarSettingModal.onClose.bind(this.calendarSettingModal);
+          this.calendarSettingModal.onClose = () => {
+            originalOnClose();
+            this.calendarSettingModal = null;
+          };
+
+          this.calendarSettingModal.open();
+        })
+      );
+  }
+
+  // CalDAV setting UI (기존 로직)
+  private renderCalDAVUI(containerEl: HTMLElement): void {
     containerEl.createEl('p', {
       text: 'This feature works on macOS and integrates with the default macOS Calendar.'
     });
@@ -1965,11 +2024,11 @@ async activateTab(tabId: string): Promise<void> {
     }
 
     new Setting(containerEl)
-      .setName('Automatically launches Zoom meetings for calendar events.')
-      .setDesc('If the toggle switch is turned on, Zoom meetings will automatically launch at the scheduled time of events')
+      .setName('Automatically launch video meetings for calendar events')
+      .setDesc('If enabled, Zoom or Google Meet meetings will automatically launch at the scheduled time of events')
       .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settingsv2.schedule.autoLaunchZoomOnSchedule).onChange(async (value) => {
-          this.plugin.settingsv2.schedule.autoLaunchZoomOnSchedule = value;
+        toggle.setValue(this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule).onChange(async (value) => {
+          this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule = value;
           await this.plugin.settingsv2.saveSettings();
           await this.plugin.calendarHandler.displayEvents(value);
           if (value) {
@@ -1989,22 +2048,22 @@ async activateTab(tabId: string): Promise<void> {
         }));
     
     const onlyAcceptedSetting = new Setting(containerEl)
-      .setName('Only join Zoom meetings that I have accepted')
-      .setDesc('When enabled, auto-launch will only work for calendar events where I have accepted the invitation. Disabled means all events with Zoom links will auto-launch.')
+      .setName('Only launch meetings that I have accepted')
+      .setDesc('When enabled, auto-launch will only work for calendar events where I have accepted the invitation or I am the organizer. Disabled means all events with meeting links will auto-launch.')
       .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settingsv2.schedule.autoLaunchZoomOnlyAccepted).onChange(async (value) => {
-          this.plugin.settingsv2.schedule.autoLaunchZoomOnlyAccepted = value;
+        toggle.setValue(this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted).onChange(async (value) => {
+          this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted = value;
           await this.plugin.settingsv2.saveSettings();
           await this.plugin.saveSettingsToFile();
           // 설정 변경 시 이벤트 리스트 다시 렌더링
-          await this.plugin.calendarHandler.displayEvents(this.plugin.settingsv2.schedule.autoLaunchZoomOnSchedule);
+          await this.plugin.calendarHandler.displayEvents(this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule);
         }));
     
     // 클래스 추가하여 CSS로 제어할 수 있도록 함
     onlyAcceptedSetting.settingEl.addClass('only-accepted-setting');
     
     // 초기 상태 설정
-    if (!this.plugin.settingsv2.schedule.autoLaunchZoomOnSchedule) {
+    if (!this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule) {
       onlyAcceptedSetting.settingEl.addClass('disabled');
     }
 
@@ -2028,7 +2087,7 @@ async activateTab(tabId: string): Promise<void> {
       // 이벤트 표시 (별도로 처리)
       const eventsPromise = (async () => {
         try {
-          await this.plugin.calendarHandler.displayEvents(this.plugin.settingsv2.schedule.autoLaunchZoomOnSchedule, eventsContainer);
+          await this.plugin.calendarHandler.displayEvents(this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule, eventsContainer);
           loadingEl.remove(); // 이벤트 로딩 완료 후 로딩 텍스트 제거
         } catch (error: any) {
           loadingEl.textContent = 'Failed to load calendar events';

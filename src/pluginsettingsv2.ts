@@ -18,7 +18,7 @@ export class PluginSettingsV2 {
   private settingsPath: string;
 
   // 설정 데이터 구조
-  schemaVersion: string = "2.0.0";
+  schemaVersion: string = "2.0.1";
   common: {
     openaiApiKey: string;
     openaiApiEndpoint: string;
@@ -117,14 +117,18 @@ export class PluginSettingsV2 {
   schedule: {
     calendar_fetchdays: number;
     calendar_polling_interval: number;
-    autoLaunchZoomOnSchedule: boolean;
-    autoLaunchZoomOnlyAccepted: boolean;
+    googleDriveFilePath: string;
+    googleDriveSyncInterval: number;
+    autoLaunchVideoMeetingOnSchedule: boolean;
+    autoLaunchVideoMeetingOnlyAccepted: boolean;
     calendarName: string[];
   } = {
     calendar_fetchdays: 1,
     calendar_polling_interval: 600000,
-    autoLaunchZoomOnSchedule: false,
-    autoLaunchZoomOnlyAccepted: true,
+    googleDriveFilePath: "Summar/calendar/events.json",
+    googleDriveSyncInterval: 900,
+    autoLaunchVideoMeetingOnSchedule: false,
+    autoLaunchVideoMeetingOnlyAccepted: true,
     calendarName: []
   };
 
@@ -158,7 +162,7 @@ export class PluginSettingsV2 {
    * 기본 설정값으로 초기화합니다
    */
   private resetToDefaults(): void {
-    this.schemaVersion = "2.0.0";
+    this.schemaVersion = "2.0.1";
     
     // Common 섹션 초기화
     Object.assign(this.common, {
@@ -223,8 +227,10 @@ export class PluginSettingsV2 {
     Object.assign(this.schedule, {
       calendar_fetchdays: 1,
       calendar_polling_interval: 600000,
-      autoLaunchZoomOnSchedule: false,
-      autoLaunchZoomOnlyAccepted: true,
+      googleDriveFilePath: "Summar/calendar/events.json",
+      googleDriveSyncInterval: 900,
+      autoLaunchVideoMeetingOnSchedule: false,
+      autoLaunchVideoMeetingOnlyAccepted: true,
       calendarName: []
     });
 
@@ -250,13 +256,22 @@ export class PluginSettingsV2 {
     try {
       if (await this.app.vault.adapter.exists(this.settingsPath)) {
         SummarDebug.log(1, `Loading settings from: ${this.settingsPath}`);
-        
+
         const rawData = await this.app.vault.adapter.read(this.settingsPath);
         const loadedSettings = JSON.parse(rawData) as Partial<PluginSettingsV2>;
-        
-        // 로드된 설정을 현재 객체에 병합
-        this.mergeWithLoaded(loadedSettings);
-        
+
+        // V2.0.0 → V2.0.1 마이그레이션
+        if (loadedSettings.schemaVersion === "2.0.0") {
+          await this.migrateV200ToV201(loadedSettings);
+          // 마이그레이션 후 즉시 저장
+          this.mergeWithLoaded(loadedSettings);
+          await this.saveSettings();
+          SummarDebug.log(1, "V2.0.0 → V2.0.1 migration completed and saved");
+        } else {
+          // 로드된 설정을 현재 객체에 병합
+          this.mergeWithLoaded(loadedSettings);
+        }
+
         SummarDebug.log(1, `Settings loaded successfully. Schema version: ${this.schemaVersion}`);
         return this;
       } else {
@@ -548,8 +563,12 @@ export class PluginSettingsV2 {
       // Schedule 섹션 마이그레이션
       if (v1Settings.calendar_fetchdays !== undefined) this.schedule.calendar_fetchdays = v1Settings.calendar_fetchdays;
       if (v1Settings.calendar_polling_interval !== undefined) this.schedule.calendar_polling_interval = v1Settings.calendar_polling_interval;
-      if (v1Settings.autoLaunchZoomOnSchedule !== undefined) this.schedule.autoLaunchZoomOnSchedule = v1Settings.autoLaunchZoomOnSchedule;
-      if (v1Settings.autoLaunchZoomOnlyAccepted !== undefined) this.schedule.autoLaunchZoomOnlyAccepted = v1Settings.autoLaunchZoomOnlyAccepted;
+      if (v1Settings.autoLaunchZoomOnSchedule !== undefined) this.schedule.autoLaunchVideoMeetingOnSchedule = v1Settings.autoLaunchZoomOnSchedule;
+      if (v1Settings.autoLaunchZoomOnlyAccepted !== undefined) this.schedule.autoLaunchVideoMeetingOnlyAccepted = v1Settings.autoLaunchZoomOnlyAccepted;
+
+      // 새 필드 기본값 설정
+      this.schedule.googleDriveFilePath = "Summar/calendar/events.json";
+      this.schedule.googleDriveSyncInterval = 900;
 
       // 동적 키 형태의 캘린더들을 배열로 변환
       this.schedule.calendarName = []; // 빈 배열로 초기화
@@ -567,11 +586,56 @@ export class PluginSettingsV2 {
       if (v1Settings.testUrl !== undefined) this.system.testUrl = v1Settings.testUrl;
 
       // 스키마 버전 업데이트
-      this.schemaVersion = "2.0.0";
+      this.schemaVersion = "2.0.1";
 
-      SummarDebug.log(1, "Migration from V1 to V2 completed successfully");
+      SummarDebug.log(1, "Migration from V1 to V2.0.1 completed successfully");
     } catch (error) {
       SummarDebug.error(1, "Error during migration from V1 to V2:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * V2.0.0 설정을 V2.0.1로 마이그레이션합니다
+   */
+  private async migrateV200ToV201(settings: Partial<PluginSettingsV2>): Promise<void> {
+    SummarDebug.log(1, "Starting migration from V2.0.0 to V2.0.1");
+
+    try {
+      if (settings.schedule) {
+        const oldSchedule = settings.schedule as any;
+
+        // autoLaunchZoom* → autoLaunchVideoMeeting* 마이그레이션
+        if (oldSchedule.autoLaunchZoomOnSchedule !== undefined) {
+          oldSchedule.autoLaunchVideoMeetingOnSchedule = oldSchedule.autoLaunchZoomOnSchedule;
+          delete oldSchedule.autoLaunchZoomOnSchedule;
+          SummarDebug.log(1, `Migrated autoLaunchZoomOnSchedule → autoLaunchVideoMeetingOnSchedule: ${oldSchedule.autoLaunchVideoMeetingOnSchedule}`);
+        }
+
+        if (oldSchedule.autoLaunchZoomOnlyAccepted !== undefined) {
+          oldSchedule.autoLaunchVideoMeetingOnlyAccepted = oldSchedule.autoLaunchZoomOnlyAccepted;
+          delete oldSchedule.autoLaunchZoomOnlyAccepted;
+          SummarDebug.log(1, `Migrated autoLaunchZoomOnlyAccepted → autoLaunchVideoMeetingOnlyAccepted: ${oldSchedule.autoLaunchVideoMeetingOnlyAccepted}`);
+        }
+
+        // 새 필드 기본값 설정 (존재하지 않으면)
+        if (oldSchedule.googleDriveFilePath === undefined) {
+          oldSchedule.googleDriveFilePath = "Summar/calendar/events.json";
+          SummarDebug.log(1, "Added googleDriveFilePath: Summar/calendar/events.json");
+        }
+
+        if (oldSchedule.googleDriveSyncInterval === undefined) {
+          oldSchedule.googleDriveSyncInterval = 900;
+          SummarDebug.log(1, "Added googleDriveSyncInterval: 900 seconds");
+        }
+      }
+
+      // 스키마 버전 업데이트
+      settings.schemaVersion = "2.0.1";
+
+      SummarDebug.log(1, "Migration from V2.0.0 to V2.0.1 completed successfully");
+    } catch (error) {
+      SummarDebug.error(1, "Error during migration from V2.0.0 to V2.0.1:", error);
       throw error;
     }
   }

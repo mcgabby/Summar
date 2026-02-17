@@ -241,8 +241,10 @@ AI 모델 목록 및 분류 - 각 기능별 사용 가능한 모델과 기본 �
 - `calendar_1` ~ `calendar_5`: 각 캘린더 식별자 (string, 동적 키)
 - `calendar_fetchdays`: 캘린더 이벤트 조회 기간 일 (number, 기본: 1)
 - `calendar_polling_interval`: 캘린더 자동 갱신 주기 ms (number, 기본: 600000)
-- `autoLaunchZoomOnSchedule`: 일정 기반 Zoom 자동 실행 여부 (boolean, 기본: false)
-- `autoLaunchZoomOnlyAccepted`: 수락한 일정만 Zoom 자동 실행 여부 (boolean, 기본: true)
+- `googleDriveFilePath`: Google Drive 캘린더 이벤트 저장 경로 (string, 기본: "Summar/calendar/events.json")
+- `googleDriveSyncInterval`: Google Drive 동기화 간격 초 단위 (number, 기본: 900)
+- `autoLaunchVideoMeetingOnSchedule`: 일정 기반 화상회의 자동 실행 여부 (boolean, 기본: false)
+- `autoLaunchVideoMeetingOnlyAccepted`: 수락한 일정만 화상회의 자동 실행 여부 (boolean, 기본: true)
 - `calendarName`: 선택된 캘린더 이름 배열 (string[], 기본: [])
 
 ### 7. Conversation Tab (`conversation-tab`)
@@ -345,7 +347,7 @@ AI 모델 목록 및 분류 - 각 기능별 사용 가능한 모델과 기본 �
 새로운 통합 설정 구조 - `PluginSettingsV2` 클래스로 관리되는 차세대 설정 시스템
 
 ### 스키마 정보
-- `schemaVersion`: 설정 스키마 버전 (string, 현재: "2.0.0")
+- `schemaVersion`: 설정 스키마 버전 (string, 현재: "2.0.1")
 
 ### 섹션별 설정 구조
 
@@ -431,8 +433,10 @@ AI 모델 목록 및 분류 - 각 기능별 사용 가능한 모델과 기본 �
 **캘린더 연동 설정** *macOS 데스크탑 전용*
 - `calendar_fetchdays`: 캘린더 이벤트 조회 기간 일 (number, 기본: 1)
 - `calendar_polling_interval`: 캘린더 자동 갱신 주기 ms (number, 기본: 600000)
-- `autoLaunchZoomOnSchedule`: 일정 기반 Zoom 자동 실행 여부 (boolean, 기본: false)
-- `autoLaunchZoomOnlyAccepted`: 수락한 일정만 Zoom 자동 실행 여부 (boolean, 기본: true)
+- `googleDriveFilePath`: Google Drive 캘린더 이벤트 저장 경로 (string, 기본: "Summar/calendar/events.json")
+- `googleDriveSyncInterval`: Google Drive 동기화 간격 초 단위 (number, 기본: 900)
+- `autoLaunchVideoMeetingOnSchedule`: 일정 기반 화상회의 자동 실행 여부 (boolean, 기본: false)
+- `autoLaunchVideoMeetingOnlyAccepted`: 수락한 일정만 화상회의 자동 실행 여부 (boolean, 기본: true)
 - `calendarName`: 연동된 캘린더 이름 배열 (string[], 기본: [], 최대: 5개)
 
 #### 7. Conversation 섹션 (`conversation`)

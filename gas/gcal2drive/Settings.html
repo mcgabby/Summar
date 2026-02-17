@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: #f5f7fa;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+      padding: 32px;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .description {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .info-box {
+      background: #f0f8ff;
+      border-left: 4px solid #0088cc;
+      padding: 16px;
+      border-radius: 6px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .info-box .label {
+      font-weight: 600;
+      color: #0088cc;
+      margin-bottom: 4px;
+    }
+
+    .info-box .value {
+      color: #333;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 12px;
+      background: #fff;
+      padding: 6px 10px;
+      border-radius: 4px;
+      margin-top: 4px;
+      word-break: break-all;
+    }
+
+    .section-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .calendar-list {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      max-height: 320px;
+      overflow-y: auto;
+      margin-bottom: 24px;
+      background: #fff;
+    }
+
+    .calendar-list .loading,
+    .calendar-list .error,
+    .calendar-list .empty {
+      padding: 24px;
+      text-align: center;
+      font-size: 14px;
+      color: #999;
+    }
+
+    .calendar-list .error {
+      color: #d32f2f;
+    }
+
+    .calendar-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .calendar-item:last-child {
+      border-bottom: none;
+    }
+
+    .calendar-item:hover {
+      background: #f8f9fa;
+    }
+
+    .calendar-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #0088cc;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .calendar-item .calendar-name {
+      font-size: 14px;
+      color: #333;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .btn-save {
+      width: 100%;
+      padding: 14px;
+      background: #0088cc;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-save:hover:not(:disabled) {
+      background: #006ba3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
+    }
+
+    .btn-save:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-save:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .toast {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+
+    .toast.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border-left: 4px solid #4caf50;
+      display: block;
+    }
+
+    .toast.error {
+      background: #ffebee;
+      color: #c62828;
+      border-left: 4px solid #f44336;
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .permission-note {
+      background: #fff9e6;
+      border-left: 4px solid #ffc107;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 24px;
+      font-size: 12px;
+      color: #8d6e00;
+      line-height: 1.5;
+    }
+
+    .permission-note strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #6d5600;
+    }
+
+    /* Scrollbar styling */
+    .calendar-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .calendar-list::-webkit-scrollbar-track {
+      background: #f0f0f0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .calendar-list::-webkit-scrollbar-thumb {
+      background: #c0c0c0;
+      border-radius: 4px;
+    }
+
+    .calendar-list::-webkit-scrollbar-thumb:hover {
+      background: #a0a0a0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📅 Google Calendar Sync</h1>
+    <p class="description">
+      Select the calendars you want to sync with Google Drive. Events from the selected
+      calendars will be automatically saved as JSON and updated regularly.
+    </p>
+
+    <div class="permission-note">
+      <strong>⚠️ Authorization Required</strong>
+      When you click "Save Settings", you'll be asked to authorize this script to access
+      your Google Calendar and Google Drive. This is required for the sync to work.
+    </div>
+
+    <div class="info-box">
+      <div class="label">📁 Save Location</div>
+      <div class="value" id="filePathDisplay">Loading...</div>
+
+      <div class="label" style="margin-top: 12px;">⏱️ Sync Interval</div>
+      <div class="value" id="intervalDisplay">Loading...</div>
+    </div>
+
+    <p class="section-label">Select Calendars to Sync</p>
+    <div class="calendar-list" id="calendarList">
+      <div class="loading">Loading your calendars...</div>
+    </div>
+
+    <button class="btn-save" id="btnSave" onclick="handleSave()">
+      Save Settings & Start Sync
+    </button>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script>
+    var toastTimer;
+
+    // Load initial settings on page load
+    window.addEventListener('load', function() {
+      // Get initial settings (filePath, interval)
+      google.script.run
+        .withSuccessHandler(function(settings) {
+          document.getElementById('filePathDisplay').textContent = settings.filePath || '(not set)';
+          document.getElementById('intervalDisplay').textContent = 'Every ' + settings.interval + ' minutes';
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('filePathDisplay').textContent = '(error loading settings)';
+          document.getElementById('intervalDisplay').textContent = '(error)';
+          console.error('Failed to load settings:', err);
+        })
+        .getInitialSettings();
+
+      // Get calendar list
+      google.script.run
+        .withSuccessHandler(function(calendars) {
+          renderCalendarList(calendars);
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('calendarList').innerHTML =
+            '<div class="error">❌ Failed to load calendars. Please check permissions and try again.</div>';
+          console.error('Failed to load calendars:', err);
+        })
+        .getCalendarList();
+    });
+
+    function renderCalendarList(calendars) {
+      var container = document.getElementById('calendarList');
+
+      if (!calendars || calendars.length === 0) {
+        container.innerHTML = '<div class="empty">No accessible calendars found.</div>';
+        return;
+      }
+
+      var html = '';
+      calendars.forEach(function(cal) {
+        var checked = cal.selected ? ' checked' : '';
+        html += '<label class="calendar-item">' +
+          '<input type="checkbox" value="' + escapeHtml(cal.id) + '"' + checked + '>' +
+          '<span class="calendar-name">' + escapeHtml(cal.name) + '</span>' +
+          '</label>';
+      });
+
+      container.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(str));
+      return div.innerHTML;
+    }
+
+    function getSelectedCalendarIds() {
+      var checkboxes = document.querySelectorAll('#calendarList input[type="checkbox"]:checked');
+      var ids = [];
+      for (var i = 0; i < checkboxes.length; i++) {
+        ids.push(checkboxes[i].value);
+      }
+      return ids;
+    }
+
+    function handleSave() {
+      var calendarIds = getSelectedCalendarIds();
+
+      if (calendarIds.length === 0) {
+        showToast('⚠️ Please select at least one calendar to sync.', false);
+        return;
+      }
+
+      // Disable button and show loading state
+      var btn = document.getElementById('btnSave');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          showToast(result.message, result.success);
+          btn.disabled = false;
+          btn.textContent = 'Save Settings & Start Sync';
+
+          if (result.success) {
+            // Auto-close after 3 seconds on success
+            setTimeout(function() {
+              google.script.host.close();
+            }, 3000);
+          }
+        })
+        .withFailureHandler(function(err) {
+          showToast('❌ Error: ' + err.message, false);
+          btn.disabled = false;
+          btn.textContent = 'Save Settings & Start Sync';
+          console.error('Save failed:', err);
+        })
+        .saveSettings(calendarIds);
+    }
+
+    function showToast(message, isSuccess) {
+      var el = document.getElementById('toast');
+      el.className = 'toast ' + (isSuccess ? 'success' : 'error');
+      el.textContent = message;
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function() {
+        el.className = 'toast';
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
