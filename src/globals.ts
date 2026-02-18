@@ -404,6 +404,10 @@ export function getAvailableFilePath(basePath: string, suffix: string, plugin: S
 }
 
 export async function showSettingsTab(plugin: SummarPlugin, tabname: string) {
+  // Set savedTabId before opening so any display() triggered by open-settings
+  // already renders the correct tab (avoids a redundant display() call)
+  plugin.summarSettingTab.savedTabId = tabname;
+
   // 설정 창 열기
   (plugin.app as any).commands.executeCommandById("app:open-settings");
 
@@ -435,34 +439,36 @@ export async function showSettingsTab(plugin: SummarPlugin, tabname: string) {
 
       // Summar 탭 찾기
       const navLinks = deepQuerySelectorAll(settingsContainer, '.vertical-tab-nav-item');
-      let summarTabClicked = false;
+      let summarTabFound = false;
 
       navLinks.forEach((link) => {
         const linkEl = link as HTMLElement;
-        // SummarDebug.log(3, "탭 이름:", linkEl.innerText);
 
         if (linkEl.innerText.includes("Summar")) {
-          // SummarDebug.log(3, "Summar 설정창 활성화 시도");
+          summarTabFound = true;
 
-          // Summar 탭 클릭
-          const clickEvent = new MouseEvent('click', {
-            bubbles: true,
-            cancelable: true,
-            view: window
-          });
-          linkEl.dispatchEvent(clickEvent);
-
-          summarTabClicked = true;
+          if (linkEl.classList.contains('is-active')) {
+            // Summar is already the active settings tab.
+            // display() was already called by executeCommandById with the correct
+            // savedTabId, so only a DOM-level tab switch is needed.
+            plugin.summarSettingTab.activateTab(tabname);
+          } else {
+            // Summar is not yet active: click to navigate to it.
+            // savedTabId is already set, so the resulting display() call will
+            // render the correct internal tab immediately.
+            const clickEvent = new MouseEvent('click', {
+              bubbles: true,
+              cancelable: true,
+              view: window
+            });
+            linkEl.dispatchEvent(clickEvent);
+          }
         }
       });
 
-      // Summar 설정창이 선택되지 않으면 계속 감시
-      if (!summarTabClicked) {
-        // SummarDebug.log(3, "Summar 설정창이 즉시 열리지 않음, 다시 감지...");
+      // Summar 탭을 찾지 못하면 계속 감시
+      if (!summarTabFound) {
         requestAnimationFrame(waitForSummarTab);
-      } else {
-        // SummarDebug.log(3, "Summar 설정창 클릭됨, schedule-tab 감지 시작");
-        plugin.summarSettingTab.activateTab(tabname);
       }
     } else {
       // SummarDebug.log(3, "설정창이 아직 로드되지 않음, 다시 확인...");

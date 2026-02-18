@@ -201,21 +201,26 @@
       }
     }
 
-    .permission-note {
-      background: #fff9e6;
-      border-left: 4px solid #ffc107;
-      padding: 12px 16px;
-      border-radius: 6px;
+    .info-details {
       margin-bottom: 24px;
-      font-size: 12px;
-      color: #8d6e00;
-      line-height: 1.5;
     }
 
-    .permission-note strong {
-      display: block;
-      margin-bottom: 4px;
-      color: #6d5600;
+    .info-details summary {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0088cc;
+      cursor: pointer;
+      user-select: none;
+      padding: 6px 0;
+    }
+
+    .info-details summary:hover {
+      color: #006ba3;
+    }
+
+    .info-details .info-box {
+      margin-top: 8px;
+      margin-bottom: 0;
     }
 
     /* Scrollbar styling */
@@ -246,19 +251,19 @@
       calendars will be automatically saved as JSON and updated regularly.
     </p>
 
-    <div class="permission-note">
-      <strong>⚠️ Authorization Required</strong>
-      When you click "Save Settings", you'll be asked to authorize this script to access
-      your Google Calendar and Google Drive. This is required for the sync to work.
-    </div>
+    <details class="info-details">
+      <summary>⚙️ Sync Settings</summary>
+      <div class="info-box">
+        <div class="label">🗂️ Vault</div>
+        <div class="value" id="vaultNameDisplay">Loading...</div>
 
-    <div class="info-box">
-      <div class="label">📁 Save Location</div>
-      <div class="value" id="filePathDisplay">Loading...</div>
+        <div class="label" style="margin-top: 12px;">📁 Save Location</div>
+        <div class="value" id="filePathDisplay">Loading...</div>
 
-      <div class="label" style="margin-top: 12px;">⏱️ Sync Interval</div>
-      <div class="value" id="intervalDisplay">Loading...</div>
-    </div>
+        <div class="label" style="margin-top: 12px;">⏱️ Sync Interval</div>
+        <div class="value" id="intervalDisplay">Loading...</div>
+      </div>
+    </details>
 
     <p class="section-label">Select Calendars to Sync</p>
     <div class="calendar-list" id="calendarList">
@@ -280,6 +285,7 @@
       // Get initial settings (filePath, interval)
       google.script.run
         .withSuccessHandler(function(settings) {
+          document.getElementById('vaultNameDisplay').textContent = settings.vaultName || '(not set)';
           document.getElementById('filePathDisplay').textContent = settings.filePath || '(not set)';
           document.getElementById('intervalDisplay').textContent = 'Every ' + settings.interval + ' minutes';
         })

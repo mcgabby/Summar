@@ -3,6 +3,7 @@ import SummarPlugin from './main';
 import {
   checkGoogleDriveStatus,
   readCalendarJson,
+  checkCalendarJsonExists,
   checkNetworkStatus
 } from './googledrive-utils';
 import * as fs from 'fs';
@@ -53,8 +54,14 @@ export class CalendarSettingModal extends Modal {
       return;
     }
 
-    // Show permission info
-    this.renderPermissionInfo(contentEl);
+    // Show permission info only when events.json does not exist yet
+    const jsonExists = await checkCalendarJsonExists(
+      this.plugin.settingsv2.schedule.googleDriveFilePath,
+      this.selectedDrivePath || undefined
+    );
+    if (!jsonExists) {
+      this.renderPermissionInfo(contentEl);
+    }
 
     // Calendar selection button
     this.renderSelectButton(contentEl);
@@ -279,7 +286,8 @@ export class CalendarSettingModal extends Modal {
 
     const params = new URLSearchParams({
       filePath: filePath,
-      interval: String(validInterval)
+      interval: String(validInterval),
+      vaultName: this.plugin.app.vault.getName()
     });
 
     const fullUrl = `${this.webAppUrl}?${params.toString()}`;
@@ -315,6 +323,12 @@ export class CalendarSettingModal extends Modal {
    */
   private updateCalendarListUI(calendars: Array<{ id: string; name: string }>, localFileTime: Date): void {
     if (!this.calendarListEl || !this.statusMessageEl) return;
+
+    if (this.syncWarningEl) {
+      this.syncWarningEl.remove();
+      this.syncWarningEl = null;
+    }
+    this.attemptCount = 0;
 
     this.statusMessageEl.textContent = `✅ 선택된 캘린더 (${calendars.length}개)`;
     this.statusMessageEl.style.color = '#16a34a';
@@ -477,7 +491,8 @@ export class CalendarSettingModal extends Modal {
     try {
       const jsonData = await readCalendarJson(
         this.plugin.settingsv2.schedule.googleDriveFilePath,
-        this.selectedDrivePath || undefined
+        this.selectedDrivePath || undefined,
+        this.plugin.app.vault.getName()
       );
 
       if (!jsonData) {
@@ -592,6 +607,7 @@ export class CalendarSettingModal extends Modal {
       multipleAccounts: status.multipleAccounts,
       availablePaths: status.availablePaths,
       selectedDrivePath: this.selectedDrivePath,
+      vaultName: this.plugin.app.vault.getName(),
       expectedFilePath: this.plugin.settingsv2.schedule.googleDriveFilePath,
       fullPath: fullPath,
       fileExists: fileExists,

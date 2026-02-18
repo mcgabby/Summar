@@ -11,6 +11,7 @@ import { AudioHandler } from "./audiohandler";
 import { AudioRecordingManager } from "./recordingmanager";
 import { CustomCommandHandler } from "./customcommandhandler";
 import { CalendarHandler } from "./calendarhandler";
+import { GoogleCalendarScheduler } from "./google-calendar-scheduler";
 import { DailyNotesHandler } from "./dailynoteshandler";
 import { StatusBar } from "./statusbar";
 import { SummarStatsModal } from "./summarstatsmodal";
@@ -97,6 +98,7 @@ export default class SummarPlugin extends Plugin {
   audioHandler: AudioHandler;
   commandHandler: CustomCommandHandler;
   calendarHandler: CalendarHandler;
+  googleCalendarScheduler: GoogleCalendarScheduler;
   dailyNotesHandler: DailyNotesHandler;
 
   recordingStatus: StatusBar;
@@ -298,6 +300,8 @@ export default class SummarPlugin extends Plugin {
       this.recordingStatus = new StatusBar(this);
       this.reservedStatus = new StatusBar(this,true);
       this.calendarHandler = new CalendarHandler(this);
+      this.googleCalendarScheduler = new GoogleCalendarScheduler(this);
+      this.googleCalendarScheduler.start();
       this.dailyNotesHandler = new DailyNotesHandler(this);
 
       // 데이터베이스 초기화
@@ -805,6 +809,11 @@ export default class SummarPlugin extends Plugin {
       if (this.calendarHandler) {
         this.calendarHandler.stop();
         SummarDebug.log(1, "Stopped calendar handler");
+      }
+
+      if (this.googleCalendarScheduler) {
+        this.googleCalendarScheduler.stop();
+        SummarDebug.log(1, "Stopped Google Calendar scheduler");
       }
 
       // Cleanup custom commands and menus

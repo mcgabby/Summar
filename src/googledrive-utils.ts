@@ -247,10 +247,12 @@ export async function getGoogleDriveFolderPath(): Promise<string | null> {
 
 /**
  * Read calendar JSON file from Google Drive
+ * @param vaultName - Obsidian vault name to read vault-specific data from the multi-vault JSON structure
  */
 export async function readCalendarJson(
   relativeFilePath: string,
-  drivePath?: string
+  drivePath?: string,
+  vaultName?: string
 ): Promise<CalendarJsonData | null> {
   try {
     // Get Google Drive path if not provided
@@ -277,26 +279,43 @@ export async function readCalendarJson(
     const content = await readFile(fullPath, 'utf-8');
     const data = JSON.parse(content);
 
+    // Determine the source object based on vault name
+    let source: any;
+    if (vaultName) {
+      // Multi-vault schema: { vaults: { [vaultName]: { selectedCalendars, events } } }
+      if (!data.vaults || typeof data.vaults !== 'object') {
+        console.error('[Calendar JSON] Invalid schema: vaults section missing');
+        return null;
+      }
+      source = data.vaults[vaultName];
+      if (!source) {
+        // Vault not yet configured in this JSON file
+        return null;
+      }
+    } else {
+      source = data;
+    }
+
     // Validate schema
-    if (!data.selectedCalendars || !Array.isArray(data.selectedCalendars)) {
+    if (!source.selectedCalendars || !Array.isArray(source.selectedCalendars)) {
       console.error('[Calendar JSON] Invalid schema: selectedCalendars missing or not an array');
       return null;
     }
 
     // Validate each calendar object
-    const validCalendars = data.selectedCalendars.filter((cal: any) =>
+    const validCalendars = source.selectedCalendars.filter((cal: any) =>
       cal &&
       typeof cal.id === 'string' &&
       typeof cal.name === 'string'
     );
 
-    if (validCalendars.length !== data.selectedCalendars.length) {
+    if (validCalendars.length !== source.selectedCalendars.length) {
       console.warn('[Calendar JSON] Some calendars have invalid format');
     }
 
     return {
       selectedCalendars: validCalendars,
-      events: Array.isArray(data.events) ? data.events : [],
+      events: Array.isArray(source.events) ? source.events : [],
       localFileTime: fileStat.mtime
     };
 

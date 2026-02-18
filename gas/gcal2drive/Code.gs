@@ -14,6 +14,7 @@ function doGet(e) {
   // Priority: 1. URL params → 2. User Properties → 3. Default values
   const filePath = params.filePath || props.getProperty('LAST_FILE_PATH') || 'Summar/calendar/events.json';
   const intervalRaw = parseInt(params.interval) || parseInt(props.getProperty('LAST_INTERVAL')) || 15;
+  const vaultName = params.vaultName || '';
 
   // Google Apps Script everyMinutes() only supports 1, 5, 10, 15, 30
   const validIntervals = [1, 5, 10, 15, 30];
@@ -25,6 +26,7 @@ function doGet(e) {
   const cache = CacheService.getUserCache();
   cache.put('INIT_FILE_PATH', filePath, 300);
   cache.put('INIT_INTERVAL', String(interval), 300);
+  cache.put('INIT_VAULT_NAME', vaultName, 300);
 
   return HtmlService.createHtmlOutputFromFile('Settings')
     .setTitle('Google Calendar Sync Settings')
@@ -41,10 +43,10 @@ function syncEventsToDrive() {
     // Read last configuration from Properties
     const filePath = props.getProperty('LAST_FILE_PATH');
     const interval = parseInt(props.getProperty('LAST_INTERVAL')) || 15;
-    const calendarIds = JSON.parse(props.getProperty('SELECTED_CALENDARS') || '[]');
-    const calendarInfo = JSON.parse(props.getProperty('SELECTED_CALENDARS_INFO') || '[]');
+    const vaultCalendars = JSON.parse(props.getProperty('VAULT_CALENDARS') || '{}');
+    const vaultCalendarsInfo = JSON.parse(props.getProperty('VAULT_CALENDARS_INFO') || '{}');
 
-    if (!filePath || !calendarIds.length) {
+    if (!filePath || Object.keys(vaultCalendars).length === 0) {
       console.log('[ERROR] Missing configuration. Please configure via web app.');
       return;
     }
@@ -54,69 +56,80 @@ function syncEventsToDrive() {
     const startTime = new Date(now.getTime() - interval * 60 * 1000);
     const endTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-    console.log(`[RUN] Syncing calendars: ${Utilities.formatDate(now, "GMT", "yyyy-MM-dd HH:mm:ss")} (${calendarIds.length} calendars, window=${interval}m ago ~ +24h)`);
+    const totalVaults = Object.keys(vaultCalendars).length;
+    console.log(`[RUN] Syncing ${totalVaults} vault(s): ${Utilities.formatDate(now, "GMT", "yyyy-MM-dd HH:mm:ss")} (window=${interval}m ago ~ +24h)`);
 
-    // Collect events from all selected calendars
-    const events = [];
+    // Build per-vault events
+    const vaultsOutput = {};
 
-    calendarIds.forEach(calId => {
-      const calendar = CalendarApp.getCalendarById(calId);
-      if (!calendar) {
-        console.warn(`[WARN] Calendar not found or inaccessible: ${calId}`);
-        return;
-      }
+    Object.entries(vaultCalendars).forEach(([vaultName, calendarIds]) => {
+      const calendarInfo = vaultCalendarsInfo[vaultName] || [];
+      const events = [];
 
-      const calEvents = calendar.getEvents(startTime, endTime);
-
-      calEvents.forEach(event => {
-        try {
-          const eventId = event.getId().split('@')[0];
-
-          // Try to use Advanced Calendar API to get conferenceData
-          let advEvent = null;
-          let meeting_url = '';
-          let participant_status = '';
-
-          try {
-            // Check if Calendar API is available
-            if (typeof Calendar !== 'undefined') {
-              advEvent = Calendar.Events.get(calId, eventId);
-              meeting_url = extractMeetingUrl(advEvent);
-              participant_status = getMyParticipantStatus(advEvent);
-            } else {
-              console.warn(`[WARN] Calendar API not available. Please add "Google Calendar API" service in Apps Script editor.`);
-            }
-          } catch (apiErr) {
-            console.warn(`[WARN] Calendar API error for event ${event.getTitle()}: ${apiErr.message}`);
-          }
-
-          events.push({
-            calendarName: calendar.getName(),
-            title: event.getTitle(),
-            start: event.getStartTime().toISOString(),
-            end: event.getEndTime().toISOString(),
-            meeting_url: meeting_url,
-            description: event.getDescription() || '',
-            location: event.getLocation() || '',
-            attendees: event.getGuestList().map(g => g.getEmail()),
-            participant_status: participant_status,
-            isAllDay: event.isAllDayEvent()
-          });
-        } catch (err) {
-          console.warn(`[WARN] Failed to process event ${event.getTitle()}: ${err.message}`);
+      calendarIds.forEach(calId => {
+        const calendar = CalendarApp.getCalendarById(calId);
+        if (!calendar) {
+          console.warn(`[WARN] Calendar not found or inaccessible: ${calId}`);
+          return;
         }
+
+        const calEvents = calendar.getEvents(startTime, endTime);
+
+        calEvents.forEach(event => {
+          try {
+            const eventId = event.getId().split('@')[0];
+
+            let advEvent = null;
+            let meeting_url = '';
+            let participant_status = '';
+
+            try {
+              if (typeof Calendar !== 'undefined') {
+                advEvent = Calendar.Events.get(calId, eventId);
+                meeting_url = extractMeetingUrl(advEvent);
+                participant_status = getMyParticipantStatus(advEvent);
+              } else {
+                console.warn(`[WARN] Calendar API not available. Please add "Google Calendar API" service in Apps Script editor.`);
+              }
+            } catch (apiErr) {
+              console.warn(`[WARN] Calendar API error for event ${event.getTitle()}: ${apiErr.message}`);
+            }
+
+            events.push({
+              calendarName: calendar.getName(),
+              title: event.getTitle(),
+              start: event.getStartTime().toISOString(),
+              end: event.getEndTime().toISOString(),
+              meeting_url: meeting_url,
+              description: event.getDescription() || '',
+              location: event.getLocation() || '',
+              attendees: event.getGuestList().map(g => g.getEmail()),
+              participant_status: participant_status,
+              isAllDay: event.isAllDayEvent()
+            });
+          } catch (err) {
+            console.warn(`[WARN] Failed to process event ${event.getTitle()}: ${err.message}`);
+          }
+        });
       });
+
+      // Sort events by start time (chronological order)
+      events.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+      const selectedCalendars = calendarInfo.length > 0
+        ? calendarInfo
+        : calendarIds.map(id => ({ id, name: 'Unknown' }));
+
+      vaultsOutput[vaultName] = {
+        selectedCalendars: selectedCalendars,
+        events: events
+      };
+
+      console.log(`[VAULT] "${vaultName}": ${events.length} events from ${calendarIds.length} calendar(s)`);
     });
 
-    // Sort events by start time (chronological order)
-    events.sort((a, b) => new Date(a.start) - new Date(b.start));
-
-    // Build JSON output with calendar info (id + name)
-    const output = {
-      selectedCalendars: calendarInfo.length > 0 ? calendarInfo : calendarIds.map(id => ({ id, name: 'Unknown' })),
-      events: events
-    };
-
+    // Build final JSON output
+    const output = { vaults: vaultsOutput };
     const jsonString = JSON.stringify(output, null, 2);
 
     // Log Google Drive JSON content
@@ -126,7 +139,8 @@ function syncEventsToDrive() {
     // Save to Google Drive
     saveToDrive(filePath, jsonString);
 
-    console.log(`[OK] Synced ${events.length} events to ${filePath}`);
+    const totalEvents = Object.values(vaultsOutput).reduce((sum, v) => sum + v.events.length, 0);
+    console.log(`[OK] Synced ${totalEvents} events across ${totalVaults} vault(s) to ${filePath}`);
 
   } catch (e) {
     console.error(`[ERROR] Sync failed: ${e.toString()}`);
@@ -135,7 +149,6 @@ function syncEventsToDrive() {
 
 // ============================================================
 // 3. Extract Meeting URL (Zoom/Google Meet/Teams)
-// Reused from gcal2drive logic
 // ============================================================
 function extractMeetingUrl(advEvent) {
   const links = new Set();
@@ -168,7 +181,7 @@ function extractMeetingUrl(advEvent) {
 }
 
 // ============================================================
-// 4. Strip HTML Tags (Reused from gcal2drive)
+// 4. Strip HTML Tags
 // ============================================================
 function stripHtml(text) {
   return String(text || '')
@@ -207,7 +220,6 @@ function saveToDrive(filePath, content) {
 
 // ============================================================
 // 6. Get or Create Folder from Path
-// Reused from FetchEventsFromCalendar
 // ============================================================
 function getOrCreateFolderFromPath(path) {
   const parts = path.split('/').filter(p => p);
@@ -232,8 +244,9 @@ function saveSettings(calendarIds) {
   const cache = CacheService.getUserCache();
   const filePath = cache.get('INIT_FILE_PATH');
   const interval = parseInt(cache.get('INIT_INTERVAL'));
+  const vaultName = cache.get('INIT_VAULT_NAME');
 
-  if (!filePath || !interval) {
+  if (!filePath || !interval || !vaultName) {
     return { success: false, message: 'Missing initialization parameters. Please reload the page from Summar.' };
   }
 
@@ -246,10 +259,17 @@ function saveSettings(calendarIds) {
     };
   });
 
+  // Update VAULT_CALENDARS and VAULT_CALENDARS_INFO (merge with existing vaults)
   const props = PropertiesService.getUserProperties();
+  const vaultCalendars = JSON.parse(props.getProperty('VAULT_CALENDARS') || '{}');
+  const vaultCalendarsInfo = JSON.parse(props.getProperty('VAULT_CALENDARS_INFO') || '{}');
+
+  vaultCalendars[vaultName] = calendarIds;
+  vaultCalendarsInfo[vaultName] = calendarInfo;
+
   const userPropsData = {
-    'SELECTED_CALENDARS': JSON.stringify(calendarIds),
-    'SELECTED_CALENDARS_INFO': JSON.stringify(calendarInfo),
+    'VAULT_CALENDARS': JSON.stringify(vaultCalendars),
+    'VAULT_CALENDARS_INFO': JSON.stringify(vaultCalendarsInfo),
     'LAST_FILE_PATH': filePath,
     'LAST_INTERVAL': String(interval)
   };
@@ -261,16 +281,17 @@ function saveSettings(calendarIds) {
   console.log(JSON.stringify(userPropsData, null, 2));
 
   try {
-    // Immediate first sync (이 함수가 Google Drive에 JSON 저장)
+    // Immediate first sync
     syncEventsToDrive();
 
-    // Setup triggers
+    // Setup triggers using union of all vaults' calendars (deduplicated)
+    const allCalendarIds = [...new Set(Object.values(vaultCalendars).flat())];
     ensureSyncTrigger(interval);
-    ensureCalendarTriggers(calendarIds);
+    ensureCalendarTriggers(allCalendarIds);
 
     return {
       success: true,
-      message: `Settings saved successfully! Syncing ${calendarIds.length} calendar(s) every ${interval} minutes to ${filePath}.`
+      message: `Settings saved! Syncing ${calendarIds.length} calendar(s) for vault "${vaultName}" every ${interval} minutes to ${filePath}.`
     };
   } catch (e) {
     return {
@@ -282,7 +303,6 @@ function saveSettings(calendarIds) {
 
 // ============================================================
 // 8. Ensure Sync Trigger (N-minute polling)
-// Modified from gcal2drive
 // ============================================================
 function ensureSyncTrigger(intervalMinutes) {
   const props = PropertiesService.getUserProperties();
@@ -307,7 +327,6 @@ function ensureSyncTrigger(intervalMinutes) {
 
 // ============================================================
 // 9. Ensure Calendar Update Triggers
-// Modified from gcal2drive
 // ============================================================
 function ensureCalendarTriggers(calendarIds) {
   const props = PropertiesService.getUserProperties();
@@ -321,7 +340,7 @@ function ensureCalendarTriggers(calendarIds) {
       .forEach(t => ScriptApp.deleteTrigger(t));
   });
 
-  // Create new triggers for each calendar
+  // Create new triggers for each unique calendar
   const newIds = [];
   const errors = [];
 
@@ -351,7 +370,8 @@ function getInitialSettings() {
 
   return {
     filePath: cache.get('INIT_FILE_PATH') || props.getProperty('LAST_FILE_PATH') || '(not set)',
-    interval: parseInt(cache.get('INIT_INTERVAL') || props.getProperty('LAST_INTERVAL')) || 15
+    interval: parseInt(cache.get('INIT_INTERVAL') || props.getProperty('LAST_INTERVAL')) || 15,
+    vaultName: cache.get('INIT_VAULT_NAME') || '(not set)'
   };
 }
 
@@ -360,8 +380,11 @@ function getInitialSettings() {
 // ============================================================
 function getCalendarList() {
   const calendars = CalendarApp.getAllCalendars();
-  const selectedRaw = PropertiesService.getUserProperties().getProperty('SELECTED_CALENDARS');
-  const selectedIds = selectedRaw ? JSON.parse(selectedRaw) : [];
+
+  // Get the vault name from cache to show correct pre-checked state per vault
+  const vaultName = CacheService.getUserCache().get('INIT_VAULT_NAME') || '';
+  const vaultCalendars = JSON.parse(PropertiesService.getUserProperties().getProperty('VAULT_CALENDARS') || '{}');
+  const selectedIds = vaultName && vaultCalendars[vaultName] ? vaultCalendars[vaultName] : [];
 
   return calendars.map(cal => ({
     id: cal.getId(),

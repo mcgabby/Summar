@@ -10,12 +10,14 @@ import { SettingHelperConfig } from "./types";
 import { SettingHelperModal } from "./settinghelper";
 import { FolderSuggest } from "./foldersuggest";
 import { CalendarSettingModal } from "./calendarsettingmodal";
+import { readCalendarJson } from "./googledrive-utils";
 
 export class SummarSettingsTab extends PluginSettingTab {
   plugin: SummarPlugin;
   savedTabId: string;
   deviceId: string;
   private calendarSettingModal: CalendarSettingModal | null = null;
+  private googleCalendarEventsContainer: HTMLElement | null = null;
 
   constructor(plugin: SummarPlugin) {
     super(plugin.app, plugin);
@@ -195,18 +197,24 @@ export class SummarSettingsTab extends PluginSettingTab {
     });
 
 
-    // Create tab contents
+    // Phase 1: Create all tab divs synchronously so activateTab() can switch tabs
+    // without needing to call display() again
+    const tabContentMap = new Map<string, HTMLElement>();
+    for (const tab of tabs) {
+      const tabContent = tabContents.createDiv({
+        cls: 'settings-tab-content hidden',
+        attr: { id: tab.id },
+      });
+      if (tab.id === activeTab) {
+        tabContent.removeClass('hidden');
+      }
+      tabContentMap.set(tab.id, tabContent);
+    }
+
+    // Phase 2: Build each tab's content sequentially (same order as before)
     (async () => {
       for (const tab of tabs) {
-        const tabContent = tabContents.createDiv({
-          cls: 'settings-tab-content hidden',
-          attr: { id: tab.id },
-        });
-
-        if (tab.id === activeTab) {
-          tabContent.removeClass('hidden');
-        }
-
+        const tabContent = tabContentMap.get(tab.id)!;
         switch (tab.id) {
           case 'common-tab':
             await this.buildCommonSettings(tabContent);
@@ -226,19 +234,14 @@ export class SummarSettingsTab extends PluginSettingTab {
             await this.buildCustomCommandSettings(tabContent);
             break;
           case 'stats-tab':
-            // 통계 대시보드 탭에 SummarStatsModal의 buildStatsView 사용
-            // if (this.plugin.settings.debugLevel > 0) {
-              // 1. 로딩중 표시 먼저 보여주기
-              tabContent.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:320px;">
+            tabContent.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:320px;">
                 <span style="color:var(--text-muted);font-size:1.1em;">통계 대시보드 로딩 중...</span>
               </div>`;
-              // 2. 다음 tick에 실제 대시보드 렌더링 (UI thread 양보)
-              setTimeout(async () => {
-                tabContent.innerHTML = ""; // 기존 로딩중 메시지 제거
-                const statsModal = new SummarStatsModal(this.plugin);
-                await statsModal.buildStatsView(tabContent);
-              }, 0);
-            // }
+            setTimeout(async () => {
+              tabContent.innerHTML = "";
+              const statsModal = new SummarStatsModal(this.plugin);
+              await statsModal.buildStatsView(tabContent);
+            }, 0);
             break;
 
           case 'schedule-tab':
@@ -251,7 +254,7 @@ export class SummarSettingsTab extends PluginSettingTab {
     })();
   }
 
-async activateTab(tabId: string): Promise<void> {
+activateTab(tabId: string): void {
     const { containerEl } = this;
 
     if (!containerEl) {
@@ -259,30 +262,17 @@ async activateTab(tabId: string): Promise<void> {
         return;
     }
 
-    // 현재 탭 ID 저장
     this.savedTabId = tabId;
 
-    // // 활성화할 탭 찾기
-    // const tabsContainer = containerEl.querySelector('.settings-tabs');
-    // const tabContents = containerEl.querySelector('.settings-tab-contents');
+    // Update active button state
+    containerEl.querySelectorAll('.settings-tabs .clickable-icon').forEach((btn) => {
+        (btn as HTMLElement).toggleClass('active', (btn as HTMLElement).dataset.id === tabId);
+    });
 
-    // if (!tabsContainer || !tabContents) {
-    //     SummarDebug.error(1, "SummarSettingsTab: tabsContainer or tabContents not found");
-    //     return;
-    // }
-
-    // // 모든 버튼에서 active 클래스 제거
-    // tabsContainer.querySelectorAll('.clickable-icon').forEach((btn) => {
-    //   SummarDebug.log(1, `btn id: ${(btn as HTMLElement).dataset.id}`);
-    //   if ((btn as HTMLElement).dataset.id === tabId) {
-    //     btn.addClass('active');
-    //   } else {
-    //     btn.removeClass('active');
-    //   }
-    // });
-
-    this.display();
-    // SummarDebug.log(1, `SummarSettingsTab: Activated tab '${tabId}'`);
+    // Show the target tab, hide all others
+    containerEl.querySelectorAll('.settings-tab-content').forEach((content) => {
+        content.toggleClass('hidden', content.id !== tabId);
+    });
 }
 
   async buildCommonSettings(containerEl: HTMLElement): Promise<void> {
@@ -1804,7 +1794,8 @@ async activateTab(tabId: string): Promise<void> {
 
         if (config.calendar?.selectCalendar) {
           // Google Calendar setting UI
-          this.renderGoogleCalendarUI(containerEl, config.calendar.selectCalendar);
+          await this.renderGoogleCalendarUI(containerEl, config.calendar.selectCalendar);
+          await this.renderCommonCalendarUI(containerEl, true);
           return;
         }
       }
@@ -1814,10 +1805,14 @@ async activateTab(tabId: string): Promise<void> {
 
     // CalDAV setting UI (기존 로직)
     this.renderCalDAVUI(containerEl);
+    await this.renderCommonCalendarUI(containerEl, false);
   }
 
   // Google Calendar setting UI
-  private renderGoogleCalendarUI(containerEl: HTMLElement, webAppUrl: string): void {
+  private async renderGoogleCalendarUI(containerEl: HTMLElement, webAppUrl: string): Promise<void> {
+    const calendarListEl = document.createElement('div');
+    calendarListEl.setAttribute('style', 'margin-top: 12px; padding: 12px; background: var(--background-secondary); border-radius: 6px;');
+
     new Setting(containerEl)
       .setName('Calendar setting')
       .setDesc('Open Google Calendar sync settings')
@@ -1836,16 +1831,57 @@ async activateTab(tabId: string): Promise<void> {
             webAppUrl
           );
 
-          // Override onClose to clean up reference
+          // Override onClose to refresh calendar list
           const originalOnClose = this.calendarSettingModal.onClose.bind(this.calendarSettingModal);
           this.calendarSettingModal.onClose = () => {
             originalOnClose();
             this.calendarSettingModal = null;
+            calendarListEl.empty();
+            this.refreshCalendarListEl(calendarListEl);
+            if (this.googleCalendarEventsContainer) {
+              this.loadGoogleCalendarEvents(this.googleCalendarEventsContainer);
+            }
           };
 
           this.calendarSettingModal.open();
         })
       );
+
+    containerEl.appendChild(calendarListEl);
+    await this.refreshCalendarListEl(calendarListEl);
+  }
+
+  private async refreshCalendarListEl(el: HTMLElement): Promise<void> {
+    const jsonData = await readCalendarJson(
+      this.plugin.settingsv2.schedule.googleDriveFilePath,
+      undefined,
+      this.plugin.app.vault.getName()
+    );
+
+    if (!jsonData || jsonData.selectedCalendars.length === 0) {
+      el.createEl('p', {
+        text: '선택된 캘린더가 없습니다. Calendar setting 버튼을 눌러 설정하세요.',
+        attr: { style: 'color: #666; font-style: italic; margin: 0;' }
+      });
+      return;
+    }
+
+    el.createEl('p', {
+      text: `선택된 캘린더 (${jsonData.selectedCalendars.length}개)`,
+      attr: { style: 'font-weight: 600; margin: 0 0 8px 0;' }
+    });
+
+    const ul = el.createEl('ul', { attr: { style: 'margin: 0 0 8px 0; padding-left: 20px;' } });
+    jsonData.selectedCalendars.forEach(cal => {
+      const li = ul.createEl('li');
+      li.createEl('span', { text: '📅 ', attr: { style: 'margin-right: 8px;' } });
+      li.createEl('span', { text: cal.name });
+    });
+
+    el.createEl('p', {
+      text: `마지막 업데이트 시간: ${jsonData.localFileTime.toLocaleString()}`,
+      attr: { style: 'color: #666; font-size: 0.85em; margin: 0;' }
+    });
   }
 
   // CalDAV setting UI (기존 로직)
@@ -2022,60 +2058,6 @@ async activateTab(tabId: string): Promise<void> {
     for (let i = 1; i <= this.plugin.settingsv2.schedule.calendarName.length; i++) {
       this.createCalendarField(containerEl, i); // await 제거하고 캘린더 목록 없이 먼저 렌더링
     }
-
-    new Setting(containerEl)
-      .setName('Automatically launch video meetings for calendar events')
-      .setDesc('If enabled, Zoom or Google Meet meetings will automatically launch at the scheduled time of events')
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule).onChange(async (value) => {
-          this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule = value;
-          await this.plugin.settingsv2.saveSettings();
-          await this.plugin.calendarHandler.displayEvents(value);
-          if (value) {
-            this.plugin.reservedStatus.setStatusbarIcon('calendar-clock', 'red');
-          } else {
-            this.plugin.reservedStatus.setStatusbarIcon('calendar-x', 'var(--text-muted)');
-          }
-          // 하위 옵션 활성화/비활성화
-          const onlyAcceptedSetting = containerEl.querySelector('.only-accepted-setting') as HTMLElement;
-          if (onlyAcceptedSetting) {
-            if (value) {
-              onlyAcceptedSetting.removeClass('disabled');
-            } else {
-              onlyAcceptedSetting.addClass('disabled');
-            }
-          }
-        }));
-    
-    const onlyAcceptedSetting = new Setting(containerEl)
-      .setName('Only launch meetings that I have accepted')
-      .setDesc('When enabled, auto-launch will only work for calendar events where I have accepted the invitation or I am the organizer. Disabled means all events with meeting links will auto-launch.')
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted).onChange(async (value) => {
-          this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted = value;
-          await this.plugin.settingsv2.saveSettings();
-          await this.plugin.saveSettingsToFile();
-          // 설정 변경 시 이벤트 리스트 다시 렌더링
-          await this.plugin.calendarHandler.displayEvents(this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule);
-        }));
-    
-    // 클래스 추가하여 CSS로 제어할 수 있도록 함
-    onlyAcceptedSetting.settingEl.addClass('only-accepted-setting');
-    
-    // 초기 상태 설정
-    if (!this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule) {
-      onlyAcceptedSetting.settingEl.addClass('disabled');
-    }
-
-    // 이벤트 표시용 컨테이너 생성 (로딩 표시기와 함께)
-    const eventsContainer = containerEl.createDiv();
-    const loadingEl = eventsContainer.createEl('p', { 
-      text: 'Loading calendar data...', 
-      cls: 'calendar-loading' 
-    });
-
-    // 백그라운드에서 캘린더 목록과 이벤트를 비동기로 로드
-    this.loadCalendarDataInBackground(eventsContainer, loadingEl);
   }
 
   // 백그라운드에서 캘린더 데이터를 로드하는 비동기 함수
@@ -2108,6 +2090,153 @@ async activateTab(tabId: string): Promise<void> {
       loadingEl.textContent = 'Failed to load calendar data';
       console.error('Calendar data loading error:', error);
     }
+  }
+
+  private async renderCommonCalendarUI(containerEl: HTMLElement, isGoogleCalendar: boolean): Promise<void> {
+    let eventsContainer!: HTMLElement;
+
+    new Setting(containerEl)
+      .setName('Automatically launch video meetings for calendar events')
+      .setDesc('If enabled, Zoom or Google Meet meetings will automatically launch at the scheduled time of events')
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule).onChange(async (value) => {
+          this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule = value;
+          await this.plugin.settingsv2.saveSettings();
+          if (isGoogleCalendar) {
+            this.loadGoogleCalendarEvents(eventsContainer);
+          } else {
+            this.plugin.calendarHandler.displayEvents(value);
+          }
+          if (value) {
+            this.plugin.reservedStatus.setStatusbarIcon('calendar-clock', 'red');
+          } else {
+            this.plugin.reservedStatus.setStatusbarIcon('calendar-x', 'var(--text-muted)');
+          }
+          const onlyAcceptedEl = containerEl.querySelector('.only-accepted-setting') as HTMLElement;
+          if (onlyAcceptedEl) {
+            if (value) {
+              onlyAcceptedEl.removeClass('disabled');
+            } else {
+              onlyAcceptedEl.addClass('disabled');
+            }
+          }
+        }));
+
+    const onlyAcceptedSetting = new Setting(containerEl)
+      .setName('Only launch meetings that I have accepted')
+      .setDesc('When enabled, auto-launch will only work for calendar events where I have accepted the invitation or I am the organizer. Disabled means all events with meeting links will auto-launch.')
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted).onChange(async (value) => {
+          this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted = value;
+          await this.plugin.settingsv2.saveSettings();
+          await this.plugin.saveSettingsToFile();
+          if (isGoogleCalendar) {
+            this.loadGoogleCalendarEvents(eventsContainer);
+          } else {
+            this.plugin.calendarHandler.displayEvents(this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule);
+          }
+        }));
+
+    onlyAcceptedSetting.settingEl.addClass('only-accepted-setting');
+
+    if (!this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule) {
+      onlyAcceptedSetting.settingEl.addClass('disabled');
+    }
+
+    eventsContainer = containerEl.createDiv();
+
+    if (isGoogleCalendar) {
+      this.googleCalendarEventsContainer = eventsContainer;
+      this.loadGoogleCalendarEvents(eventsContainer);
+    } else {
+      const loadingEl = eventsContainer.createEl('p', {
+        text: 'Loading calendar data...',
+        cls: 'calendar-loading'
+      });
+      this.loadCalendarDataInBackground(eventsContainer, loadingEl);
+    }
+  }
+
+  private async loadGoogleCalendarEvents(container: HTMLElement): Promise<void> {
+    container.empty();
+    const loadingEl = container.createEl('p', {
+      text: 'Loading calendar data...',
+      cls: 'calendar-loading'
+    });
+
+    const jsonData = await readCalendarJson(
+      this.plugin.settingsv2.schedule.googleDriveFilePath,
+      undefined,
+      this.plugin.app.vault.getName()
+    );
+
+    loadingEl.remove();
+
+    if (!jsonData || !jsonData.events || jsonData.events.length === 0) {
+      container.createEl('p', {
+        text: 'No upcoming events found.',
+        attr: { style: 'color: var(--text-muted); font-style: italic;' }
+      });
+      return;
+    }
+
+    const now = new Date();
+    const end = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    const upcomingEvents = jsonData.events.filter((event: any) => {
+      const startTime = new Date(event.start);
+      const endTime = new Date(event.end);
+      return startTime <= end && endTime > now;
+    });
+
+    if (upcomingEvents.length === 0) {
+      container.createEl('p', {
+        text: 'No upcoming events in the next 24 hours.',
+        attr: { style: 'color: var(--text-muted); font-style: italic;' }
+      });
+      return;
+    }
+
+    const autoLaunch = this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule;
+    const onlyAccepted = this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted;
+
+    upcomingEvents.forEach((event: any) => {
+      const startTime = new Date(event.start);
+      const endTime = new Date(event.end);
+
+      let statusEmoji = '👤';
+      let statusText = 'My Event';
+      let statusClass = 'status-organizer';
+
+      switch (event.participant_status) {
+        case 'accepted':
+          statusEmoji = '✅'; statusText = 'Accepted'; statusClass = 'status-accepted'; break;
+        case 'declined':
+          statusEmoji = '❌'; statusText = 'Declined'; statusClass = 'status-declined'; break;
+        case 'tentative':
+          statusEmoji = '❓'; statusText = 'Maybe'; statusClass = 'status-tentative'; break;
+        case 'needsAction':
+          statusEmoji = '⏸️'; statusText = 'Pending'; statusClass = 'status-pending'; break;
+      }
+
+      const shouldAutoLaunch = autoLaunch &&
+        event.meeting_url && event.meeting_url.length > 0 &&
+        (!onlyAccepted || event.participant_status === 'accepted');
+
+      const eventEl = container.createDiv({ cls: `event ${statusClass}${shouldAutoLaunch ? ' event-selected' : ''}` });
+
+      let strInnerHTML = `
+        <div class="event-title">📅 ${event.title}</div>
+        <div class="event-time">⏳${startTime.toLocaleString()} - ⏳${endTime.toLocaleString()}</div>
+        <div class="event-status">${statusEmoji} ${statusText}</div>`;
+
+      if (event.meeting_url && event.meeting_url.length > 0) {
+        strInnerHTML += `<a href="${event.meeting_url}" class="event-zoom-link" target="_blank">🔗 Join Meeting</a>`;
+      }
+
+      strInnerHTML += `<a href="#" class="event-obsidian-link">📝 Create Note in Obsidian</a>`;
+      eventEl.innerHTML = strInnerHTML;
+    });
   }
 
   // 모든 캘린더 드롭다운을 업데이트하는 헬퍼 함수

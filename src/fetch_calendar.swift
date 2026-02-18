@@ -174,6 +174,22 @@ if CommandLine.arguments.contains("--check-permission") {
         return nil
     }
 
+    // Google Meet 링크를 추출하는 함수
+    func extractGoogleMeetLink(from text: String?) -> String? {
+        guard let text = text else { return nil }
+
+        let pattern = #"https?://meet\.google\.com/[a-z]+-[a-z]+-[a-z]+"#
+        let regex = try? NSRegularExpression(pattern: pattern, options: [])
+
+        if let match = regex?.firstMatch(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count)) {
+            if let range = Range(match.range, in: text) {
+                return String(text[range])
+            }
+        }
+
+        return nil
+    }
+
     // 캘린더 접근 권한 요청 및 데이터 가져오기
     requestCalendarAccess { granted in
         guard granted else {
@@ -299,6 +315,7 @@ if CommandLine.arguments.contains("--check-permission") {
             // Zoom 키워드가 포함된 일정만 필터링
             //if containsZoom(text: title) || containsZoom(text: location) || containsZoom(text: notes) {
                 let zoomLink = extractZoomLink(from: notes) ?? extractZoomLink(from: location) ?? ""
+                let googleMeetLink = extractGoogleMeetLink(from: notes) ?? extractGoogleMeetLink(from: location) ?? ""
 
                 let eventData: [String: Any] = [
                     "title": title,
@@ -307,6 +324,7 @@ if CommandLine.arguments.contains("--check-permission") {
                     "description": notes,
                     "location": location,
                     "zoom_link": zoomLink,
+                    "google_meet_link": googleMeetLink,
                     "attendees": attendees,
                     "participant_status": myParticipantStatus
                 ]

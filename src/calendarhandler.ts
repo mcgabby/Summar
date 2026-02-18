@@ -4,14 +4,16 @@ import { promisify } from "util";
 import { SummarDebug } from "./globals";
 import { writeFileSync, unlinkSync, truncate } from "fs";
 import SummarPlugin from "./main";
+import { RecordingEndPromptModal } from "./googlemeet-recording-prompt";
 
-interface CalendarEvent {
+export interface CalendarEvent {
     title: string;
     start: Date;
     end: Date;
     description?: string;
     location?: string;
     zoom_link?: string;
+    google_meet_link?: string;
     attendees?: string[];
     participant_status?: string;
 }
@@ -23,6 +25,7 @@ interface ZoomMeeting {
     description: string;
     location: string;
     zoom_link: string;
+    google_meet_link?: string;
     attendees: string[];
     participant_status?: string;
 }
@@ -299,6 +302,7 @@ export class CalendarHandler {
                 description: meeting.description,
                 location: meeting.location,
                 zoom_link: meeting.zoom_link,
+                google_meet_link: meeting.google_meet_link,
                 attendees: meeting.attendees || [],
                 participant_status: meeting.participant_status || "unknown",
             })));
@@ -344,31 +348,50 @@ export class CalendarHandler {
 
                 if (shouldAutoLaunch) {
                     const timer = setTimeout(async () => {
-                        // if (this.plugin.recordingManager.getRecorderState() !== "recording") {
-                        //     await this.plugin.recordingManager.startRecording(this.plugin.settingsv2.recording.recordingUnit);
-                        // }
                         this.launchZoomMeeting(event.zoom_link as string);
                         clearTimeout(timer);
                     }, delayMs);
                     SummarDebug.log(1, `   🚀 Zoom meeting reserved: ${event.start} (Status: ${event.participant_status || "unknown"})`);
-                    // this.timers.push({ title: event.title, start: event.start, timeoutId: timer });
                     this.timers.set(event.start.getTime(), timer);
-                } else if (this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule && 
+                } else if (this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule &&
                           this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted &&
                           event.zoom_link && event.zoom_link.length > 0 &&
                           event.participant_status === "declined") {
                     SummarDebug.log(1, `   ❌ Zoom meeting skipped (declined): ${event.start}`);
-                } else if (this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule && 
+                } else if (this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule &&
                           this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted &&
                           event.zoom_link && event.zoom_link.length > 0 &&
                           event.participant_status === "pending") {
                     SummarDebug.log(1, `   ⏸️ Zoom meeting skipped (pending response): ${event.start}`);
-                } else if (this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule && 
+                } else if (this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule &&
                           this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted &&
                           event.zoom_link && event.zoom_link.length > 0 &&
                           event.participant_status === "tentative") {
                     SummarDebug.log(1, `   ❓ Zoom meeting skipped (tentative): ${event.start}`);
                 }
+
+                const shouldAutoLaunchGoogleMeet = this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule &&
+                    delayMs > 0 && delayMs < MAX_DELAY &&
+                    !this.timers.has(event.start.getTime()) &&
+                    event.google_meet_link && event.google_meet_link.length > 0 &&
+                    (!this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted ||
+                     event.participant_status === "accepted" ||
+                     event.participant_status === "organizer" ||
+                     event.participant_status === "unknown");
+
+                if (shouldAutoLaunchGoogleMeet) {
+                    const timer = setTimeout(async () => {
+                        await this.launchGoogleMeetMeeting(event.google_meet_link as string);
+                        if (this.plugin.recordingManager.getRecorderState() !== "recording") {
+                            await this.plugin.recordingManager.startRecording(this.plugin.settingsv2.recording.recordingUnit);
+                        }
+                        this.scheduleGoogleMeetRecordingEndPrompt(event);
+                        clearTimeout(timer);
+                    }, delayMs);
+                    SummarDebug.log(1, `   🎥 Google Meet reserved: ${event.start} (Status: ${event.participant_status || "unknown"})`);
+                    this.timers.set(event.start.getTime(), timer);
+                }
+
                 SummarDebug.log(1, "================================================");
             });
         } catch (error) {
@@ -395,12 +418,14 @@ export class CalendarHandler {
             this.eventContainer.replaceChildren();
             this.events.forEach((event, index) => {
                 const eventEl = this.createEventElement(event, index);
-                // autoRecord가 true이고, 해당 이벤트에 zoom_link가 있을 때만 선택 효과
+                // autoRecord가 true이고, zoom_link 또는 google_meet_link가 있을 때만 선택 효과
                 // 그리고 새로운 설정에 따라 참석 상태도 확인
-                const shouldAutoLaunch = this.autoRecord && 
-                    event.zoom_link && event.zoom_link.length > 0 &&
-                    (!this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted || 
-                     event.participant_status === "accepted" || 
+                const hasMeetingLink = (event.zoom_link && event.zoom_link.length > 0) ||
+                    (event.google_meet_link && event.google_meet_link.length > 0);
+                const shouldAutoLaunch = this.autoRecord &&
+                    hasMeetingLink &&
+                    (!this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnlyAccepted ||
+                     event.participant_status === "accepted" ||
                      event.participant_status === "organizer" ||
                      event.participant_status === "unknown");
                      
@@ -473,6 +498,9 @@ export class CalendarHandler {
         if (event.zoom_link && event.zoom_link.length > 0) {
             strInnerHTML += `<a href="${event.zoom_link}" class="event-zoom-link" target="_blank">🔗Join Zoom Meeting</a>`;
         }
+        if (event.google_meet_link && event.google_meet_link.length > 0) {
+            strInnerHTML += `<a href="${event.google_meet_link}" class="event-meet-link" target="_blank">🎥 Join Google Meet</a>`;
+        }
         strInnerHTML += `<a href="#" class="event-obsidian-link">📝 Create Note in Obsidian</a>
     `;
         eventEl.innerHTML = strInnerHTML;
@@ -514,6 +542,58 @@ export class CalendarHandler {
         } catch (error) {
             SummarDebug.error(1, "Failed to launch Zoom meeting:", error);
         }
+    }
+
+    /**
+     * Launches the given Google Meet URL. On macOS, uses the 'open' command.
+     */
+    async launchGoogleMeetMeeting(url: string): Promise<void> {
+        const execAsync = promisify(exec);
+        try {
+            SummarDebug.log(1, `Launching Google Meet: ${url}`);
+            const { stderr } = await execAsync(`open "${url}"`);
+            if (stderr && stderr.trim()) {
+                SummarDebug.error(1, "Error occurred while launching Google Meet:", stderr);
+            }
+        } catch (error) {
+            SummarDebug.error(1, "Failed to launch Google Meet:", error);
+        }
+    }
+
+    /**
+     * Schedules a recording-end prompt modal to appear at the event's end time.
+     */
+    scheduleGoogleMeetRecordingEndPrompt(event: CalendarEvent): void {
+        const now = new Date();
+        const delayMs = event.end.getTime() - now.getTime();
+        if (delayMs > 0) {
+            setTimeout(() => {
+                this.showGoogleMeetRecordingEndPrompt(event);
+            }, delayMs);
+            SummarDebug.log(1, `   ⏰ Recording end prompt scheduled at: ${event.end}`);
+        }
+    }
+
+    /**
+     * Shows a modal prompting the user to stop recording, with a "remind in 5 min" option.
+     */
+    private showGoogleMeetRecordingEndPrompt(event: CalendarEvent): void {
+        if (this.plugin.recordingManager.getRecorderState() !== "recording") {
+            return;
+        }
+        const modal = new RecordingEndPromptModal(
+            this.plugin.app,
+            event.title,
+            async () => {
+                await this.plugin.toggleRecording();
+            },
+            () => {
+                setTimeout(() => {
+                    this.showGoogleMeetRecordingEndPrompt(event);
+                }, 5 * 60 * 1000);
+            }
+        );
+        modal.open();
     }
 
     /**
@@ -883,6 +963,7 @@ export class CalendarHandler {
                 description: meeting.description,
                 location: meeting.location,
                 zoom_link: meeting.zoom_link,
+                google_meet_link: meeting.google_meet_link,
                 attendees: meeting.attendees || [],
                 participant_status: meeting.participant_status || "unknown",
             }));
