@@ -64,7 +64,7 @@
 ```
 1. 플러그인 로드 (main.ts:onload)
    ├─ CalendarHandler 초기화 (10분마다 캘린더 업데이트)
-   └─ autoRecordOnZoomMeeting → startZoomAutoRecordWatcher() (3초마다 CptHost 감시)
+   └─ autoRecordOnVideoMeeting → startZoomAutoRecordWatcher() (3초마다 CptHost 감시)
 
 2. 캘린더 업데이트 (10분 주기)
    ├─ fetchZoomMeetings() → Swift 스크립트 → JSON
@@ -98,7 +98,7 @@
 | `schedule.autoLaunchVideoMeetingOnSchedule` | false | 캘린더 일정에 따라 Zoom 자동 실행 |
 | `schedule.autoLaunchVideoMeetingOnlyAccepted` | true | accepted/organizer 상태만 자동 실행 |
 | `schedule.calendar_polling_interval` | 600,000ms | 캘린더 업데이트 주기 (10분) |
-| `recording.autoRecordOnZoomMeeting` | false | Zoom 미팅 시 자동 녹음 |
+| `recording.autoRecordOnVideoMeeting` | false | Video 미팅 시 자동 녹음 |
 | `recording.recordingUnit` | 15분 | 녹음 청크 저장 간격 |
 | `recording.organizeByDate` | false | 녹음을 날짜별 폴더에 정리 |
 

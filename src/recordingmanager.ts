@@ -469,7 +469,7 @@ export class AudioRecordingManager extends SummarViewContainer {
 
 	startZoomAutoRecordWatcher() {
 		if (!(Platform.isMacOS && Platform.isDesktopApp)) return;
-		if (!this.plugin.settingsv2.recording.autoRecordOnZoomMeeting) return;
+		if (!this.plugin.settingsv2.recording.autoRecordOnVideoMeeting) return;
 		if (this.zoomWatcherInterval) return;
 		this.zoomWatcherInterval = setInterval(() => {
 			// macOS: Zoom 미팅 중에만 존재하는 프로세스(CptHost) 감지

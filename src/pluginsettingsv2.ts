@@ -18,7 +18,7 @@ export class PluginSettingsV2 {
   private settingsPath: string;
 
   // 설정 데이터 구조
-  schemaVersion: string = "2.0.1";
+  schemaVersion: string = "2.0.2";
   common: {
     openaiApiKey: string;
     openaiApiEndpoint: string;
@@ -68,7 +68,7 @@ export class PluginSettingsV2 {
   };
   
   recording: {
-    autoRecordOnZoomMeeting: boolean;
+    autoRecordOnVideoMeeting: boolean;
     customVocabulary: string;
     selectedDeviceId: { [deviceKey: string]: string };
     recordingDir: string;
@@ -84,7 +84,7 @@ export class PluginSettingsV2 {
     refineSummary: boolean;
     refineSummaryPrompt: string;
   } = {
-    autoRecordOnZoomMeeting: false,
+    autoRecordOnVideoMeeting: false,
     customVocabulary: "",
     selectedDeviceId: {},
     recordingDir: "",
@@ -145,11 +145,13 @@ export class PluginSettingsV2 {
     testUrl: string;
     autoUpdateInterval: number;
     settingHelper: string;
+    calendarType: 'CalDAV' | 'GCal';
   } = {
     debugLevel: 0,
     testUrl: "",
     autoUpdateInterval: 1000 * 60 * 60 * 24, // 24시간 (밀리초)
-    settingHelper: ""
+    settingHelper: "",
+    calendarType: 'CalDAV'
   };
 
   constructor(app: App, pluginId: string) {
@@ -162,8 +164,8 @@ export class PluginSettingsV2 {
    * 기본 설정값으로 초기화합니다
    */
   private resetToDefaults(): void {
-    this.schemaVersion = "2.0.1";
-    
+    this.schemaVersion = "2.0.2";
+
     // Common 섹션 초기화
     Object.assign(this.common, {
       openaiApiKey: "",
@@ -196,7 +198,7 @@ export class PluginSettingsV2 {
 
     // Recording 섹션 초기화
     Object.assign(this.recording, {
-      autoRecordOnZoomMeeting: false,
+      autoRecordOnVideoMeeting: false,
       customVocabulary: "",
       selectedDeviceId: {},
       recordingDir: "",
@@ -245,7 +247,8 @@ export class PluginSettingsV2 {
       debugLevel: 0,
       testUrl: "",
       autoUpdateInterval: 1000 * 60 * 60 * 24,
-      settingHelper: ""
+      settingHelper: "",
+      calendarType: 'CalDAV'
     });
   }
 
@@ -260,16 +263,17 @@ export class PluginSettingsV2 {
         const rawData = await this.app.vault.adapter.read(this.settingsPath);
         const loadedSettings = JSON.parse(rawData) as Partial<PluginSettingsV2>;
 
-        // V2.0.0 → V2.0.1 마이그레이션
-        if (loadedSettings.schemaVersion === "2.0.0") {
-          await this.migrateV200ToV201(loadedSettings);
-          // 마이그레이션 후 즉시 저장
-          this.mergeWithLoaded(loadedSettings);
+        // 마이그레이션
+        let migrated = false;
+        if (loadedSettings.schemaVersion === "2.0.0" || loadedSettings.schemaVersion === "2.0.1") {
+          await this.migrateToV202(loadedSettings);
+          migrated = true;
+        }
+        // 로드된 설정을 현재 객체에 병합
+        this.mergeWithLoaded(loadedSettings);
+        if (migrated) {
           await this.saveSettings();
-          SummarDebug.log(1, "V2.0.0 → V2.0.1 migration completed and saved");
-        } else {
-          // 로드된 설정을 현재 객체에 병합
-          this.mergeWithLoaded(loadedSettings);
+          SummarDebug.log(1, `Migration completed and saved. Schema version: ${this.schemaVersion}`);
         }
 
         SummarDebug.log(1, `Settings loaded successfully. Schema version: ${this.schemaVersion}`);
@@ -343,6 +347,11 @@ export class PluginSettingsV2 {
     
     if (loaded.system) {
       Object.assign(this.system, loaded.system);
+    }
+
+    // calendarType absent in saved file → default to 'CalDAV'
+    if (!(loaded.system as any)?.calendarType) {
+      this.system.calendarType = 'CalDAV';
     }
   }
 
@@ -501,7 +510,7 @@ export class PluginSettingsV2 {
       if (v1Settings.pdfPrompt !== undefined) this.pdf.pdfPrompt = v1Settings.pdfPrompt;
 
       // Recording 섹션 마이그레이션
-      if (v1Settings.autoRecordOnZoomMeeting !== undefined) this.recording.autoRecordOnZoomMeeting = v1Settings.autoRecordOnZoomMeeting;
+      if (v1Settings.autoRecordOnZoomMeeting !== undefined) this.recording.autoRecordOnVideoMeeting = v1Settings.autoRecordOnZoomMeeting;
       if (v1Settings.recordingDir !== undefined) this.recording.recordingDir = v1Settings.recordingDir;
       if (v1Settings.saveTranscriptAndRefineToNewNote !== undefined) this.recording.saveTranscriptAndRefineToNewNote = v1Settings.saveTranscriptAndRefineToNewNote;
       if (v1Settings.addLinkToDailyNotes !== undefined) this.recording.addLinkToDailyNotes = v1Settings.addLinkToDailyNotes;
@@ -586,9 +595,9 @@ export class PluginSettingsV2 {
       if (v1Settings.testUrl !== undefined) this.system.testUrl = v1Settings.testUrl;
 
       // 스키마 버전 업데이트
-      this.schemaVersion = "2.0.1";
+      this.schemaVersion = "2.0.2";
 
-      SummarDebug.log(1, "Migration from V1 to V2.0.1 completed successfully");
+      SummarDebug.log(1, "Migration from V1 to V2.0.2 completed successfully");
     } catch (error) {
       SummarDebug.error(1, "Error during migration from V1 to V2:", error);
       throw error;
@@ -596,16 +605,16 @@ export class PluginSettingsV2 {
   }
 
   /**
-   * V2.0.0 설정을 V2.0.1로 마이그레이션합니다
+   * V2.0.0 또는 V2.0.1 설정을 V2.0.2로 마이그레이션합니다
    */
-  private async migrateV200ToV201(settings: Partial<PluginSettingsV2>): Promise<void> {
-    SummarDebug.log(1, "Starting migration from V2.0.0 to V2.0.1");
+  private async migrateToV202(settings: Partial<PluginSettingsV2>): Promise<void> {
+    SummarDebug.log(1, `Starting migration from ${settings.schemaVersion} to V2.0.2`);
 
     try {
       if (settings.schedule) {
         const oldSchedule = settings.schedule as any;
 
-        // autoLaunchZoom* → autoLaunchVideoMeeting* 마이그레이션
+        // autoLaunchZoom* → autoLaunchVideoMeeting* 마이그레이션 (V2.0.0에서만 존재)
         if (oldSchedule.autoLaunchZoomOnSchedule !== undefined) {
           oldSchedule.autoLaunchVideoMeetingOnSchedule = oldSchedule.autoLaunchZoomOnSchedule;
           delete oldSchedule.autoLaunchZoomOnSchedule;
@@ -630,12 +639,23 @@ export class PluginSettingsV2 {
         }
       }
 
-      // 스키마 버전 업데이트
-      settings.schemaVersion = "2.0.1";
+      if (settings.recording) {
+        const oldRecording = settings.recording as any;
 
-      SummarDebug.log(1, "Migration from V2.0.0 to V2.0.1 completed successfully");
+        // autoRecordOnZoomMeeting → autoRecordOnVideoMeeting 마이그레이션 (V2.0.1에서만 존재)
+        if (oldRecording.autoRecordOnZoomMeeting !== undefined) {
+          oldRecording.autoRecordOnVideoMeeting = oldRecording.autoRecordOnZoomMeeting;
+          delete oldRecording.autoRecordOnZoomMeeting;
+          SummarDebug.log(1, `Migrated autoRecordOnZoomMeeting → autoRecordOnVideoMeeting: ${oldRecording.autoRecordOnVideoMeeting}`);
+        }
+      }
+
+      // 스키마 버전 업데이트
+      settings.schemaVersion = "2.0.2";
+
+      SummarDebug.log(1, "Migration to V2.0.2 completed successfully");
     } catch (error) {
-      SummarDebug.error(1, "Error during migration from V2.0.0 to V2.0.1:", error);
+      SummarDebug.error(1, `Error during migration from ${settings.schemaVersion} to V2.0.2:`, error);
       throw error;
     }
   }

@@ -5,6 +5,7 @@ import { SummarDebug } from "./globals";
 import { writeFileSync, unlinkSync, truncate } from "fs";
 import SummarPlugin from "./main";
 import { RecordingEndPromptModal } from "./googlemeet-recording-prompt";
+import { GoogleMeetWatcher } from "./googlemeet-watcher";
 
 export interface CalendarEvent {
     title: string;
@@ -28,6 +29,7 @@ interface ZoomMeeting {
     google_meet_link?: string;
     attendees: string[];
     participant_status?: string;
+    isAllDay?: boolean;
 }
 
 export class CalendarHandler {
@@ -38,6 +40,7 @@ export class CalendarHandler {
     eventContainer: HTMLElement;
     // private timers: { title: string; start: Date, timeoutId: NodeJS.Timeout }[] = [];
     private timers: Map<number, NodeJS.Timeout> = new Map();
+    private googleMeetWatcher?: GoogleMeetWatcher;
 
     constructor(plugin: any) {
         this.plugin = plugin; // 플러그인 저장
@@ -46,10 +49,11 @@ export class CalendarHandler {
 
     private async init() {
         try {
-            if (Platform.isMacOS && Platform.isDesktopApp) {
+            if (Platform.isMacOS && Platform.isDesktopApp
+                && this.plugin.settingsv2.system.calendarType === 'CalDAV') {
                 // Swift 환경 사전 검증
                 await this.checkSwiftEnvironment();
-                
+
                 // 초기 실행
                 await this.updateScheduledMeetings();
                 if (this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule) {
@@ -57,7 +61,6 @@ export class CalendarHandler {
                 } else {
                     this.plugin.reservedStatus.setStatusbarIcon("calendar-x", "var(--text-muted)");
                 }
-                // this.plugin.reservedStatus.update(this.plugin.settings.autoLaunchVideoMeetingOnSchedule ? "⏰" : "", this.plugin.settings.autoLaunchVideoMeetingOnSchedule ? "green" : "black");
 
                 // 10분마다 업데이트 실행
                 this.intervalId = setInterval(() => {
@@ -69,9 +72,15 @@ export class CalendarHandler {
         }
     }
     
+    // Allows external sources (e.g. GoogleCalendarScheduler) to populate the event store
+    setEvents(events: CalendarEvent[]): void {
+        this.events = events;
+    }
+
     // ✅ 클래스 종료 시 `setInterval` 해제
     public stop() {
         clearInterval(this.intervalId);
+        this.stopGoogleMeetWatcher();
         SummarDebug.log(1, "Stopped CalendarHandler updates.");
     }
 
@@ -295,17 +304,19 @@ export class CalendarHandler {
             // JSON 데이터를 CalendarEvent[] 타입으로 변환
             // const events: CalendarEvent[] = meetings.map((meeting) => ({
             // 새로운 데이터 추가
-            this.events.push(...meetings.map(meeting => ({
-                title: meeting.title,
-                start: new Date(meeting.start),
-                end: new Date(meeting.end),
-                description: meeting.description,
-                location: meeting.location,
-                zoom_link: meeting.zoom_link,
-                google_meet_link: meeting.google_meet_link,
-                attendees: meeting.attendees || [],
-                participant_status: meeting.participant_status || "unknown",
-            })));
+            this.events.push(...meetings
+                .filter(meeting => !meeting.isAllDay)
+                .map(meeting => ({
+                    title: meeting.title,
+                    start: new Date(meeting.start),
+                    end: new Date(meeting.end),
+                    description: meeting.description,
+                    location: meeting.location,
+                    zoom_link: meeting.zoom_link,
+                    google_meet_link: meeting.google_meet_link,
+                    attendees: meeting.attendees || [],
+                    participant_status: meeting.participant_status || "unknown",
+                })));
 
             // this.timers.forEach(({ timeoutId, title }) => {
             //     clearTimeout(timeoutId);
@@ -382,10 +393,13 @@ export class CalendarHandler {
                 if (shouldAutoLaunchGoogleMeet) {
                     const timer = setTimeout(async () => {
                         await this.launchGoogleMeetMeeting(event.google_meet_link as string);
-                        if (this.plugin.recordingManager.getRecorderState() !== "recording") {
-                            await this.plugin.recordingManager.startRecording(this.plugin.settingsv2.recording.recordingUnit);
+                        if (this.plugin.settingsv2.recording.autoRecordOnVideoMeeting) {
+                            if (this.plugin.recordingManager.getRecorderState() !== "recording") {
+                                await this.plugin.recordingManager.startRecording(this.plugin.settingsv2.recording.recordingUnit);
+                            }
+                            this.scheduleGoogleMeetRecordingEndPrompt(event);
+                            this.startGoogleMeetWatcher(event);
                         }
-                        this.scheduleGoogleMeetRecordingEndPrompt(event);
                         clearTimeout(timer);
                     }, delayMs);
                     SummarDebug.log(1, `   🎥 Google Meet reserved: ${event.start} (Status: ${event.participant_status || "unknown"})`);
@@ -594,6 +608,21 @@ export class CalendarHandler {
             }
         );
         modal.open();
+    }
+
+    startGoogleMeetWatcher(event: CalendarEvent): void {
+        this.stopGoogleMeetWatcher();
+        this.googleMeetWatcher = new GoogleMeetWatcher(() => {
+            this.showGoogleMeetRecordingEndPrompt(event);
+        });
+        this.googleMeetWatcher.start();
+    }
+
+    stopGoogleMeetWatcher(): void {
+        if (this.googleMeetWatcher?.isWatching()) {
+            this.googleMeetWatcher.stop();
+        }
+        this.googleMeetWatcher = undefined;
     }
 
     /**

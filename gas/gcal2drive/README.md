@@ -86,34 +86,37 @@ https://script.google.com/macros/s/[deployment-id]/exec
 
 ```json
 {
-  "selectedCalendars": [
-    {
-      "id": "primary",
-      "name": "Work Calendar"
-    },
-    {
-      "id": "user@example.com",
-      "name": "Personal"
-    }
-  ],
-  "lastSync": "2025-02-17T10:30:00.000Z",
-  "events": [
-    {
-      "calendarName": "Work Calendar",
-      "title": "Team Meeting",
-      "start": "2025-02-17T14:00:00.000Z",
-      "end": "2025-02-17T15:00:00.000Z",
-      "meeting_url": "https://zoom.us/j/123456789",
-      "description": "Weekly team sync",
-      "location": "Conference Room A",
-      "attendees": [
-        "alice@example.com",
-        "bob@example.com"
+  "vaults": {
+    "MyVault": {
+      "selectedCalendars": [
+        {
+          "id": "primary",
+          "name": "Work Calendar"
+        },
+        {
+          "id": "user@example.com",
+          "name": "Personal"
+        }
       ],
-      "participant_status": "accepted",
-      "isAllDay": false
+      "events": [
+        {
+          "calendarName": "Work Calendar",
+          "title": "Team Meeting",
+          "start": "2025-02-17T14:00:00.000Z",
+          "end": "2025-02-17T15:00:00.000Z",
+          "meeting_url": "https://zoom.us/j/123456789",
+          "description": "Weekly team sync",
+          "location": "Conference Room A",
+          "attendees": [
+            "alice@example.com",
+            "bob@example.com"
+          ],
+          "participant_status": "accepted",
+          "isAllDay": false
+        }
+      ]
     }
-  ]
+  }
 }
 ```
 

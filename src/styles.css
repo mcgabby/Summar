@@ -315,14 +315,16 @@
   color: var(--text-muted);
   margin-bottom: 6px;
 }
-.event-zoom-link {
+.event-zoom-link,
+.event-meet-link {
   display: inline-block;
   margin-right: 12px;
   color: var(--interactive-accent);
   text-decoration: underline;
   font-weight: 500;
 }
-.event-zoom-link:hover {
+.event-zoom-link:hover,
+.event-meet-link:hover {
   color: var(--interactive-accent-hover);
 }
 .event-obsidian-link {

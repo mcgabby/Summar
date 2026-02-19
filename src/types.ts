@@ -17,7 +17,7 @@ export interface PluginSettings {
   webModel: string;
   pdfModel: string;
   
-  autoRecordOnZoomMeeting: boolean;
+  autoRecordOnVideoMeeting: boolean;
   selectedDeviceId: string;
   recordingDir: string;
   saveTranscriptAndRefineToNewNote: boolean; // recordingResultNewNote -> saveTranscriptAndRefineToNewNote : from 1.0.0

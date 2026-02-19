@@ -162,7 +162,7 @@ if CommandLine.arguments.contains("--check-permission") {
     func extractZoomLink(from text: String?) -> String? {
         guard let text = text else { return nil }
 
-        let pattern = #"https?://\S*zoom\.us\S*"#
+        let pattern = #"https?://[^\s"<>]*zoom\.us[^\s"<>]*"#
         let regex = try? NSRegularExpression(pattern: pattern, options: [])
 
         if let match = regex?.firstMatch(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count)) {
@@ -326,7 +326,8 @@ if CommandLine.arguments.contains("--check-permission") {
                     "zoom_link": zoomLink,
                     "google_meet_link": googleMeetLink,
                     "attendees": attendees,
-                    "participant_status": myParticipantStatus
+                    "participant_status": myParticipantStatus,
+                    "isAllDay": event.isAllDay
                 ]
                 filteredEvents.append(eventData)
             //}

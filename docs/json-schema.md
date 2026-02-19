@@ -209,7 +209,7 @@ AI 모델 목록 및 분류 - 각 기능별 사용 가능한 모델과 기본 �
 
 ### 4. Recording Tab (`recording-tab`)
 **녹음 기본 설정**
-- `autoRecordOnZoomMeeting`: Zoom 미팅 자동 녹음 여부 (boolean, 기본: false)
+- `autoRecordOnVideoMeeting`: Video 미팅 자동 녹음 여부 (boolean, 기본: false)
 - `customVocabulary`: STT 정확도를 높이기 위한 콤마 구분 사용자 용어 목록 (string, 기본: "")
 - `selectedDeviceId`: 디바이스별 기본 입력 장치 ID 맵 (record<string,string>, 기본: `{}`)
 - `recordingDir`: 녹음 파일 저장 디렉토리 (string, 기본: "")
@@ -391,7 +391,7 @@ AI 모델 목록 및 분류 - 각 기능별 사용 가능한 모델과 기본 �
 
 #### 4. Recording 섹션 (`recording`)
 **녹음 기본 설정**
-- `autoRecordOnZoomMeeting`: Zoom 미팅 자동 녹음 여부 (boolean, 기본: false)
+- `autoRecordOnVideoMeeting`: Video 미팅 자동 녹음 여부 (boolean, 기본: false)
 - `customVocabulary`: STT에 사용할 사용자 정의 용어 목록 (string, 기본: "")
 - `selectedDeviceId`: 디바이스별 오디오 장치 매핑 (object, 기본: {})
   - 키: 디바이스 식별자 (string)

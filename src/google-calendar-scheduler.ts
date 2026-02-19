@@ -14,6 +14,12 @@ export class GoogleCalendarScheduler {
     constructor(private plugin: SummarPlugin) {}
 
     start(): void {
+        if (this.plugin.settingsv2.schedule.autoLaunchVideoMeetingOnSchedule) {
+            this.plugin.reservedStatus.setStatusbarIcon("calendar-clock", "red");
+        } else {
+            this.plugin.reservedStatus.setStatusbarIcon("calendar-x", "var(--text-muted)");
+        }
+
         this.updateScheduledMeetings();
         this.intervalId = setInterval(() => {
             this.updateScheduledMeetings();
@@ -35,6 +41,13 @@ export class GoogleCalendarScheduler {
             undefined,
             this.plugin.app.vault.getName()
         );
+        const calendarEvents = jsonData
+            ? jsonData.events
+                .filter((raw: any) => !raw.isAllDay)
+                .map((raw: any) => this.convertToCalendarEvent(raw))
+            : [];
+        this.plugin.calendarHandler.setEvents(calendarEvents);
+
         if (!jsonData || jsonData.events.length === 0) return;
 
         this.timers.forEach(timer => clearTimeout(timer));
@@ -70,12 +83,15 @@ export class GoogleCalendarScheduler {
             const timer = setTimeout(async () => {
                 if (isGoogleMeet) {
                     await this.plugin.calendarHandler.launchGoogleMeetMeeting(event.google_meet_link as string);
-                    if (this.plugin.recordingManager.getRecorderState() !== 'recording') {
-                        await this.plugin.recordingManager.startRecording(
-                            this.plugin.settingsv2.recording.recordingUnit
-                        );
+                    if (this.plugin.settingsv2.recording.autoRecordOnVideoMeeting) {
+                        if (this.plugin.recordingManager.getRecorderState() !== 'recording') {
+                            await this.plugin.recordingManager.startRecording(
+                                this.plugin.settingsv2.recording.recordingUnit
+                            );
+                        }
+                        this.plugin.calendarHandler.scheduleGoogleMeetRecordingEndPrompt(event);
+                        this.plugin.calendarHandler.startGoogleMeetWatcher(event);
                     }
-                    this.plugin.calendarHandler.scheduleGoogleMeetRecordingEndPrompt(event);
                 } else {
                     this.plugin.calendarHandler.launchZoomMeeting(event.zoom_link as string);
                 }

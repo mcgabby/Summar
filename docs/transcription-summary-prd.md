@@ -50,7 +50,7 @@ Summar의 "Transcription Summary" 기능은 오디오 파일(회의/녹음 등) 
 - recordingLanguage: 녹음/오디오의 언어를 선택합니다. (예: ko-KR, en-US 등)
 - recordingDir: 오디오 및 변환 파일을 저장할 임시 폴더 경로를 지정합니다.
 - saveTranscriptAndRefineToNewNote: 요약/보강 결과를 새로운 노트로 저장할지 여부를 설정합니다.
-- autoRecordOnZoomMeeting: Zoom 미팅 시작 시 자동으로 녹음을 시작할지 여부를 설정합니다.
+- autoRecordOnVideoMeeting: Video 미팅 시작 시 자동으로 녹음을 시작할지 여부를 설정합니다.
 - deviceId: 사용할 오디오 입력 장치(마이크)를 선택합니다.
 - recordingUnit: 녹음 단위 시간(분)을 설정합니다.
 - organizeByDate: 녹음 파일을 날짜 계층 폴더(YYYY/YYYY-MM/YYYY-MM-DD (Day))로 자동 정리할지 여부를 설정합니다.

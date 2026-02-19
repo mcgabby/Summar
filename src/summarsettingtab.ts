@@ -1000,11 +1000,11 @@ activateTab(tabId: string): void {
 
     if ((Platform.isMacOS && Platform.isDesktopApp)) {
       new Setting(containerEl)
-        .setName("Auto record on Zoom meeting")
-        .setDesc("Automatically start recording when a Zoom meeting starts, and stop when it ends.")
+        .setName("Auto record on Video meeting")
+        .setDesc("Automatically start recording when a Video meeting starts, and stop when it ends.")
         .addToggle((toggle) =>
-          toggle.setValue(this.plugin.settingsv2.recording.autoRecordOnZoomMeeting).onChange(async (value) => {
-            this.plugin.settingsv2.recording.autoRecordOnZoomMeeting = value;
+          toggle.setValue(this.plugin.settingsv2.recording.autoRecordOnVideoMeeting).onChange(async (value) => {
+            this.plugin.settingsv2.recording.autoRecordOnVideoMeeting = value;
             await this.plugin.settingsv2.saveSettings();
             await this.plugin.saveSettingsToFile();
             this.plugin.updateZoomAutoRecordWatcher(); // 토글 변경 시 감시 상태 갱신
@@ -1783,29 +1783,30 @@ activateTab(tabId: string): void {
   async buildCalendarSettings(containerEl: HTMLElement): Promise<void> {
     containerEl.createEl('h2', { text: 'Calendar integration' });
 
-    // summar_common.json 요청하여 조건부 UI 결정
-    const helperUrl = 'https://line-objects-dev.com/summar/summar_common.json';
-
-    try {
-      const response = await SummarRequestUrlWithTimeout(this.plugin, helperUrl, 2000);
-
-      if (response.status === 200 && response.json) {
-        const config = response.json as SettingHelperConfig;
-
-        if (config.calendar?.selectCalendar) {
-          // Google Calendar setting UI
-          await this.renderGoogleCalendarUI(containerEl, config.calendar.selectCalendar);
-          await this.renderCommonCalendarUI(containerEl, true);
-          return;
+    if (this.plugin.settingsv2.system.calendarType === 'GCal') {
+      // UI branch determined by calendarType (no network dependency)
+      // summar_common.json is fetched only to obtain the GAS web app URL for CalendarSettingModal
+      let webAppUrl = '';
+      try {
+        let helperUrl = this.plugin.settingsv2.system.settingHelper;
+        if (!helperUrl || helperUrl.length === 0) {
+          helperUrl = 'https://line-objects-dev.com/summar/summar_common.json';
         }
+        const response = await SummarRequestUrlWithTimeout(this.plugin, helperUrl, 2000);
+        if (response.status === 200 && response.json) {
+          const config = response.json as SettingHelperConfig;
+          webAppUrl = config.calendar?.selectCalendar ?? '';
+        }
+      } catch (error) {
+        console.log('[Calendar Settings] Failed to fetch webAppUrl from summar_common.json');
       }
-    } catch (error) {
-      console.log('[Calendar Settings] Failed to fetch summar_common.json, using CalDAV setting');
+      await this.renderGoogleCalendarUI(containerEl, webAppUrl);
+      await this.renderCommonCalendarUI(containerEl, true);
+    } else {
+      // CalDAV setting UI
+      this.renderCalDAVUI(containerEl);
+      await this.renderCommonCalendarUI(containerEl, false);
     }
-
-    // CalDAV setting UI (기존 로직)
-    this.renderCalDAVUI(containerEl);
-    await this.renderCommonCalendarUI(containerEl, false);
   }
 
   // Google Calendar setting UI
@@ -1818,6 +1819,7 @@ activateTab(tabId: string): void {
       .setDesc('Open Google Calendar sync settings')
       .addButton(button => button
         .setButtonText('Calendar setting')
+        .setCta()
         .onClick(() => {
           // Prevent multiple modals from opening
           if (this.calendarSettingModal) {
@@ -1861,7 +1863,7 @@ activateTab(tabId: string): void {
     if (!jsonData || jsonData.selectedCalendars.length === 0) {
       el.createEl('p', {
         text: '선택된 캘린더가 없습니다. Calendar setting 버튼을 눌러 설정하세요.',
-        attr: { style: 'color: #666; font-style: italic; margin: 0;' }
+        attr: { style: 'color: red; font-style: italic; margin: 0;' }
       });
       return;
     }
@@ -2184,6 +2186,7 @@ activateTab(tabId: string): void {
     const end = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
     const upcomingEvents = jsonData.events.filter((event: any) => {
+      if (event.isAllDay) return false;
       const startTime = new Date(event.start);
       const endTime = new Date(event.end);
       return startTime <= end && endTime > now;
@@ -2219,9 +2222,10 @@ activateTab(tabId: string): void {
           statusEmoji = '⏸️'; statusText = 'Pending'; statusClass = 'status-pending'; break;
       }
 
+      const status = event.participant_status ?? 'unknown';
       const shouldAutoLaunch = autoLaunch &&
         event.meeting_url && event.meeting_url.length > 0 &&
-        (!onlyAccepted || event.participant_status === 'accepted');
+        (!onlyAccepted || status === 'accepted' || status === 'organizer' || status === 'unknown');
 
       const eventEl = container.createDiv({ cls: `event ${statusClass}${shouldAutoLaunch ? ' event-selected' : ''}` });
 
@@ -2236,6 +2240,17 @@ activateTab(tabId: string): void {
 
       strInnerHTML += `<a href="#" class="event-obsidian-link">📝 Create Note in Obsidian</a>`;
       eventEl.innerHTML = strInnerHTML;
+
+      const formattedDate = startTime.getFullYear().toString().slice(2) +
+        String(startTime.getMonth() + 1).padStart(2, '0') +
+        startTime.getDate().toString().padStart(2, '0') + '-' +
+        startTime.getHours().toString().padStart(2, '0') +
+        startTime.getMinutes().toString().padStart(2, '0');
+      const obsidianLinkEl = eventEl.querySelector('.event-obsidian-link');
+      obsidianLinkEl?.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.plugin.app.workspace.openLinkText(formattedDate, '', true);
+      });
     });
   }
 

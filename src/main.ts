@@ -44,7 +44,7 @@ export default class SummarPlugin extends Plugin {
     pdfPrompt: "",
     
 
-    autoRecordOnZoomMeeting: false,
+    autoRecordOnVideoMeeting: false,
     selectedDeviceId: "",
     recordingDir: "",
     saveTranscriptAndRefineToNewNote: true,
@@ -98,7 +98,7 @@ export default class SummarPlugin extends Plugin {
   audioHandler: AudioHandler;
   commandHandler: CustomCommandHandler;
   calendarHandler: CalendarHandler;
-  googleCalendarScheduler: GoogleCalendarScheduler;
+  googleCalendarScheduler?: GoogleCalendarScheduler;
   dailyNotesHandler: DailyNotesHandler;
 
   recordingStatus: StatusBar;
@@ -300,8 +300,11 @@ export default class SummarPlugin extends Plugin {
       this.recordingStatus = new StatusBar(this);
       this.reservedStatus = new StatusBar(this,true);
       this.calendarHandler = new CalendarHandler(this);
-      this.googleCalendarScheduler = new GoogleCalendarScheduler(this);
-      this.googleCalendarScheduler.start();
+      if (this.settingsv2.system.calendarType === 'GCal') {
+        this.googleCalendarScheduler = new GoogleCalendarScheduler(this);
+        this.googleCalendarScheduler.start();
+      }
+      // CalDAV: CalendarHandler.init() handles scheduling internally
       this.dailyNotesHandler = new DailyNotesHandler(this);
 
       // 데이터베이스 초기화
@@ -606,7 +609,7 @@ export default class SummarPlugin extends Plugin {
     this.registerCustomCommandAndMenus();
 
     // 플러그인 로딩 시 Zoom 자동녹음 watcher 시작
-    if (this.settingsv2.recording.autoRecordOnZoomMeeting) {
+    if (this.settingsv2.recording.autoRecordOnVideoMeeting) {
       this.recordingManager.startZoomAutoRecordWatcher();
     }
   }
@@ -728,6 +731,7 @@ export default class SummarPlugin extends Plugin {
       await this.recordingManager.startRecording(this.settingsv2.recording.recordingUnit);
     } else {
       const recordingPath = await this.recordingManager.stopRecording();
+      this.calendarHandler.stopGoogleMeetWatcher();
       SummarDebug.log(1, `main.ts - recordingPath: ${recordingPath}`);
 
       try {
@@ -775,7 +779,7 @@ export default class SummarPlugin extends Plugin {
   }
 
   public updateZoomAutoRecordWatcher() {
-    if (this.settingsv2.recording.autoRecordOnZoomMeeting) {
+    if (this.settingsv2.recording.autoRecordOnVideoMeeting) {
       this.recordingManager.startZoomAutoRecordWatcher();
     } else {
       this.recordingManager.stopZoomAutoRecordWatcher();
