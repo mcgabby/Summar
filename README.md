@@ -10,7 +10,7 @@
 - **Web Page Summarization**: Summarize web content via URL input or context menu
 - **PDF Summarization**: Convert and summarize PDF files to Markdown
 - **Confluence Integration**: Upload summaries directly to Confluence wiki
-- **Calendar Integration & Auto-Recording**: Detect calendar events (especially Zoom meetings) and auto-record/summarize
+- **Calendar Integration & Auto-Recording**: Sync calendar events from CalDAV or Google Calendar (via Google Drive), auto-launch and auto-record Zoom and Google Meet meetings, and prompt for recording stop at meeting end
 - **Custom Commands**: Run custom OpenAI prompts on selected text
 - **Auto Updates**: Always stay up-to-date with the latest features
 
@@ -93,6 +93,20 @@ Complete reference for Summar's configuration files and data structures:
 - Migration guides between configuration versions
 - API integration settings and model configurations
 - Troubleshooting configuration-related issues
+
+### 📅 **[Meeting Auto-Recording Guide](docs/meeting-auto-recording.md)** - Zoom & Google Meet Auto-Recording
+How Summar detects and auto-records video meetings:
+- Zoom process monitoring (CptHost) and auto-record on meeting start
+- Google Meet browser tab detection via AppleScript across Chrome, Safari, and Edge
+- Calendar-triggered auto-launch and recording for both Zoom and Google Meet
+- Recording stop prompt at meeting end with 5-minute snooze option
+
+### 🔗 **[Calendar Scheduler Unification](docs/calendar-scheduler-unification.md)** - CalDAV & Google Calendar Integration
+Architecture overview for unified calendar scheduling support:
+- CalDAV (macOS native) and Google Calendar (via Google Drive JSON) integration
+- Google Apps Script setup for syncing Google Calendar events to Google Drive
+- `calendarType` setting and how the scheduler selects the appropriate source
+- Schema migration path and settings structure for v2.0.x
 
 ---
 
@@ -180,3 +194,7 @@ Complete reference for Summar's configuration files and data structures:
 - **2025-12-31**: Fixed WebM duration metadata for proper playback, improved HTTP error handling in audio transcription API
 - **2025-12-31**: Added folder autocomplete suggestion for recording folder setting and option to organize recordings by date hierarchy (YYYY/YYYY-MM/YYYY-MM-DD)
 - **2026-01-17**: Added Gemini 3 Pro/Flash preview models with tiered pricing support and dynamic pricing detection from JSON structure, released v1.3.3
+- **2026-02-19**: Added Google Calendar sync via Google Drive with Google Apps Script (GAS), supporting multilingual My Drive folder detection
+- **2026-02-19**: Added Google Meet auto-detection via AppleScript browser tab scanning (Chrome, Safari, Edge) with recording start/stop prompt
+- **2026-02-19**: Unified calendar scheduling to support both CalDAV and Google Calendar with `calendarType` setting
+- **2026-02-19**: Renamed Zoom-specific settings to video-meeting-agnostic names and consolidated schema migration to v2.0.2
