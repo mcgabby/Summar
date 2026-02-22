@@ -1007,7 +1007,7 @@ activateTab(tabId: string): void {
             this.plugin.settingsv2.recording.autoRecordOnVideoMeeting = value;
             await this.plugin.settingsv2.saveSettings();
             await this.plugin.saveSettingsToFile();
-            this.plugin.updateZoomAutoRecordWatcher(); // 토글 변경 시 감시 상태 갱신
+            this.plugin.updateVideoMeetingAutoRecordWatcher(); // 토글 변경 시 감시 상태 갱신
           })
         );
     }

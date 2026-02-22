@@ -608,9 +608,10 @@ export default class SummarPlugin extends Plugin {
 
     this.registerCustomCommandAndMenus();
 
-    // 플러그인 로딩 시 Zoom 자동녹음 watcher 시작
+    // 플러그인 로딩 시 Video meeting 자동녹음 watcher 시작
     if (this.settingsv2.recording.autoRecordOnVideoMeeting) {
       this.recordingManager.startZoomAutoRecordWatcher();
+      this.recordingManager.startGoogleMeetAutoRecordWatcher();
     }
   }
 
@@ -778,11 +779,13 @@ export default class SummarPlugin extends Plugin {
 
   }
 
-  public updateZoomAutoRecordWatcher() {
+  public updateVideoMeetingAutoRecordWatcher() {
     if (this.settingsv2.recording.autoRecordOnVideoMeeting) {
       this.recordingManager.startZoomAutoRecordWatcher();
+      this.recordingManager.startGoogleMeetAutoRecordWatcher();
     } else {
       this.recordingManager.stopZoomAutoRecordWatcher();
+      this.recordingManager.stopGoogleMeetAutoRecordWatcher();
     }
   }
 

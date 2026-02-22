@@ -6,6 +6,7 @@ import { NativeAudioRecorder } from "./audiorecorder";
 import { RecordingTimer } from "./recordingtimer";
 import { JsonBuilder } from "./jsonbuilder";
 import { exec } from "child_process";
+import { detectActiveGoogleMeetUrl } from "./googlemeet-watcher";
 
 export class AudioRecordingManager extends SummarViewContainer {
 
@@ -24,6 +25,9 @@ export class AudioRecordingManager extends SummarViewContainer {
 
 	private zoomWatcherInterval: NodeJS.Timeout | null = null;
 	private wasZoomRunning = false;
+
+	private googleMeetWatcherInterval: NodeJS.Timeout | null = null;
+	private wasGoogleMeetActive = false;
 
 	constructor(plugin: SummarPlugin) {
 		super(plugin);
@@ -503,6 +507,34 @@ export class AudioRecordingManager extends SummarViewContainer {
 		}
 	}
 
+	startGoogleMeetAutoRecordWatcher() {
+		if (!(Platform.isMacOS && Platform.isDesktopApp)) return;
+		if (!this.plugin.settingsv2.recording.autoRecordOnVideoMeeting) return;
+		if (this.googleMeetWatcherInterval) return;
+		this.googleMeetWatcherInterval = setInterval(async () => {
+			const url = await detectActiveGoogleMeetUrl();
+			const isMeetingActive = url.length > 0;
+			if (isMeetingActive && !this.wasGoogleMeetActive) {
+				// Google Meet started
+				this.plugin.recordingManager.startRecording(this.plugin.settingsv2.recording.recordingUnit);
+			} else if (!isMeetingActive && this.wasGoogleMeetActive && this.plugin.recordingManager.getRecorderState() === "recording") {
+				// Google Meet ended
+				this.plugin.toggleRecording();
+			}
+			this.wasGoogleMeetActive = isMeetingActive;
+		}, 5000);
+		SummarDebug.log(1, "Google Meet auto record watcher started");
+	}
+
+	stopGoogleMeetAutoRecordWatcher() {
+		if (this.googleMeetWatcherInterval) {
+			clearInterval(this.googleMeetWatcherInterval);
+			this.googleMeetWatcherInterval = null;
+			this.wasGoogleMeetActive = false;
+			SummarDebug.log(1, "Google Meet auto record watcher stopped");
+		}
+	}
+
 	/**
 	 * 플러그인 언로드 시 모든 recording 관련 리소스를 정리합니다.
 	 */
@@ -510,6 +542,8 @@ export class AudioRecordingManager extends SummarViewContainer {
 		try {
 			// Zoom watcher 중지
 			this.stopZoomAutoRecordWatcher();
+			// Google Meet watcher 중지
+			this.stopGoogleMeetAutoRecordWatcher();
 
 			// 현재 녹음 중이라면 강제 중단
 			const currentState = this.getRecorderState();

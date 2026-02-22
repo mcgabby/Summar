@@ -4,30 +4,40 @@ import { SummarDebug } from "./globals";
 const IDLE_POLL_INTERVAL_MS = 5000;
 const ACTIVE_POLL_INTERVAL_MS = 3000;
 
-const GOOGLE_MEET_DETECT_SCRIPT = `
-set meetUrl to ""
+export const GOOGLE_MEET_DETECT_SCRIPT = `
+set allUrls to ""
 
-try
-    tell application "Google Chrome"
-        repeat with w in windows
-            repeat with t in tabs of w
-                set tabUrl to URL of t
-                if tabUrl contains "meet.google.com/" then
-                    set meetUrl to tabUrl
-                end if
+if application "Google Chrome" is running then
+    try
+        tell application "Google Chrome"
+            repeat with w in windows
+                repeat with t in tabs of w
+                    set tabUrl to URL of t
+                    if tabUrl contains "meet.google.com/" then
+                        if allUrls is "" then
+                            set allUrls to tabUrl
+                        else
+                            set allUrls to allUrls & (ASCII character 10) & tabUrl
+                        end if
+                    end if
+                end repeat
             end repeat
-        end repeat
-    end tell
-end try
+        end tell
+    end try
+end if
 
-if meetUrl is "" then
+if application "Safari" is running then
     try
         tell application "Safari"
             repeat with w in windows
                 repeat with t in tabs of w
                     set tabUrl to URL of t
                     if tabUrl contains "meet.google.com/" then
-                        set meetUrl to tabUrl
+                        if allUrls is "" then
+                            set allUrls to tabUrl
+                        else
+                            set allUrls to allUrls & (ASCII character 10) & tabUrl
+                        end if
                     end if
                 end repeat
             end repeat
@@ -35,14 +45,18 @@ if meetUrl is "" then
     end try
 end if
 
-if meetUrl is "" then
+if application "Microsoft Edge" is running then
     try
         tell application "Microsoft Edge"
             repeat with w in windows
                 repeat with t in tabs of w
                     set tabUrl to URL of t
                     if tabUrl contains "meet.google.com/" then
-                        set meetUrl to tabUrl
+                        if allUrls is "" then
+                            set allUrls to tabUrl
+                        else
+                            set allUrls to allUrls & (ASCII character 10) & tabUrl
+                        end if
                     end if
                 end repeat
             end repeat
@@ -50,10 +64,10 @@ if meetUrl is "" then
     end try
 end if
 
-return meetUrl
+return allUrls
 `;
 
-function isValidGoogleMeetUrl(url: string): boolean {
+export function isValidGoogleMeetUrl(url: string): boolean {
     try {
         const parsed = new URL(url);
         if (parsed.hostname !== "meet.google.com") return false;
@@ -67,7 +81,7 @@ function isValidGoogleMeetUrl(url: string): boolean {
     }
 }
 
-function runAppleScript(script: string): Promise<string> {
+export function runAppleScript(script: string): Promise<string> {
     return new Promise((resolve) => {
         const proc = spawn("osascript", [], { stdio: ["pipe", "pipe", "pipe"] });
         let output = "";
@@ -77,6 +91,13 @@ function runAppleScript(script: string): Promise<string> {
         proc.stdin.write(script);
         proc.stdin.end();
     });
+}
+
+export async function detectActiveGoogleMeetUrl(): Promise<string> {
+    const output = await runAppleScript(GOOGLE_MEET_DETECT_SCRIPT);
+    if (!output) return "";
+    const urls = output.split("\n").map(u => u.trim()).filter(Boolean);
+    return urls.find(url => isValidGoogleMeetUrl(url)) ?? "";
 }
 
 export class GoogleMeetWatcher {
@@ -127,7 +148,7 @@ export class GoogleMeetWatcher {
     }
 
     private async detectGoogleMeet(): Promise<boolean> {
-        const url = await runAppleScript(GOOGLE_MEET_DETECT_SCRIPT);
-        return isValidGoogleMeetUrl(url);
+        const url = await detectActiveGoogleMeetUrl();
+        return url.length > 0;
     }
 }
