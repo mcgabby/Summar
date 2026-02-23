@@ -238,6 +238,8 @@ export class SettingHelperModal extends Modal {
             // 선택된 설정값들만 플러그인 설정에 적용
             if (this.openaiCheckbox?.checked && common.openaiApiEndpoint) {
                 this.plugin.settingsv2.common.openaiApiEndpoint = common.openaiApiEndpoint;
+                // [GEMINI_PROXY] Uncomment when Gemini proxy is implemented:
+                // this.plugin.settingsv2.common.geminiApiEndpoint = common.openaiApiEndpoint;
                 appliedCount++;
             }
             if (this.confluenceCheckbox?.checked && common.confluenceDomain) {

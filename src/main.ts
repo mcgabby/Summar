@@ -1280,7 +1280,19 @@ export default class SummarPlugin extends Plugin {
 
   getAllModelKeyValues(category: ModelCategory): Record<string, string> {
     const models = this.modelsByCategory[category] || {};
-    return { ...models }; 
+    const result = { ...models };
+
+    const endpoint = this.settingsv2.common.geminiApiEndpoint?.trim();
+    if (endpoint) {
+      const ALLOWED_GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro'];
+      for (const key of Object.keys(result)) {
+        if (key.startsWith('gemini-') && !ALLOWED_GEMINI_MODELS.includes(key)) {
+          delete result[key];
+        }
+      }
+    }
+
+    return result;
   }
 
   async loadPromptsFromFile(): Promise<void> {

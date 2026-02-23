@@ -119,6 +119,7 @@ export interface SettingHelperConfig {
     common: {
         getChatAIPat: string;
         openaiApiEndpoint: string;
+        geminiApiEndpoint: string;
         getConfluencePat: string;
         confluenceDomain: string;
         slackWorkspaceDomain: string;

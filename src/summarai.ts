@@ -185,30 +185,9 @@ export class SummarAI extends SummarViewContainer {
             response.json.candidates[0].content.parts.length > 0 &&
             response.json.candidates[0].content.parts[0].text
           ) {
-            // SummarDebug.log(1, `Gemini generateContent response: \n${JSON.stringify(response.json)}`);
             this.response.status = response.status;
             this.response.json = response.json;
             this.response.text = response.json.candidates[0].content.parts[0].text || '';
-            // trackapi.logAPICall('gemini', this.aiModel, 'generateContent', this.feature, bodyContent, response.json, true);
-            const statsid: string = (await trackapi.logAPICall({
-              provider: 'gemini',
-              model: this.aiModel,
-              endpoint: 'generateContent',
-              feature: this.feature,
-              requestData: bodyContent,
-              responseData: response.json, 
-            })) || '';
-            this.response.statsId = statsid;
-            if (statsid) {
-              await trackapi.logConversation(statsid, bodyContent, this.response.text);
-            }
-            return true;
-          } else {
-            // SummarDebug.log(1, `Gemini generateContent response without content: \n${JSON.stringify(response.json)}`);
-            this.response.status = response.status;
-            this.response.json = response.json;
-            this.response.text = response.json.error ? response.json.error.message : 'No content available';
-            // trackapi.logAPICall('gemini', this.aiModel, 'generateContent', this.feature, bodyContent, response.json, false, this.response.text);
             const statsid: string = (await trackapi.logAPICall({
               provider: 'gemini',
               model: this.aiModel,
@@ -216,7 +195,24 @@ export class SummarAI extends SummarViewContainer {
               feature: this.feature,
               requestData: bodyContent,
               responseData: response.json,
-              success: false, 
+            })) || '';
+            this.response.statsId = statsid;
+            if (statsid) {
+              await trackapi.logConversation(statsid, bodyContent, this.response.text);
+            }
+            return true;
+          } else {
+            this.response.status = response.status;
+            this.response.json = response.json;
+            this.response.text = response.json.error ? response.json.error.message : 'No content available';
+            const statsid: string = (await trackapi.logAPICall({
+              provider: 'gemini',
+              model: this.aiModel,
+              endpoint: 'generateContent',
+              feature: this.feature,
+              requestData: bodyContent,
+              responseData: response.json,
+              success: false,
               errorMessage: this.response.text,
             })) || '';
             this.response.statsId = statsid;
@@ -390,14 +386,21 @@ export class SummarAI extends SummarViewContainer {
       // SummarDebug.log(1, `bodyContent: ${bodyContent}`);
       SummarDebug.log(1, `SummarAI.completeGemini() with model: ${this.aiModel}, feature: ${this.feature}`);
 
-      const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${this.aiModel}:generateContent?key=${this.aiKey}`;
+      const geminiEndpoint = this.plugin.settingsv2.common.geminiApiEndpoint?.trim();
+      let API_URL: string;
+      const headers: Record<string, string> = { "Content-Type": contentType };
+
+      if (geminiEndpoint) {
+        API_URL = `${geminiEndpoint.replace(/\/$/, "")}/v1beta/models/${this.aiModel}:generateContent`;
+        headers["Authorization"] = `Bearer ${this.aiKey}`;
+      } else {
+        API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${this.aiModel}:generateContent?key=${this.aiKey}`;
+      }
 
       const response = await SummarRequestUrl(this.plugin, {
         url: API_URL,
         method: "POST",
-        headers: {
-          "Content-Type": contentType 
-        },
+        headers: headers,
         body: bodyContent,
         throw: throwFlag,
       });

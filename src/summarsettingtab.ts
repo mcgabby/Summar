@@ -6,7 +6,7 @@ import SummarPlugin from "./main";
 import { ConfluenceAPI } from "./confluenceapi";
 import { SlackAPI } from "./slackapi";
 import { SummarStatsModal } from "./summarstatsmodal";
-import { SettingHelperConfig } from "./types";
+import { SettingHelperConfig, ModelCategory } from "./types";
 import { SettingHelperModal } from "./settinghelper";
 import { FolderSuggest } from "./foldersuggest";
 import { CalendarSettingModal } from "./calendarsettingmodal";
@@ -18,6 +18,7 @@ export class SummarSettingsTab extends PluginSettingTab {
   deviceId: string;
   private calendarSettingModal: CalendarSettingModal | null = null;
   private googleCalendarEventsContainer: HTMLElement | null = null;
+  private modelDropdowns: {selectEl: HTMLSelectElement, category: ModelCategory}[] = [];
 
   constructor(plugin: SummarPlugin) {
     super(plugin.app, plugin);
@@ -52,6 +53,7 @@ export class SummarSettingsTab extends PluginSettingTab {
 
     containerEl.empty();
     containerEl.addClass('summar-plugin'); // Add a class to scope our CSS
+    this.modelDropdowns = [];
 
     // Create tabs container
     const tabsContainer = containerEl.createDiv({ cls: 'settings-tabs' });
@@ -275,6 +277,26 @@ activateTab(tabId: string): void {
     });
 }
 
+  private refreshModelDropdowns(): void {
+    for (const ref of this.modelDropdowns) {
+      const options = this.plugin.getAllModelKeyValues(ref.category);
+      const currentValue = ref.selectEl.value;
+
+      ref.selectEl.innerHTML = '';
+      for (const [key, display] of Object.entries(options)) {
+        const opt = ref.selectEl.createEl('option', { value: key, text: display });
+        if (key === currentValue) opt.selected = true;
+      }
+
+      if (!options[currentValue] && currentValue.startsWith('gemini-')) {
+        if (options['gemini-2.5-flash']) {
+          ref.selectEl.value = 'gemini-2.5-flash';
+        }
+        ref.selectEl.dispatchEvent(new Event('change'));
+      }
+    }
+  }
+
   async buildCommonSettings(containerEl: HTMLElement): Promise<void> {
     // ...기존 코드...
     containerEl.createEl("h2", { text: "Common Settings" });
@@ -434,7 +456,10 @@ activateTab(tabId: string): void {
           .setValue(this.plugin.settingsv2.common.openaiApiEndpoint || "")
           .onChange(async (value) => {
             this.plugin.settingsv2.common.openaiApiEndpoint = value;
+            // [GEMINI_PROXY] Uncomment when Gemini proxy is implemented:
+            // this.plugin.settingsv2.common.geminiApiEndpoint = value;
             await this.plugin.settingsv2.saveSettings();
+            this.refreshModelDropdowns();
           });
         const textAreaEl = text.inputEl;
         textAreaEl.style.width = "100%";
@@ -756,18 +781,19 @@ activateTab(tabId: string): void {
       .addDropdown(dropdown => {
         const options = this.plugin.getAllModelKeyValues("webModel");
         if (Object.keys(options).length === 0) {
-          options['gpt-4o'] = 'gpt-4o'; 
+          options['gpt-4o'] = 'gpt-4o';
           options['gpt-4.1'] = 'gpt-4.1';
           options['o1-mini'] = 'o1-mini';
           options['o3-mini'] = 'o3-mini';
-        }            
+        }
         dropdown
           .addOptions(options)
           .setValue(this.plugin.settingsv2.web.webModel)
           .onChange(async (value) => {
             this.plugin.settingsv2.web.webModel = value;
             await this.plugin.settingsv2.saveSettings();
-          })
+          });
+        this.modelDropdowns.push({selectEl: dropdown.selectEl, category: "webModel"});
       });
 
     // --- 버튼 2개 (set default, revert) 및 텍스트에 따른 상태 관리 ---
@@ -893,6 +919,7 @@ activateTab(tabId: string): void {
             this.plugin.settingsv2.pdf.pdfModel = value;
             await this.plugin.settingsv2.saveSettings();
           });
+        this.modelDropdowns.push({selectEl: dropdown.selectEl, category: "pdfModel"});
       });      
 
     // --- 버튼 2개 (set default, revert) 및 텍스트에 따른 상태 관리 ---
@@ -1215,8 +1242,9 @@ activateTab(tabId: string): void {
               }
             }
           });
+        this.modelDropdowns.push({selectEl: dropdown.selectEl, category: "sttModel"});
       });
-   
+
     // STT 프롬프트 버튼들을 위한 별도 div
     promptButtonsDiv = containerEl.createDiv({ cls: "transcription-prompt-buttons" });
     const sttPromptSettingButtons = new Setting(promptButtonsDiv)
@@ -1359,7 +1387,8 @@ activateTab(tabId: string): void {
           .onChange(async (value) => {
             this.plugin.settingsv2.recording.transcriptSummaryModel = value;
             await this.plugin.settingsv2.saveSettings();
-          })
+          });
+        this.modelDropdowns.push({selectEl: dropdown.selectEl, category: "transcriptSummaryModel"});
       });
 
     // --- 버튼 2개 (set default, revert) 및 텍스트에 따른 상태 관리 ---
@@ -1649,9 +1678,10 @@ activateTab(tabId: string): void {
           .onChange(async (value) => {
             command.model = value;
             await this.plugin.settingsv2.saveSettings();
-          })
+          });
+        this.modelDropdowns.push({selectEl: dropdown.selectEl, category: "customModel"});
       })
-  
+
       .addText((hotkeyInput) => {
         hotkeyInput
           .setPlaceholder('Press a hotkey...')

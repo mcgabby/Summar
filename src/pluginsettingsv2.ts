@@ -23,6 +23,7 @@ export class PluginSettingsV2 {
     openaiApiKey: string;
     openaiApiEndpoint: string;
     googleApiKey: string;
+    geminiApiEndpoint: string;
     useConfluenceAPI: boolean;
     confluenceApiToken: string;
     confluenceDomain: string;
@@ -38,6 +39,7 @@ export class PluginSettingsV2 {
     openaiApiKey: "",
     openaiApiEndpoint: "",
     googleApiKey: "",
+    geminiApiEndpoint: "",
     useConfluenceAPI: true,
     confluenceApiToken: "",
     confluenceDomain: "",
@@ -171,6 +173,7 @@ export class PluginSettingsV2 {
       openaiApiKey: "",
       openaiApiEndpoint: "",
       googleApiKey: "",
+      geminiApiEndpoint: "",
       useConfluenceAPI: true,
       confluenceApiToken: "",
       confluenceDomain: "",
@@ -276,6 +279,8 @@ export class PluginSettingsV2 {
           SummarDebug.log(1, `Migration completed and saved. Schema version: ${this.schemaVersion}`);
         }
 
+        this.sanitizeGeminiModels();
+
         SummarDebug.log(1, `Settings loaded successfully. Schema version: ${this.schemaVersion}`);
         return this;
       } else {
@@ -356,10 +361,40 @@ export class PluginSettingsV2 {
   }
 
   /**
+   * geminiApiEndpoint가 설정되어 있을 때, 허용되지 않은 gemini 모델을 gemini-2.5-flash로 대치합니다
+   */
+  private sanitizeGeminiModels(): void {
+    const endpoint = this.common.geminiApiEndpoint?.trim();
+    if (!endpoint) return;
+
+    const ALLOWED_GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro'];
+    const FALLBACK_MODEL = 'gemini-2.5-flash';
+
+    const sanitize = (model: string): string => {
+      if (model.startsWith('gemini-') && !ALLOWED_GEMINI_MODELS.includes(model)) {
+        return FALLBACK_MODEL;
+      }
+      return model;
+    };
+
+    this.web.webModel = sanitize(this.web.webModel);
+    this.pdf.pdfModel = sanitize(this.pdf.pdfModel);
+    this.recording.sttModel = sanitize(this.recording.sttModel);
+    this.recording.transcriptSummaryModel = sanitize(this.recording.transcriptSummaryModel);
+    this.conversation.conversationModel = sanitize(this.conversation.conversationModel);
+
+    for (const cmd of this.custom.command) {
+      cmd.model = sanitize(cmd.model);
+    }
+  }
+
+  /**
    * 설정을 파일에 저장합니다
    */
   async saveSettings(): Promise<void> {
     try {
+      this.sanitizeGeminiModels();
+
       const pluginDir = normalizePath(`/.obsidian/plugins/${this.pluginId}`);
       await this.app.vault.adapter.mkdir(pluginDir);
       
@@ -493,6 +528,8 @@ export class PluginSettingsV2 {
       // Common 섹션 마이그레이션
       if (v1Settings.openaiApiKey !== undefined) this.common.openaiApiKey = v1Settings.openaiApiKey;
       if (v1Settings.openaiApiEndpoint !== undefined) this.common.openaiApiEndpoint = v1Settings.openaiApiEndpoint;
+      // [GEMINI_PROXY] Uncomment when Gemini proxy is implemented:
+      // if (v1Settings.openaiApiEndpoint !== undefined) this.common.geminiApiEndpoint = v1Settings.openaiApiEndpoint;
       if (v1Settings.googleApiKey !== undefined) this.common.googleApiKey = v1Settings.googleApiKey;
       if (v1Settings.useConfluenceAPI !== undefined) this.common.useConfluenceAPI = v1Settings.useConfluenceAPI;
       if (v1Settings.confluenceApiToken !== undefined) this.common.confluenceApiToken = v1Settings.confluenceApiToken;
